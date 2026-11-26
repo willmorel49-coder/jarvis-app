@@ -93,6 +93,8 @@
   .olm .offr,.olm .offsr,.olm-conc{flex:none;scroll-snap-align:start}
 }
 .olm-bar{display:flex;align-items:center;justify-content:space-between;gap:12px 16px;flex-wrap:wrap;margin:6px 0 14px}
+.olm-pastilles{margin:-6px 0 14px;font-size:13.5px;line-height:1.4;color:var(--o-gris)}
+@media (max-width:640px){.olm-pastilles{display:none}}   /* 26/11/2026 : planche ordinateur, le téléphone ne bouge pas */
 .olm-nb{margin:0;font-size:15px;line-height:1.4;color:var(--o-gris)}
 .olm-nb b{font-size:17px;color:var(--ip-ink)}
 .olm-tri{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--o-gris)}

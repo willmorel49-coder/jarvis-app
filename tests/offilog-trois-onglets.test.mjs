@@ -46,7 +46,7 @@ test('trois onglets à la place des trois portes', () => {
   const m = code.match(/var ONGLETS = (\[[^;]*\]);/);
   assert.ok(m, 'liste des onglets introuvable');
   const onglets = JSON.parse(m[1].replace(/'/g, '"'));
-  assert.deepEqual(onglets.map((o) => o[2]), ['Trouver un produit', 'Comparer nos prix', 'Le catalogue']);
+  assert.deepEqual(onglets.map((o) => o[2]), ['Trouver un produit', 'Comparer nos prix', 'Catalogue à envoyer']);
   assert.match(code, /class="olm-onglet[^]*role="tab"/, 'chaque onglet est un vrai onglet (role="tab")');
 });
 

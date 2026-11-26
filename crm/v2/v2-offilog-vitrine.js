@@ -540,7 +540,7 @@
     var segs = CHOIX.map(function (c) {
       return '<button type="button" class="v2-seg' + (c === choix ? ' on' : '') + '" aria-pressed="' + (c === choix ? 'true' : 'false') + '" onclick="V2.offVitrineChoix(' + c + ')">' + c + '<span class="ovt-seg-l"> produits</span></button>';
     }).join('');
-    return '<div class="ovt-bar"><div class="ovt-th"><span class="ovt-t">Le catalogue Offilog</span><span class="ovt-info" id="ovt-info" aria-live="polite"></span></div>' +
+    return '<div class="ovt-bar"><div class="ovt-th"><span class="ovt-t">Catalogue à envoyer</span><span class="ovt-info" id="ovt-info" aria-live="polite"></span></div>' +
       '<div class="ovt-segs" role="group" aria-label="Nombre de produits">' + segs + '</div>' +
       '<button type="button" class="v2-btn v2-btn-primary ovt-b" onclick="V2.offVitrineImprimer()">' + ICO('fiche', 15, 2) + ' Imprimer</button>' +
       '<button type="button" class="v2-btn v2-btn-primary ovt-b" onclick="V2.offVitrinePdf()">' + ICO('download', 15, 2) + ' <span class="ovt-seg-l">Télécharger le </span>PDF</button>' +
@@ -597,7 +597,7 @@
     poserCss();
     if (!modal) {
       modal = document.createElement('div'); modal.id = 'ovt-modal';
-      modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-label', 'Le catalogue Offilog');
+      modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-label', 'Catalogue à envoyer');
       document.body.appendChild(modal);
       try { document.addEventListener('keydown', surCloture); window.addEventListener('resize', ajuster); } catch (e) {}
     }
@@ -898,7 +898,7 @@
     return '<div class="olv">' +
       '<div class="olv-vig" id="olv-vig" role="button" tabindex="0" aria-label="Voir le catalogue en grand" onclick="V2.offVitrine()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();V2.offVitrine()}">' +
         '<span class="olv-vig-c" aria-hidden="true"></span><span class="olv-vig-t">Préparation de la couverture…</span></div>' +
-      '<div class="olv-txt"><h2 class="olv-h">Le catalogue Offilog</h2>' +
+      '<div class="olv-txt"><h2 class="olv-h">Catalogue à envoyer</h2>' +
         '<p class="olv-p">Un catalogue prêt à montrer ou à envoyer au pharmacien : les meilleures ventes d\'Offilog, avec le prix Offilog et, quand nous le connaissons, le tarif du laboratoire.' +
         (der ? ' Classement des ventes du ' + esc(dl(der, true)) + '.' : '') + '</p>' +
         '<div class="olm-pan-l">Combien de produits dans le catalogue ?</div><div class="v2-segs off-adv-segs">' + segs + '</div>' +

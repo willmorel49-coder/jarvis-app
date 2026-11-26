@@ -2082,7 +2082,7 @@
     return '<div class="off-search">' + ICO('search', 19, 2) + '<input id="off-search-input" type="search" autocomplete="off" aria-label="Rechercher un produit, une marque ou un code EAN" placeholder="Produit, marque ou code EAN…" value="' + S.q.replace(/"/g, '&quot;') + '" oninput="V2.offSearch(this.value)">' +
       (S.q ? '<button type="button" class="clr" onclick="V2.offSearch(\'\')" aria-label="Effacer la recherche">' + ICO('close', 16, 2) + '</button>' : '') + '</div>';
   }
-  var ONGLETS = [['trouver', 'search', 'Trouver un produit'], ['comparer', 'pilo', 'Comparer nos prix'], ['catalogue', 'fiche', 'Le catalogue']];
+  var ONGLETS = [['trouver', 'search', 'Trouver un produit'], ['comparer', 'pilo', 'Comparer nos prix'], ['catalogue', 'fiche', 'Catalogue à envoyer']];   // 26/11/2026 (Will, planche ordinateur C2) : « Le catalogue » devient « Catalogue à envoyer »
   // Les trois onglets (data-porte : même attribut que les anciennes portes, lu par les contrôles du banc).
   function v3Onglets(tab) {
     return '<div class="olm-portes" role="tablist" aria-label="Ce que vous voulez faire">' + ONGLETS.map(function (o) {
@@ -2104,7 +2104,9 @@
       return '<option value="' + o[0] + '"' + (S.sort === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
     }).join('');
     return '<div class="olm-bar"><p class="olm-nb" role="status"><b class="mono">' + V2.fmtNum(total) + '</b> produit' + (total > 1 ? 's' : '') + (ctx ? ' · ' + esc(ctx) : '') + ' · <span>trié par ' + esc(sortLabel(S.sort).toLowerCase()) + '</span></p>' +
-      '<label class="olm-tri"><span>Trier par</span><select id="olm-tri" onchange="V2.offSort(this.value)">' + opts + '</select></label></div>';
+      '<label class="olm-tri"><span>Trier par</span><select id="olm-tri" onchange="V2.offSort(this.value)">' + opts + '</select></label></div>' +
+      // 26/11/2026 (Will, planche ordinateur B16) : ce que disent les pastilles « +22 % / −11 % » des cartes, une fois pour toutes (écart = prix du concurrent − notre prix ; voir cmpEcart).
+      '<p class="olm-pastilles">Les pastilles donnent l’écart du prix d’un concurrent face à notre prix : + s’il est plus cher que nous, − s’il est moins cher.</p>';
   }
   function grilleV3(liste, total) {
     if (!total) return '<div class="v2-empty"><div class="v2-empty-ico">' + ICO('search', 64, 1.4) + '</div><div class="v2-empty-t">Aucun produit</div><div class="v2-empty-d">Rien ne correspond à cette recherche ni à ce choix.</div></div>';
