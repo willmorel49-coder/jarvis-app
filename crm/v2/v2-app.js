@@ -522,8 +522,10 @@
   // pour les suivis groupement genre essentiel, opso etc. »). Posée seulement pour les comptes de V2.CONTACTS_GROUPEMENT (v2-comptes.js) : la liste
   // décide de l'affichage, le vrai verrou reste celui de chaque app côté serveur (jarvis_acces_essentiels, jarvis_acces_opso).
   // Un groupement de plus = une ligne dans ce tableau. Chemins relatifs : même origine, donc même session. Escale et Phirst n'en sont pas.
+  // 26/11/2026 — option B, étape 9 : Essentiels Pharma passe sur la nouvelle app (même code que JARVIS, essentiels/v2/). L'ancienne
+  // (essentiels-pharma/) reste servie, sans plus aucun lien depuis JARVIS : revenir en arrière = remettre cette adresse.
   var GROUPEMENTS_APPS = [
-    { nom: 'Essentiels Pharma', url: '../../essentiels-pharma/index.html' },
+    { nom: 'Essentiels Pharma', url: '../../essentiels/v2/index.html' },
     { nom: 'OPSO', url: '../../opso/v2/index.html' }
   ];
   function groupementsMenu(m) {
