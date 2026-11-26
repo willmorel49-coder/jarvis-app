@@ -71,7 +71,7 @@
     ppht: 'les prix du catalogue', tarifage: 'la date des prix', prodstats: 'les ventes par produit',
     prodstatscond: 'les conditions par produit', catcomplet: 'le catalogue complet', catgroupe: 'le catalogue du groupe',
     mktrayons: 'les rayons du catalogue', mktipprix: 'les prix Intégral du marketing', mktnr: 'les produits non remboursables du marketing',
-    biosimcomplet: 'les biosimilaires', officinesinfos: 'les fiches des officines (adresse, SIREN)',
+    biosimcomplet: 'les biosimilaires', officinesinfos: 'les fiches des officines (adresse, SIREN)', ugacontours: 'les contours des UGA',
     pharmafrca: 'le chiffre d’affaires des officines de France', pharmafrseg: 'le classement des officines de France',
     pharmafrcomm: 'les commerciaux des officines de France', secteursajoutes: 'les secteurs ajoutés',
     bench: 'la comparaison des prix', benchcond: 'les conditions de la comparaison des prix',

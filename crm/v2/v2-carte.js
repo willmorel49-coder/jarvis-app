@@ -42,6 +42,9 @@
   ];
   var colorMode = 'type';        // défaut : Client/Prospect (voir d'emblée les ~2200 clientes ET les ~17000 prospects sur toute la France) · comm | type | uga | grp | ca
   var commFocus = [], grpFocus = [], typeFocus = 'all';   // comm/grp = multi-sélection (tableaux) · statut = all | clients | prospects
+  // 26/11/2026 — « Ma carte » (v2-carte-secteur.js) : à l'ouverture La carte montre le SECTEUR du commercial ; « Toute la France » reste à un clic.
+  // secteurPass : posée par ce module (officine du secteur affiché ?) ; null = Toute la France, comportement d'avant, intact.
+  var secteurPass = null;
   var searchTerm = '';   // recherche nom / ville / cp / titulaire
   var listSort = 'nom';  // tri de la liste : nom | ca
   var LIST_STEP = 500, listShown = LIST_STEP;   // liste : rendu par paquets (toutes dispo, DOM borné)
@@ -240,6 +243,7 @@
   }
   function deptOf(cp) { cp = String(cp || '').replace(/\s/g, ''); if (cp.length < 2) return ''; return /^97/.test(cp) ? cp.slice(0, 3) : cp.slice(0, 2); }
   function pass(p) {
+    if (secteurPass && !secteurPass(p)) return false;   // « Mon secteur » : seulement les officines des UGA du secteur affiché
     if (typeFocus === 'clients' && !isClient(p)) return false;
     if (typeFocus === 'prospects' && D.seg[p[4]] !== 'Prospect') return false;
     if (commFocus.length) {
@@ -1847,12 +1851,14 @@
     if (!D || !D.p || !map || !document.getElementById('carte-map')) return;   // carte fermée : le prochain boot() recalera
     recaler();
     var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml();
+    if (V2.carteSecteur) V2.carteSecteur.donneesChangees();   // « Ma carte » : le secteur et ses chiffres se relisent sur les données arrivées
     applyFilters();
   };
 
   function boot(root) {
     D = window.PHARMA_FR;
     recaler();
+    if (V2.carteSecteur) V2.carteSecteur.preparer(V2._carteApi);   // « Ma carte » : décide secteur ou France AVANT de dessiner la barre et la carte
     loadTour();
     try { var dp = JSON.parse(localStorage.getItem('jarvis_depot_v1') || 'null'); if (dp && dp.lat) depot = dp; } catch (e) {}
     root.querySelector('#carte-legend').innerHTML = legendHtml();
@@ -1892,7 +1898,7 @@
     // DOM a été retiré par le routeur — l'appeler faisait planter la console de l'écran
     // suivant avec « Map container not found » (constaté par le lot 0, cause non identifiée
     // alors). Même garde que le écouteur resize juste en dessous.
-    setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) { map.invalidateSize(); rebuild(); if (zonesOn) drawZones(); updateTourBar(); drawTourLine(); homeView(); } }, 60);
+    setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) { map.invalidateSize(); rebuild(); if (zonesOn) drawZones(); updateTourBar(); drawTourLine(); if (V2.carteSecteur) V2.carteSecteur.monter(); homeView(); } }, 60);
     setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) map.invalidateSize(); }, 420);
     if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && surCarte()) { map.invalidateSize(); renderFbRow(); } }); }
   }
@@ -1917,11 +1923,17 @@
   }
   // Vue d'ouverture : SES clients (le commercial connecté), pas la France entière.
   // Le profil porte un prénom (« Will », « Pauline G. ») ; PHARMA_FR indexe le même.
+  // Le nom du commercial connecté tel que La carte le connaît (« Pauline G. » du profil = celui de PHARMA_FR) ; '' pour la direction.
+  function monNomCommercial() {
+    var me = (V2.user && V2.user.commercial) ? norm(String(V2.user.commercial)).replace(/\./g, '').trim() : '';
+    var noms = commNames();
+    if (me) for (var k = 0; k < noms.length; k++) { var c = norm(noms[k] || '').replace(/\./g, '').trim(); if (c && (c === me || c.split(' ')[0] === me.split(' ')[0])) return noms[k]; }
+    return '';
+  }
   function homeView() {
     if (!map || !D) return;
-    var me = (V2.user && V2.user.commercial) ? norm(String(V2.user.commercial)).replace(/\./g, '').trim() : '';
-    var idx = '', noms = commNames();
-    if (me) for (var k = 0; k < noms.length; k++) { var c = norm(noms[k] || '').replace(/\./g, '').trim(); if (c && (c === me || c.split(' ')[0] === me.split(' ')[0])) { idx = noms[k]; break; } }
+    if (V2.carteSecteur && V2.carteSecteur.cadrer()) return;   // « Mon secteur » : la vue est cadrée sur le secteur
+    var idx = monNomCommercial();
     if (!idx) return;   // direction / profil sans commercial : la France
     var pts = [];
     for (var i = 0; i < D.p.length; i++) { var p = D.p[i]; if (isClient(p) && commsOf(p).indexOf(idx) >= 0 && isFinite(p[0]) && isFinite(p[1]) && (p[0] || p[1])) pts.push([p[0], p[1]]); }
@@ -2000,7 +2012,7 @@
     var commItem = fbItem('comm', commFocus.length === 1 ? commFocus[0] : commFocus.length ? commFocus.length + ' commerciaux' : 'Commercial', commFocus.length > 0);
     var grpItem = fbItem('grp', grpFocus.length === 1 ? grpFocus[0] : grpFocus.length ? grpFocus.length + ' groupements' : 'Groupement', grpFocus.length > 0);
     var more = fbIsOpen();
-    el.innerHTML =
+    el.innerHTML = (V2.carteSecteur ? V2.carteSecteur.barreHtml() : '') +
       '<div class="cn-seg cn-statut" role="group" aria-label="Statut">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div>' +
       (narrow ? '' : commItem + grpItem) +
       '<button class="cn-fb-btn cn-fb-more' + (more || fbSecondaryActive() ? ' on' : '') + '" aria-expanded="' + (more ? 'true' : 'false') + '" onclick="V2.carteFbMore()">' + (narrow ? 'Filtres' : 'Plus de filtres') + '<i class="cn-fb-car">' + (more ? '▴' : '▾') + '</i></button>';
@@ -2118,6 +2130,7 @@
   V2.pages.carte = {
     render: function (root) {
       injectCss();
+      if (V2.carteSecteur && !document.getElementById('carte-map')) V2.carteSecteur.nouvelleOuverture();   // « Ma carte » : une vraie ouverture (pas un redessin de la même page) repart du secteur
       // ══ LA CARTE (27/08/2026, Will : « beaucoup plus simple, là c'est le bordel ») ══
       // Avant : barre de 8 filtres + colonne de réglages à gauche + liste de 19 671
       // officines à droite + deux boutons « Organisateur de tournée » + un bandeau.
@@ -2226,8 +2239,11 @@
   function centrerVisible(p, zoom) {
     map.invalidateSize({ pan: false });   // la pastille de recherche réduit la carte sans la prévenir : centre décalé de 16 px mesuré
     var c = map.getContainer().getBoundingClientRect(), f = document.getElementById('cn-fiche'), r = f && f.getBoundingClientRect();
-    var bas = !!(r && r.width && r.left <= c.left + 1 && r.top > c.top), droite = !!(r && r.width && !bas && r.left > c.left);
+    var bas = !!(r && r.width && r.left <= c.left + 1 && r.top > c.top);
+    var gauche = !!(r && r.width && !bas && (r.left - c.left) < (c.right - r.right));   // « Ma carte » : la fiche est posée à GAUCHE, à la place du panneau du secteur
+    var droite = !!(r && r.width && !bas && !gauche && r.left > c.left);
     map.fitBounds(window.L.latLngBounds([[p[0], p[1]], [p[0], p[1]]]), { maxZoom: zoom, animate: true,
+      paddingTopLeft: [gauche ? r.right - c.left : 0, 0],
       paddingBottomRight: [droite ? c.right - r.left : 0, bas ? c.bottom - r.top : 0] });
   }
   // 27/10/2026 (Will) : au téléphone, la fiche s'ouvre à MI-HAUTEUR (avant 88 % : 76 px de carte au-dessus) et se tire au
@@ -2360,6 +2376,7 @@
     // « Liste », la fiche s'ouvrait DERRIÈRE le panneau de liste (z 3000) — invisible. Une fiche
     // ancrée à la carte n'a de sens que carte visible : on ferme la liste avant de l'ouvrir.
     V2.carteListClose();
+    if (V2.carteSecteur) V2.carteSecteur.avantFiche();   // « Ma carte » : la fiche remplace le panneau du secteur
     if (fbEtroit() && (fbMore || fbOpen)) { fbMore = false; fbOpen = ''; renderFbRow(); if (map) setTimeout(function () { if (map) map.invalidateSize(); }, 0); }   // 24/10/2026 : la fiche prend la place des filtres
     if (!document.getElementById('cn-fiche')) {
       // Fiche ANCRÉE à la carte (volet à droite sur ordinateur, tiroir bas sur téléphone) :
@@ -2376,7 +2393,7 @@
     var pr = V2.loadFiles ? V2.loadFiles(['clientsactifs', 'officinesinfos']) : null, fin = function () { ensureDetail(function () { renderFiche(i); }); };
     if (pr && pr.then) pr.then(fin, fin); else fin();
   };
-  V2.carteFicheClose = function () { ficheIdx = null; var el = document.getElementById('cn-fiche'); if (el) el.remove(); };
+  V2.carteFicheClose = function () { ficheIdx = null; var el = document.getElementById('cn-fiche'); if (el) el.remove(); if (V2.carteSecteur) V2.carteSecteur.apresFermetureFiche(); };
   // Libellés des mois RÉELLEMENT couverts par les exports (WML_MOIS, écrit par le
   // générateur). Écrits en dur, un mois ajouté à la base sortait une barre sans étiquette.
   var _MAB = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
@@ -2478,6 +2495,7 @@
         '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/dir/?api=1&destination=' + q + '" target="_blank" rel="noopener">Itinéraire</a>' +
       '</div></div>';
     var ph = el.querySelector('.cn-phead'); if (ph && ph.offsetHeight) el.style.setProperty('--cn-bandeau', ph.offsetHeight + 'px');   // cran « bandeau » = en-tête seul
+    if (V2.carteSecteur) V2.carteSecteur.apresFiche(i);   // « Ma carte » : bouton « Étude de zone » quand l'officine a une étude
     if (V2.profil) V2.profil.hydrate();   // charge/sauve les infos officine (Supabase profils), comme l'onglet Pharmacies
     if (V2.notes) V2.notes.hydrate();
     // Suivi : dernière visite (3 sources réunies par V2.rdvVuLe) et prochain rendez-vous — lus à l'ouverture de la fiche.
@@ -2493,4 +2511,26 @@
       }, function () {});
     }
   }
+  // ── 26/11/2026 · « Ma carte » : la petite interface que v2-carte-secteur.js lit (jamais l'inverse : ce fichier ne dépend de lui que par des gardes `if (V2.carteSecteur)`).
+  // Tout est lu en direct (la carte et les données sont recréées à chaque ouverture) : aucune valeur n'est copiée ici.
+  function nomsAvecSecteur() {
+    var o = {}; if (commByUga) Object.keys(commByUga).forEach(function (u) { (commByUga[u] || []).forEach(function (c) { if (c) o[c] = 1; }); });
+    return Object.keys(o).sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
+  }
+  V2._carteApi = {
+    CB: CB,
+    donnees: function () { return D; }, carte: function () { return map; },
+    commsOf: function (p) { return commsOf(p); }, isClient: function (p) { return isClient(p); }, segOf: function (p) { return segOf(p); },
+    caOf: function (p) { return caOf(p); }, voitCa: function (p) { return voitCa(p); },
+    monNom: monNomCommercial, nomsAvecSecteur: nomsAvecSecteur,
+    detail: ensureDetail, detailPret: function () { return DETAIL; }, moisLbls: moisLbls,
+    ficheIdx: function () { return ficheIdx; }, ouvrirFiche: function (i) { V2.carteFiche(i); },
+    centrer: function (i, zoom) { var p = D && D.p[i]; if (map && p) centrerVisible(p, zoom || 15); },
+    poserFiltre: function (fn) { secteurPass = fn || null; },
+    rafraichir: function () { applyFilters(); },
+    redessinerBarre: function () { renderFbRow(); },
+    surCarte: surCarte, etroit: fbEtroit,
+    choixDepot: function () { return pickDepotMode; },
+    tourDe: function () { return tour; }
+  };
 })();

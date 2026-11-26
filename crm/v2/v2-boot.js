@@ -1118,6 +1118,9 @@
     // (commercial, grossiste, CA, potentiel) : fichier PUBLIC, 1,5 Mo → chargé
     // à l'ouverture d'une fiche (client ou prospect), jamais au démarrage.
     officinesinfos: 'v2/officines-infos-data.js',
+    // 26/11/2026 — « Ma carte » (La carte, v2-carte-secteur.js) : contours simplifiés des UGA (800 Ko, public : code, nom et contour, AUCUNE donnée
+    // commerciale ; fabriqué par scripts/fabriquer_uga_contours.py). Chargé à l'ouverture de « Mon secteur », jamais au démarrage.
+    ugacontours: 'v2/uga-contours-data.js',
   };
 
   // ── Les fichiers de données reviennent dans le dépôt (15/08/2026) ────
