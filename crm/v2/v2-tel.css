@@ -62,9 +62,6 @@
   body.bnav-on .mis-tot{position:sticky;bottom:calc(var(--bnav-h) + 8px);z-index:5;box-shadow:0 12px 22px -12px rgba(11,46,30,.6)}
 
   /* ── Audit téléphone du 25/11/2026 : ce qui ne dépend pas de la barre ── */
-  /* bouton principal grisé : fond gris, plus le dégradé bleu (v2.css, « bouton principal : bleu à lumière », l'emportait sur la règle « désactivé » :
-     texte gris sur bleu, 1,2:1 ; sur le gris prévu, 5,8:1). L'ordinateur n'est pas corrigé ici. */
-  html:not([data-hab]) .v2-btn-primary:is(:disabled,[disabled],[aria-disabled="true"]){background-color:var(--btn-off-bg);background-image:none;border-color:var(--btn-off-line);box-shadow:none}
   /* étiquettes de l'agenda, de « Qui inviter » et de « Qui appeler » : 12 px (« html » : ces écrans posent leur style après cette feuille) */
   html .agv-tag,html .rad-tag,html .app-tag{font-size:12px}
   /* « Suivi & contrôle » : avec trois cartes de chiffres, la dernière prend la rangée entière (grille de deux jusqu'à 559 px, de quatre au-delà) */

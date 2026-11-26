@@ -633,6 +633,18 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   html .mis-tot span,html .mis-tot small,html .mis-tot-note{opacity:1}
   /* Listings : le libellé des cartes de famille n'est plus en capitales espacées (« NOTRE MARGE PAR / BOÎTE » se cassait en deux) */
   html .mp-fv::before{text-transform:none;letter-spacing:0}
+  /* Barre du haut à 380 px et moins : 8 px entre les quatre boutons de droite (planche du 26/11/2026, sujet 10, version 3 « 8 px, le nom court »).
+     v2-pieces.css les serre à 2 px pour que la maison d'un écran interne ne soit pas rognée ; la place est reprise au bouton Retour (resserré de 15 px)
+     et au nom de la marque, dont seul le premier mot se voit : « JARVIS » au lieu de « JARVIS Pharma ». Le nom n'est pas réécrit ici (il vient de V2_BRAND.name) :
+     il se replie sur son espace et son cadre ne montre que la première ligne ; le texte entier reste dans la page.
+     JARVIS connecté seulement : ni Phirst (data-teinte) ni OPSO (pas de barre du bas). */
+  @media (max-width:380px){
+    html:not([data-teinte]) body.bnav-on .tp-d{gap:8px}
+    html:not([data-teinte]) body.bnav-on .tp-g{gap:4px}
+    html:not([data-teinte]) body.bnav-on .v2-top .v2-back{gap:4px;padding:0 8px 0 5px}
+    html:not([data-teinte]) body.bnav-on .v2-top .v2-brand-t{white-space:normal}
+    html:not([data-teinte]) body.bnav-on .v2-top .v2-brand:not(.v2-brand-compact)>span:not(.v2-logo){width:min-content;height:20px;line-height:20px;overflow:hidden}
+  }
 }
 .v2-cmdk-x{display:none;align-items:center;justify-content:center;flex-shrink:0;min-height:44px;padding:0 8px;border:0;background:none;
   color:var(--ip-blue);font:600 16px var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -1089,6 +1101,9 @@ html:not([data-hab]) .v2-section-head .v2-sh-s{font-size:14px;color:#505661;font
 /* ── Bouton principal : bleu à lumière, comme m32 ── */
 html:not([data-hab]) .v2-btn-primary{background-color:#0043C8;background-image:linear-gradient(170deg,#0A5BF0,#0043C8);border-color:#0036A8;box-shadow:0 8px 18px -8px rgba(0,80,230,.7),0 1px 0 rgba(255,255,255,.3) inset}
 html:not([data-hab]) .v2-btn-primary:hover{box-shadow:0 12px 24px -8px rgba(0,80,230,.75),0 1px 0 rgba(255,255,255,.32) inset}
+/* grisé : fond gris, plus de dégradé ni d'ombre bleue. Le bleu à lumière ci-dessus pèse plus lourd que la règle « désactivé » (plus haut) : le texte gris restait sur le bleu, 1,2:1 ; sur le gris prévu, 5,8:1.
+   À l'ordinateur comme au téléphone (26/11/2026, accord de Will ; la règle vivait dans v2-tel.css, sous 640 px). À laisser APRÈS le survol, de même poids : survolé ou touché, un bouton grisé ne reprend pas l'ombre bleue. */
+html:not([data-hab]) .v2-btn-primary:is(:disabled,[disabled],[aria-disabled="true"]){background-color:var(--btn-off-bg);background-image:none;border-color:var(--btn-off-line);box-shadow:none}
 /* ═══ fin du temps 2 ═══ */
 
 /* ═══ COUP DE NEUF — temps 3 (18/11/2026) : les mêmes composants d'un écran à l'autre, accueil et écrans de la barre SEULEMENT.
