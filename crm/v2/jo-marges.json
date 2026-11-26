@@ -1,8 +1,22 @@
 {
- "generated_at": "2026-11-25T17:23:04.422889+00:00",
+ "generated_at": "2026-11-26T17:02:51.343704+00:00",
  "source": "Journal officiel · open data DILA",
- "count": 7,
+ "count": 8,
  "items": [
+  {
+   "id": "JORFTEXT000055144458",
+   "titre": "Décision du 24 novembre 2026 relative à l'abrogation de tarifs forfaitaires de responsabilité pour des groupes génériques",
+   "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055144458",
+   "jo": "2026-11-26",
+   "signe_le": "2026-11-24",
+   "motifs": [
+    "arrêté prix & marges (le texte de 1987 qui fixe la marge grossiste)",
+    "modification de l'arrêté fondateur de 1987"
+   ],
+   "resume": null,
+   "date_effet": null,
+   "a_venir": false
+  },
   {
    "id": "JORFTEXT000055138140",
    "titre": "Avis modifiant l'avis du 6 novembre 2026 relatif aux prix de spécialités pharmaceutiques publiés en application de l'article L. 162-16-6 du code de la sécurité sociale",
