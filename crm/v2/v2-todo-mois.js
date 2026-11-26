@@ -124,6 +124,10 @@
     var R = window.V2RECO, idx = R && V2.planningIndex ? V2.planningIndex() : null, liste = [];
     if (idx && RECO) RECO.brut.forEach(function (ev) {
       var m = R.apparier(ev.titre, idx.porte, idx.nat, RECO.alias, idx.villes);
+      // 26/11/2026 — l'annuaire est désormais chargé ici (noms d'enseigne de ses clients) : une simple ressemblance avec
+      // une officine hors du fichier de l'équipe n'est pas montrée (« Appeler phie du chapitre » sortait à Marseille,
+      // une homonyme sur trois ; la vraie est à Rennes). Elle reste une heure occupée, comme avant ce chargement.
+      if (m && m.officine && m.etat !== 'reconnu' && idx.idsPorte && !idx.idsPorte[String(m.officine.id)]) return;
       if (m && m.officine) liste.push({ date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier, cip: String(m.officine.id), nom: m.officine.name, ville: m.officine.ville || '', etat: m.etat });
     });
     RECO_CLE = cle; RECO_LISTE = liste;

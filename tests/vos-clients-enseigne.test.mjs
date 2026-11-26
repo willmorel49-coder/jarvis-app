@@ -148,3 +148,18 @@ test('le bouton envoie les disponibilités aux clients sans rendez-vous qui ont 
   assert.equal(ctx.V2.campagneModeVoulu, 'groupe');
   assert.deepEqual(vu.go, ['campagne']);
 });
+
+test('le mois ne montre pas une simple ressemblance avec une officine hors du fichier (annuaire chargé)', async () => {
+  const { V2, vu, ctx } = ecran();
+  V2.planningIndex = () => ({ porte: [], nat: [], idsPorte: { '9400001': 1, '9400002': 1, '9400003': 1, '9400004': 1 } });
+  V2.planningAppelerAgenda = () => Promise.resolve({ ok: true, evenements: [
+    { date: plus(0), debut: '11:30:00', fin: '12:30:00', jour_entier: false, titre: 'Appeler phie du chapitre' },
+    { date: plus(0), debut: '14:30:00', fin: '15:30:00', jour_entier: false, titre: 'Pharmacie de la chasse' },
+  ] });
+  ctx.V2RECO = { apparier: (t) => /chapitre/i.test(t) ? { officine: { id: '9999001', name: 'PHARMACIE DU CHAPITRE', ville: 'VILLE-LOIN' }, etat: 'confirmer' }
+    : /chasse/i.test(t) ? { officine: { id: '9999002', name: 'PHARMACIE DE LA CHASSE', ville: 'VILLE-PROSPECT' }, etat: 'reconnu' } : {} };
+  V2.todoMois.html(); await attendre(); vu.annuaire(); await attendre();
+  const h = V2.todoMois.html();
+  assert.match(h, /Chasse/, 'marqueur : une officine reconnue hors du fichier (prospect) reste montrée');
+  assert.doesNotMatch(h, /Chapitre/, 'une ressemblance hors du fichier n’est pas montrée');
+});
