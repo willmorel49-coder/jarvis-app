@@ -670,6 +670,11 @@
         '.mol-table tbody tr.mol-plus30{margin:6px 0 14px;background:none}' +
         'html .mol-plus30 .mol-plus30-b{min-height:48px;padding:0 22px;font-size:14px;font-weight:700}' +
         '.mol-plus30 small{display:block;margin-top:10px;font-size:13px;font-weight:500;line-height:1.4;color:var(--ip-ink-3,var(--muted))}' +
+        // un toucher laisse la rangée « survolée » sous Safari : la règle de survol de v2.css (« html:root:root body :is(.v2-table tbody tr,.v2-row):hover », bleu pâle)
+        // teintait alors TOUTE la carte des lignes, et une bande derrière « Voir 30 de plus » (vu au rendu le 26/11/2026). Ces deux rangées gardent leur fond ;
+        // « html:root:root body » : le même poids que cette règle, plus la classe de la rangée.
+        'html:root:root body .mol-table tbody tr.mol-lgw:hover{background-color:var(--card)}' +
+        'html:root:root body .mol-table tbody tr.mol-plus30:hover{background-color:transparent}' +
       '}' +
       // accessibilité : mouvement réduit
       '@media(prefers-reduced-motion:reduce){' +

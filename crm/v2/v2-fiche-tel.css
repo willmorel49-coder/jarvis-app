@@ -154,6 +154,9 @@
   .pha-wrap.fdr-on .fdr-plis .fdo-b{order:5}
   /* une ligne ; --pli-h / --pli-b : arrondi du haut et du bas de la carte (première ligne, dernière ligne, de part et d'autre d'un chapitre ouvert) */
   .pha-wrap.fdr-on .fdr-plis .fdr-pli{margin-top:-1px;transform:none;transition:none}
+  /* « Côté Intégral » en ligne : plus de trait pointillé ni de marge au-dessus (v2.css, « .fdr-on .fdr-int »), qui détachaient la 5e ligne de la carte
+     de 27 px et laissaient la 4e sans arrondi (vu au rendu le 26/11/2026). La pastille sombre du 5 dit toujours que le chapitre est interne. */
+  .pha-wrap.fdr-on .fdr-plis .fdr-pli.fdr-int{padding-top:0;border-top:0}
   .pha-wrap.fdr-on .fdr-plis #fdr-c1.fdr-pli{margin-top:12px;--pli-h:20px}
   .pha-wrap.fdr-on .fdr-plis .fdr-pli.fdr-ouvert{--pli-b:20px}
   .pha-wrap.fdr-on .fdr-plis .fdr-pli.fdr-ouvert + .fdr-pli{margin-top:14px;--pli-h:20px}

@@ -1577,7 +1577,7 @@
       '}',
       /* 26/11/2026 — téléphone seulement (choix de Will, planche « 11 choix », sujet 6, version 1) : les rubriques repliées, une ligne + un chiffre */
       '@media(max-width:640px){',
-      '.mp-rubs{margin-top:6px}',
+      '.mp-rubs{margin-top:14px}',   // 14 et non 6 : cette marge se confond avec les 8 px du bas des chiffres clés (la plus grande gagne) ; mesuré 8 px au rendu, 14 entre deux chiffres clés
       '.mp-rub+.mp-rub{border-top:1px solid var(--line)}',
       '.mp-rub>summary{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 14px 8px 16px;list-style:none;cursor:pointer;-webkit-tap-highlight-color:transparent}',
       '.mp-rub>summary::-webkit-details-marker{display:none}',
