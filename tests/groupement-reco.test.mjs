@@ -26,7 +26,7 @@ const FAUX = {
   ventes: { depot: '08/09/2031', mois: 'janvier à mars 2031', nb_pharmacies: 12 },
   listes: [
     { cle: 'glp1', titre: 'Titre liste un', court: 'Court un', note: 'Note liste un', pourcent: true, lignes: [
-      L({ designation: 'ALPHA 10MG', n: 9, ppht: 50.5, net: 48.5, abandon_pct: 0.039 }),
+      L({ designation: 'ALPHA 10MG', n: 9, ppht: 50.5, net: 48.5, abandon_pct: 3.9 }),
       L({ designation: 'ZETA 5MG', n: 4, ppht: 20, net: 19.5, abandon_pct: null })] },
     { cle: 'gen_nr', titre: 'Titre liste deux', court: 'Court deux', note: '', pourcent: false, lignes: [
       L({ designation: 'BETA GENERIQUE', nature: 'generique', n: 7, ppht: 1.21, net: 1.21 })] }
@@ -83,7 +83,7 @@ test('colonne « Abandon de marge » seulement si pourcent:true ; « — » sur 
   let h = racineEcran.innerHTML;
   assert.match(h, /role="columnheader">Abandon de marge</);
   const lignes = h.split('class="greco-li has-aban" role="row"').slice(1);
-  assert.match(lignes[0], /3,9 %/);                       // 0,039 en fraction = 3,9 %
+  assert.match(lignes[0], /3,9 %/);                       // abandon_pct écrit en pourcents
   assert.match(lignes[1].split('data-l="Abandon de marge"')[1], /—/);
   V2.grecoListe('gen_nr');
   h = racineEcran.innerHTML;
@@ -92,13 +92,21 @@ test('colonne « Abandon de marge » seulement si pourcent:true ; « — » sur 
   assert.match(h, /BETA GENERIQUE/);
 });
 
-test('pourcentage écrit en pourcents (valeur > 1) : lu comme tel, jamais ×100', async () => {
-  const f = JSON.parse(JSON.stringify(FAUX)); f.listes[0].lignes[0].abandon_pct = 3.9;
+test('pourcentage lu EN POURCENTS, même sous 1 % (produits chers) : jamais ×100 deviné', async () => {
+  const f = JSON.parse(JSON.stringify(FAUX)); f.listes[0].lignes[0].abandon_pct = 0.8;
   const { V2, racineEcran } = monter(CONF_ESS, { fichier: f });
   V2.pages.recogroupement.render(racineEcran);
   await attendre();
-  assert.match(racineEcran.innerHTML, /3,9 %/);
-  assert.doesNotMatch(racineEcran.innerHTML, /390 %/);
+  assert.match(racineEcran.innerHTML, /0,8 %/);
+  assert.doesNotMatch(racineEcran.innerHTML, /80 %/);
+});
+
+test('impression aux polices et couleurs du thème (lues à l\'exécution), jamais Arial ni gris écrits en dur', () => {
+  const src = lire('groupements/v2/groupement-reco.js');
+  const imp = src.slice(src.indexOf('function themeImpression'), src.indexOf('V2.grecoImprimer = function'));
+  assert.doesNotMatch(imp, /Arial|Helvetica|#222|#444|#555|#eee|#ddd/);
+  assert.match(imp, /--grp-accent/);
+  assert.match(imp, /document\.fonts\.ready/);
 });
 
 test('impression : fenêtre ouverte AVANT toute écriture, liste affichée, SANS colonne ni % d\'abandon de marge, avec dates et phrase prix net seul', async () => {

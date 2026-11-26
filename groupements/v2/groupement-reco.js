@@ -38,14 +38,9 @@
   var fP = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
   function num(v) { return typeof v === 'number' && isFinite(v) ? v : null; }
   function euros(v) { return num(v) == null ? '—' : fE.format(v) + ' €'; }
-  // Unité du pourcentage : le fichier des produits l'écrit en fraction (0,039 = 3,9 %). Si une valeur dépasse 1, le fichier
-  // l'écrit en pourcents (3,9) : l'unité se décide pour tout le fichier, jamais ligne par ligne.
-  function enPourcents(d) {
-    var t = false;
-    ((d && d.listes) || []).forEach(function (l) { (l.lignes || []).forEach(function (x) { if (num(x.abandon_pct) != null && x.abandon_pct > 1) t = true; }); });
-    return t;
-  }
-  function pct(v, pctDirect) { return num(v) == null ? '—' : fP.format(pctDirect ? v : v * 100) + ' %'; }
+  // Unité du pourcentage : reco-produits.json écrit abandon_pct EN POURCENTS (12,8 = 12,8 %, contrat du fichier, 26/11/2026).
+  // Jamais de conversion devinée d'après les valeurs : une liste de produits chers (abandon < 1 %) serait lue ×100.
+  function pct(v) { return num(v) == null ? '—' : fP.format(v) + ' %'; }
   // Clé de liste insérée dans un onclick : lettres, chiffres, tiret seulement (esc() ne protège pas une chaîne JS).
   function cleSure(k) { return /^[a-z0-9_-]+$/.test(String(k == null ? '' : k)); }
   function listesValides(d) {
@@ -96,9 +91,9 @@
   }
 
   // ── Rendu ──
-  function ligne(l, i, avecAban, pDirect) {
+  function ligne(l, i, avecAban) {
     var aban = avecAban ? '<div class="greco-c greco-num" role="cell" data-l="Abandon de marge">' +
-      (num(l.abandon_pct) == null ? '<span class="greco-vide">—</span>' : '<b>' + pct(l.abandon_pct, pDirect) + '</b>') + '</div>' : '';
+      (num(l.abandon_pct) == null ? '<span class="greco-vide">—</span>' : '<b>' + pct(l.abandon_pct) + '</b>') + '</div>' : '';
     return '<div class="greco-li' + (avecAban ? ' has-aban' : '') + '" role="row">' +
       '<div class="greco-c greco-rang" role="cell">' + (i + 1) + '</div>' +
       '<div class="greco-c greco-nom" role="cell"><b class="greco-n">' + esc(l.designation) + '</b>' +
@@ -118,7 +113,7 @@
       (avecAban ? '<div class="greco-c greco-num" role="columnheader">Abandon de marge</div>' : '') + '</div>';
   }
   function corps(d) {
-    var listes = listesValides(d), act = listeActive(), pD = enPourcents(d);
+    var listes = listesValides(d), act = listeActive();
     var avecAban = act.pourcent === true;
     var onglets = listes.map(function (l) {
       return '<button type="button" class="v2-tab' + (l === act ? ' on' : '') + '" onclick="V2.grecoListe(\'' + l.cle + '\')">' +
@@ -127,7 +122,7 @@
     var choix = '<select class="v2-field opx-tabsel" aria-label="Liste" onchange="V2.grecoListe(this.value)">' +
       listes.map(function (l) { return '<option value="' + l.cle + '"' + (l === act ? ' selected' : '') + '>' + esc(l.court || l.titre || l.cle) + ' · ' + l.lignes.length + '</option>'; }).join('') + '</select>';
     var tableau = act.lignes.length
-      ? '<div class="greco-table" role="table" aria-label="' + esc(act.titre || act.court || '') + '">' + entete(avecAban) + act.lignes.map(function (l, i) { return ligne(l, i, avecAban, pD); }).join('') + '</div>'
+      ? '<div class="greco-table" role="table" aria-label="' + esc(act.titre || act.court || '') + '">' + entete(avecAban) + act.lignes.map(function (l, i) { return ligne(l, i, avecAban); }).join('') + '</div>'
       : '<p class="greco-rien" role="status">Cette liste est vide.</p>';
     return '<div class="v2-tabs opx-tabs greco-tabs" role="tablist">' + onglets + '</div>' + choix +
       '<section class="greco-carte"><h2 class="greco-t">' + esc(act.titre || act.court || '') + '</h2>' +
@@ -160,22 +155,40 @@
   }
 
   // ── Impression : fenêtre A4 de la liste affichée, SANS la colonne d'abandon de marge ──
+  // Couleurs et polices LUES dans le thème de l'app (variables --grp-*, police du corps de page) et feuilles de polices recopiées :
+  // la feuille remise au groupement porte sa charte. Repli neutre si une variable manque (banc d'essai).
+  function themeImpression() {
+    var cs = null, v = function (n, r) { var x = cs ? String(cs.getPropertyValue(n) || '').trim() : ''; return /^[#a-z0-9(),.%\s-]+$/i.test(x) ? x : r; };
+    var police = function (x, r) { x = String(x || '').trim(); return /^[a-z0-9 ,'"-]+$/i.test(x) ? x : r; };
+    try { cs = getComputedStyle(document.documentElement); } catch (e) { cs = null; }
+    var corps = ''; try { corps = getComputedStyle(document.body).fontFamily; } catch (e) {}
+    var liens = ''; try {
+      Array.prototype.forEach.call(document.querySelectorAll('link[rel="stylesheet"]'), function (k) {
+        var h = k.getAttribute('href') || ''; if (/^https:\/\/(fonts\.googleapis\.com|api\.fontshare\.com)\//.test(h)) liens += '<link rel="stylesheet" href="' + esc(h) + '">';
+      });
+    } catch (e) {}
+    return { liens: liens, texte: police(corps, 'system-ui, sans-serif'), titre: police(v('--grp-police-titre', ''), police(corps, 'system-ui, sans-serif')),
+      accent: v('--grp-accent', 'currentColor'), accentD: v('--grp-accent-d', 'inherit'), pale: (function (t) { return /^\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}$/.test(t) ? 'rgba(' + t + ',.10)' : 'transparent'; })(v('--grp-accent-rgb', '')),
+      encre: v('--grp-ink', 'inherit'), encre2: v('--grp-ink-2', 'inherit'), trait: v('--line', 'currentColor') };
+  }
   function htmlImpression(d, l) {
     var lignes = l.lignes.map(function (x, i) {
       return '<tr><td class="r">' + (i + 1) + '</td><td><b>' + esc(x.designation) + '</b><br><span class="s">' + esc(x.labo || '') + (x.cip ? ' · CIP ' + esc(x.cip) : '') + '</span></td>' +
         '<td class="c"><b>' + (num(x.n) == null ? '—' : fN.format(x.n)) + '</b></td><td class="r">' + euros(x.ppht) + '</td><td class="r"><b>' + euros(x.net) + '</b></td></tr>';
     }).join('');
-    return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>' + esc((G.nom || '') + ' — ' + (CFG.titre || 'Reco produits')) + '</title>' +
-      '<style>@page{size:A4;margin:14mm}body{font-family:Arial,Helvetica,sans-serif;color:#222;font-size:11px}' +
-      'h1{font-size:18px;margin:0}.head{border-bottom:2px solid #444;padding-bottom:8px;margin-bottom:12px}.sub{color:#555;font-size:12px;margin-top:3px}' +
-      'table{width:100%;border-collapse:collapse}th{background:#eee;text-align:left;padding:6px;font-size:10px;text-transform:uppercase}' +
-      'td{padding:5px 6px;border-bottom:1px solid #ddd;vertical-align:top}.r{text-align:right}.c{text-align:center}.s{color:#555;font-size:9px}.foot{margin-top:12px;color:#555;font-size:9px}tr{break-inside:avoid}</style></head><body>' +
+    var T = themeImpression();
+    return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>' + esc((G.nom || '') + ' — ' + (CFG.titre || 'Reco produits')) + '</title>' + T.liens +
+      '<style>@page{size:A4;margin:14mm}body{font-family:' + T.texte + ';color:' + T.encre + ';font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+      'h1{font-family:' + T.titre + ';font-weight:700;font-size:19px;margin:0;color:' + T.accentD + '}.head{border-bottom:3px solid ' + T.accent + ';padding-bottom:9px;margin-bottom:12px}.sub{color:' + T.encre2 + ';font-size:12px;margin-top:3px}' +
+      'table{width:100%;border-collapse:collapse}th{background:' + T.pale + ';color:' + T.accentD + ';text-align:left;padding:6px;font-size:10px;text-transform:uppercase;letter-spacing:.04em}' +
+      'td{padding:5px 6px;border-bottom:1px solid ' + T.trait + ';vertical-align:top;font-variant-numeric:tabular-nums}.r{text-align:right}.c{text-align:center}td.c b{background:' + T.pale + ';color:' + T.accentD + ';padding:1px 7px;border-radius:8px}' +
+      '.s{color:' + T.encre2 + ';font-size:9px}.foot{margin-top:12px;color:' + T.encre2 + ';font-size:9px}tr{break-inside:avoid}</style></head><body>' +
       '<div class="head"><h1>' + esc(G.nom || '') + ' — ' + esc(CFG.titre || 'Reco produits') + '</h1>' +
       '<div class="sub">' + esc(l.titre || l.court || '') + ' · ' + l.lignes.length + ' produits</div>' +
       '<div class="sub">' + textDates(d, false) + '</div></div>' +
       '<table><thead><tr><th class="r">#</th><th>Produit</th><th class="c">Pharmacies</th><th class="r">PPHT</th><th class="r">Prix net</th></tr></thead><tbody>' + lignes + '</tbody></table>' +
       '<div class="foot">Génériques et non remboursés : prix net seul. « Pharmacies » : nombre d\'officines Intégral Pharma qui commandent déjà le produit.</div>' +
-      '<script>window.onload=function(){window.print()}<\/script></body></html>';
+      '<script>window.onload=function(){var p=function(){window.print()};if(document.fonts&&document.fonts.ready){document.fonts.ready.then(p,p)}else{p()}}<\/script></body></html>';
   }
   V2.grecoImprimer = function () {
     if (!_data) return;
@@ -199,6 +212,6 @@
     palette: CFG.palette || 'Reco produits',
     titre: CFG.titre || 'Reco produits',
     // exposés pour le banc d'essai
-    _htmlImpression: htmlImpression, _cleSure: cleSure, _enPourcents: enPourcents
+    _htmlImpression: htmlImpression, _cleSure: cleSure
   };
 })();
