@@ -155,6 +155,7 @@
   }
 
   // ── Impression : fenêtre A4 de la liste affichée, SANS la colonne d'abandon de marge ──
+  // Sous-titre = libellé COURT : le titre long peut énoncer un niveau d'abandon (« supérieur à 4,7 % »), interdit sur un document remis.
   // Couleurs et polices LUES dans le thème de l'app (variables --grp-*, police du corps de page) et feuilles de polices recopiées :
   // la feuille remise au groupement porte sa charte. Repli neutre si une variable manque (banc d'essai).
   function themeImpression() {
@@ -184,7 +185,7 @@
       'td{padding:5px 6px;border-bottom:1px solid ' + T.trait + ';vertical-align:top;font-variant-numeric:tabular-nums}.r{text-align:right}.c{text-align:center}td.c b{background:' + T.pale + ';color:' + T.accentD + ';padding:1px 7px;border-radius:8px}' +
       '.s{color:' + T.encre2 + ';font-size:9px}.foot{margin-top:12px;color:' + T.encre2 + ';font-size:9px}tr{break-inside:avoid}</style></head><body>' +
       '<div class="head"><h1>' + esc(G.nom || '') + ' — ' + esc(CFG.titre || 'Reco produits') + '</h1>' +
-      '<div class="sub">' + esc(l.titre || l.court || '') + ' · ' + l.lignes.length + ' produits</div>' +
+      '<div class="sub">' + esc(l.court || l.titre || '') + ' · ' + l.lignes.length + ' produits</div>' +
       '<div class="sub">' + textDates(d, false) + '</div></div>' +
       '<table><thead><tr><th class="r">#</th><th>Produit</th><th class="c">Pharmacies</th><th class="r">PPHT</th><th class="r">Prix net</th></tr></thead><tbody>' + lignes + '</tbody></table>' +
       '<div class="foot">Génériques et non remboursés : prix net seul. « Pharmacies » : nombre d\'officines Intégral Pharma qui commandent déjà le produit.</div>' +

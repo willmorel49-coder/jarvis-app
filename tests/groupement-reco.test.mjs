@@ -109,6 +109,13 @@ test('impression aux polices et couleurs du thème (lues à l\'exécution), jama
   assert.match(imp, /document\.fonts\.ready/);
 });
 
+test('impression : sous-titre = libellé court de la liste (le titre long peut énoncer un niveau d\'abandon)', () => {
+  const { V2 } = monter(CONF_ESS, { fichier: FAUX });
+  const h = V2.groupementReco._htmlImpression(FAUX, FAUX.listes[0]);
+  assert.match(h, /Court un/);
+  assert.doesNotMatch(h, /Titre liste un/);
+});
+
 test('impression : fenêtre ouverte AVANT toute écriture, liste affichée, SANS colonne ni % d\'abandon de marge, avec dates et phrase prix net seul', async () => {
   const { V2, appels, racineEcran } = monter(CONF_ESS);
   V2.pages.recogroupement.render(racineEcran);
