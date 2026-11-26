@@ -1,0 +1,18 @@
+/* ════════════════════════════════════════════════════════════════
+   Réglage du groupement OPSO Santé — couche « groupement » commune (option B, 26/11/2026)
+   Will : OPSO et Essentiels Pharma = le MÊME code JARVIS, seule la charte change.
+   Chargé par opso/v2/index.html AVANT v2-boot.js, qui le lit (V2.groupement,
+   V2.enGroupement(), V2.conditionsCachees(), V2.accesGroupement()).
+   Rien de chiffré ni de nominatif ici : ce fichier est public.
+   ════════════════════════════════════════════════════════════════ */
+window.V2_GROUPEMENT = {
+  id: 'opso',
+  nom: 'OPSO Santé',
+  // Clé de la liste des comptes admis dans crm/v2/v2-comptes.js (garde d'écran) ;
+  // le vrai verrou reste côté Supabase (jarvis_acces_opso).
+  acces: 'opso',
+  // Dossier du jeu de ventes d'un commercial restreint dans cet espace (ventes/<empreinte>/).
+  jeuVentes: 'OPSO',
+  // OPSO = mode « consultation » : aucun fichier de conditions (marges, abandons, clients actifs…).
+  conditionsVisibles: false
+};

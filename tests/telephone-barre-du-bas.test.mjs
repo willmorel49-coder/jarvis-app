@@ -57,7 +57,7 @@ test('Envoyer sans e-mail : pas de ligne E-mail ni de rendez-vous', () => {
 // ── la liste « Autres outils » et la barre du bas (v2-app.js) ──
 const RUBRIQUES = ['pharma', 'todo', 'infos', 'groupements', 'offilog', 'produits', 'pilotage', 'marketing', 'rdv'].map(k => ({ k, nom: 'Nom ' + k, act: 'go:' + k, href: '#' + k }));
 function monde({ user = { id: 1 }, opso = false, route = { name: 'home' }, barre = RUBRIQUES, feuilleTel = true } = {}) {
-  const V2 = { user, route, accueilCinq: { barre: () => barre }, accueilWidgets: null };
+  const V2 = { user, route, accueilCinq: { barre: () => barre }, accueilWidgets: null, enGroupement: () => !!opso };   // 26/11/2026 : réglage de groupement (v2-boot.js)
   const fams = [{ k: 'direct', nom: 'Outils', cles: ['lgo', 'carte'] }, { k: 'dev', nom: 'En développement', cles: ['biosimilaires'] }];
   const outil = k => ({ k, nom: 'Outil ' + k, act: 'go:' + k, href: '#' + k });
   const ic = (n, s) => '<svg data-ic="' + n + '" data-s="' + s + '"/>';

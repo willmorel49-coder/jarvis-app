@@ -14,7 +14,8 @@ describe('citation de l’accueil : signature réglée par la marque', () => {
   const i = app.indexOf('  function u2Citation() {'), j = app.indexOf('\n  }\n', i)
   assert.ok(i > 0 && j > i, 'u2Citation introuvable')
   const src = app.slice(i, j + 4)
-  const citation = (brand, liste) => new Function('window', 'esc', src + '\nreturn u2Citation();')({ V2_BRAND: brand, V2_CITATIONS: liste }, esc)
+  // 26/11/2026 : u2Citation lit V2.enGroupement() (réglage de groupement, v2-boot.js)
+  const citation = (brand, liste) => new Function('window', 'esc', 'V2', src + '\nreturn u2Citation();')({ V2_BRAND: brand, V2_CITATIONS: liste }, esc, { enGroupement: () => !!(brand && brand.opso) })
   const MAISON = [{ t: 'Un dossier bien rangé.', a: 'Écrit pour JARVIS' }]
   const AUTEUR = [{ t: 'Pas un jour sans une ligne.', a: 'Pline l’Ancien' }]
   const PHIRST = { name: 'Phirst', phirst: true, citationMaison: '' }

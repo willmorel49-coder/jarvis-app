@@ -18,7 +18,7 @@ function bloc(src, debut, fin) {
 function cles({ brand = {}, pages = { doccom: 1, documents: 1, pharma: 1, offilog: 1, lgo: 1 } } = {}) {
   const corps = [bloc(app, '  var G4_REPLI', '\n'), bloc(app, '  var G4_PORTES = {', '\n  };\n'), bloc(app, '  function u2Cles() {', '\n  }\n')].join('\n');
   const window = { V2_BRAND: brand };
-  const V2 = { pages, user: { id: 'x', role: 'user' } };
+  const V2 = { pages, user: { id: 'x', role: 'user' }, enGroupement: () => !!brand.opso };   // 26/11/2026 : lecteur du réglage de groupement (v2-boot.js)
   return new Function('V2', 'window', 'u2Escale', 'tournInterdit', 'docOk', 'g4Classer', corps + '\nreturn u2Cles();')(
     V2, window, () => !!brand.escale, () => !!brand.opso, () => true, l => l);
 }

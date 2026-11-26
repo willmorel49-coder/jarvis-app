@@ -7,6 +7,9 @@
 (function () {
   'use strict';
   var V2 = window.V2; if (!V2) return;
+  // 26/11/2026 — lecteur du réglage de groupement, posé par v2-boot.js ; même définition si ce fichier est chargé
+  // sans lui (bancs d'essai tests/*.test.mjs).
+  V2.enGroupement = V2.enGroupement || function () { return !!(window.V2_GROUPEMENT || (window.V2_BRAND && window.V2_BRAND.opso)); };
   V2.pages = V2.pages || {};
 
   // ── State période (local module) ──────────────
@@ -1051,7 +1054,7 @@
 
   // ── Détection mode OPSO ───────────────────────
   function isOpso() {
-    return !!(window.V2_BRAND && window.V2_BRAND.opso);
+    return V2.enGroupement();
   }
 
   // ── Mini sparkline SVG (tendance sur N points) ──────────────

@@ -93,6 +93,16 @@
   V2.OPSO_ACCES = COMPTES.opso || [];
   V2.PLAN_OPSO_ACCES = COMPTES.planOpso || [];
   V2.CONTACTS_GROUPEMENT = COMPTES.contactsGroupement || [];
+  // 26/11/2026 — couche « groupement » commune (option B, choix de Will) : OPSO et Essentiels Pharma sont
+  // deux habillages du même code. Chaque habillage pose window.V2_GROUPEMENT (groupements/config/<id>.js)
+  // avant ce fichier. Absent = JARVIS, Escale, Phirst. Filet : l'habillage OPSO sans son réglage reste
+  // en mode groupement, conditions cachées et liste d'accès OPSO (son comportement d'avant).
+  V2.groupement = window.V2_GROUPEMENT || null;
+  V2.enGroupement = function () { return !!(window.V2_GROUPEMENT || (window.V2_BRAND && window.V2_BRAND.opso)); };
+  // Conditions commerciales (marges, abandons, clients actifs…) cachées, sauf réglage explicite conditionsVisibles:true.
+  V2.conditionsCachees = function () { return V2.enGroupement() && !(window.V2_GROUPEMENT && window.V2_GROUPEMENT.conditionsVisibles === true); };
+  // Comptes admis à l'écran dans l'espace du groupement. Liste absente = personne (jamais la liste d'un autre groupement).
+  V2.accesGroupement = function () { var g = window.V2_GROUPEMENT; return g ? (COMPTES[g.acces] || []) : V2.OPSO_ACCES; };
   V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
@@ -524,7 +534,7 @@
       // 30/09/2026 — Will : l'espace OPSO, « il doit y avoir que [le compte du client OPSO]
       // et moi qui y ont accès ». Les autres comptes repartent vers le CRM.
       // Même liste côté Supabase : jarvis_acces_opso() (_sql/opso-acces-restreint.sql).
-      if (window.V2_BRAND && window.V2_BRAND.opso && V2.OPSO_ACCES.indexOf(String(user.email || '').toLowerCase()) < 0) {
+      if (V2.enGroupement() && V2.accesGroupement().indexOf(String(user.email || '').toLowerCase()) < 0) {
         try { location.replace('../../crm/v2/index.html'); } catch (e) {}
         return false;
       }
@@ -538,7 +548,7 @@
       // reste confiné à l'espace Escale.
       var appEscale = !!(window.V2_BRAND && window.V2_BRAND.escale);
       var commProfil = String(pr.data.commercial || '');
-      if (commProfil === 'Escale' && !appEscale && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+      if (commProfil === 'Escale' && !appEscale && !V2.enGroupement()) {
         try { location.replace('../../crm/v2/index.html?espace=escale'); } catch (e) {}
         return false;
       }
@@ -571,7 +581,7 @@
       // 13/10/2026 — Will : dans l'espace OPSO, [un commercial de V2.OPSO_ACCES] voit « tout, comme [le client OPSO] ». Un commercial
       // restreint y charge donc le jeu OPSO (les adhérents), pas le sien ; dans le CRM, rien ne change.
       // Même règle côté Supabase : jarvis_peut_lire_protege (_sql/opso-liste-blanche.sql).
-      var commJeu = (window.V2_BRAND && window.V2_BRAND.opso) ? 'OPSO' : commProfil;
+      var commJeu = (window.V2_GROUPEMENT && window.V2_GROUPEMENT.jeuVentes) || ((window.V2_BRAND && window.V2_BRAND.opso) ? 'OPSO' : commProfil);
       V2._dossierVentesPret = (commProfil.trim() && !V2.user.voitTousReel)
         ? dossierVentes(commJeu) : Promise.resolve().then(function () { V2._dossierVentesConnu = true; });
       // 24/09/2026 — `commercial` BRUT du profil : ouvre la bascule Intégral ↔ Escale
@@ -583,7 +593,7 @@
       // 30/09/2026 — compte OPSO (commercial='OPSO') : 'OPSO' ne sert qu'au dossier de son jeu de
       // ventes (déjà borné aux adhérents). Ce n'est le prénom d'aucun commercial : gardé, il viderait
       // le Pilotage et l'accueil (« 0 officines actives »). Dans l'espace OPSO il voit tout le périmètre.
-      if (window.V2_BRAND && window.V2_BRAND.opso) { V2.user.commercial = ''; V2.user.voitAussi = []; }
+      if (V2.enGroupement()) { V2.user.commercial = ''; V2.user.voitAussi = []; }
       // 20/11/2026 — Will, pour Aurélie (CPR) : « elle a pas de pilotage a elle cest pas une commercial elle est
       // responsable de l'établissement ». Profil « Prénom (ÉTAB)+A+B… » : le premier nom reste « moi » (RDV,
       // campagnes, carte) mais n'a aucune vente ; ÉTAB = son équipe, les noms suivants. Le Pilotage s'ouvre
@@ -1122,7 +1132,7 @@
   };
   // 30/09/2026 — espace OPSO : versions réduites (prix IP sans nos ventes nationales ; CIP
   // Sagitta sans prix). Ce sont les seules que le rôle opso peut lire (jarvis_peut_lire_protege).
-  if (window.V2_BRAND && window.V2_BRAND.opso) { PROTEGES.benchcond = 'opso-bench-conditions.js'; PROTEGES.sagitta = 'opso-sagitta-cip.js'; }
+  if (V2.conditionsCachees()) { PROTEGES.benchcond = 'opso-bench-conditions.js'; PROTEGES.sagitta = 'opso-sagitta-cip.js'; }
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 
   // Fichiers protégés dont l'adresse a été refusée pour de bon. Lu par l'écran
@@ -2123,7 +2133,7 @@
     // ⚠️ 29/09/2026 — SAUF côté OPSO : `offilog-conditions.js` porte notre prix
     // d'achat interne (condition Intégral). Le coupler ici le faisait partir
     // en mémoire même pour l'app OPSO, qui ne doit jamais le voir (§8 CLAUDE.md).
-    if (keys && keys.indexOf('offilog') >= 0 && keys.indexOf('offilogcond') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+    if (keys && keys.indexOf('offilog') >= 0 && keys.indexOf('offilogcond') < 0 && !V2.conditionsCachees()) {
       keys = keys.concat(['offilogcond']);
     }
     // Même règle pour la grande passe : un catalogue sans ses conditions
@@ -2147,7 +2157,7 @@
       }
     }
     // 14/10/2026 — les secteurs ajoutés (UGA -> commercial) se chargent avec le commercial affecté, jamais côté OPSO.
-    if (keys && keys.indexOf('pharmafrcomm') >= 0 && keys.indexOf('secteursajoutes') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+    if (keys && keys.indexOf('pharmafrcomm') >= 0 && keys.indexOf('secteursajoutes') < 0 && !V2.conditionsCachees()) {
       keys = keys.concat(['secteursajoutes']);
     }
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('wmlca') < 0) {
@@ -2162,16 +2172,16 @@
       keys = keys.concat(['clientscond']);
     }
     // (pas côté OPSO : base clients Intégral, aucun écran OPSO ne l'affiche — 30/09/2026)
-    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('clientsactifs') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('clientsactifs') < 0 && !V2.conditionsCachees()) {
       keys = keys.concat(['clientsactifs']);
     }
     // Règle de marge privée du Pilotage : jamais les ventes sans elle (pas côté OPSO, qui n'a pas cet écran)
-    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('margeprive') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('margeprive') < 0 && !V2.conditionsCachees()) {
       keys = keys.concat(['margeprive']);
     }
     // 14/10/2026 — « Notre marge » par client : chargée avec les ventes (jeu du commercial, ou fichier complet pour la direction), jamais côté OPSO.
     // (l'attente du jeu de ventes ci-dessus la couvre : 'wmlca' accompagne toujours 'wml')
-    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('margeclients') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('margeclients') < 0 && !V2.conditionsCachees()) {
       keys = keys.concat(['margeclients']);
     }
     // OPSO : le périmètre (les adhérents) doit être en mémoire avant loadData (applyOpsoPerimeter)

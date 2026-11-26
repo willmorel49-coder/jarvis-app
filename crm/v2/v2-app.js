@@ -5,6 +5,9 @@
 (function () {
   'use strict';
   var V2 = window.V2;
+  // 26/11/2026 — lecteur du réglage de groupement, posé par v2-boot.js ; même définition si ce fichier est chargé
+  // sans lui (bancs d'essai tests/*.test.mjs).
+  V2.enGroupement = V2.enGroupement || function () { return !!(window.V2_GROUPEMENT || (window.V2_BRAND && window.V2_BRAND.opso)); };
   V2.pages = V2.pages || {};   // registry des piliers : { home, pharma, catalogue, fiches, pilotage }
   V2.route = { name: 'home', param: null };
 
@@ -287,9 +290,9 @@
     var brand = '<a class="v2-brand' + (back ? ' v2-brand-compact' : '') + '" onclick="V2.go(\'home\')" title="Accueil" aria-label="Accueil">' +
       // 02/10/2026 — sur un écran interne, le chemin vers l'accueil est une maison sur fond blanc : le logo
       // (carré bleu à croix) se confondait avec le « + » de la barre. OPSO n'a pas de « + » et garde son logo.
-      ((back && !(window.V2_BRAND && window.V2_BRAND.opso))
+      ((back && !V2.enGroupement())
         ? '<span class="tp-accueil"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.8 9.6V19a1 1 0 0 0 1 1h3.4v-5.2h3.6V20h3.4a1 1 0 0 0 1-1V9.6"/></svg></span>'
-        : '<span class="v2-logo">' + ((V2.route && V2.route.name === 'home' && !(window.V2_BRAND && window.V2_BRAND.opso))
+        : '<span class="v2-logo">' + ((V2.route && V2.route.name === 'home' && !V2.enGroupement())
           ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6v5h5v6h-5v5H9v-5H4V9h5z"/></svg>'
           : ICO('logo', 22)) + '</span>') +
       (back ? '' : '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '<span class="v2-brand-dot" aria-hidden="true"></span></span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span>') +
@@ -308,14 +311,14 @@
       : '';
     // 13/10/2026 — raccourci « Faire une remontée » de retour dans la barre (demande de Will) : une ampoule, un clic,
     // le formulaire s'ouvre. Même picto que la porte « Remontées » de l'accueil (U2_IC, une seule source). Jamais côté OPSO.
-    var idee = (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen)
+    var idee = (!V2.enGroupement() && V2.remonteeOpen)
       ? '<button type="button" class="tp-idee" title="Faire une remontée" aria-label="Faire une remontée" aria-haspopup="dialog" onclick="V2.remonteeOpen()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + U2_IC.remontees + '</svg></button>'
       : '';
     // 18/11/2026 — coup de neuf, temps 2 (Will : « la barre de menu en haut […] qui permet de passer d'une feature à l'autre ») : sur un écran
     // interne, les outils de l'accueil en pastilles, dans l'ordre de l'accueil (V2.accueilCinq.barre). Mêmes écrans, aucun lien nouveau.
     // Jamais côté OPSO. Affichée sur ordinateur seulement, dans tous les habillages (v2.css, blocs « temps 2 » et « douze habillages ») : ailleurs, rien ne change.
     var menu = '';
-    if (back && !(window.V2_BRAND && window.V2_BRAND.opso) && V2.accueilCinq && V2.accueilCinq.barre) {
+    if (back && !V2.enGroupement() && V2.accueilCinq && V2.accueilCinq.barre) {
       try {
         // 20/11/2026 — l'écran Officines efface « groupements » de V2.route.param dès l'arrivée (v2-pharma.js, render) : on lit aussi la vue ouverte (V2.pharmaVueOuverte),
         // sinon la barre allumait « Officines » sur Groupements.
@@ -329,7 +332,7 @@
     }
     // 19/11/2026 — l'accueil à l'ordinateur : les sept premières rubriques + « Autres outils » (le rail et les widgets sont cachés par v2.css, bloc « accueil sobre »).
     // Toujours rendue ; seul le CSS décide (> 1000 px, tous les habillages). Aucune pastille `.on` : on est à l'accueil. Jamais côté OPSO.
-    if (!back && !(window.V2_BRAND && window.V2_BRAND.opso) && V2.route && V2.route.name === 'home' && V2.accueilCinq && V2.accueilCinq.barre) {
+    if (!back && !V2.enGroupement() && V2.route && V2.route.name === 'home' && V2.accueilCinq && V2.accueilCinq.barre) {
       try {
         var la = V2.accueilCinq.barre().slice(0, 7).map(function (t) {
           return '<a class="tp-m" href="' + esc(t.href) + '" data-tp-act="' + esc(t.act) + '" onclick="return V2.topAller(event,this)">' + esc(t.nom) + '</a>';
@@ -342,7 +345,7 @@
       '<div class="v2-top' + (menu ? ' tp-avec-menu' : '') + '">' +
         '<div class="tp-g">' + back + brand + nom + '</div>' + menu +
         '<div class="tp-d">' +
-          ((V2.route && V2.route.name === 'home' && window.V2_BRAND && window.V2_BRAND.opso) ? '' : '<button type="button" class="v2-top-search" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
+          ((V2.route && V2.route.name === 'home' && V2.enGroupement()) ? '' : '<button type="button" class="v2-top-search" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
           idee + plus +
           '<button type="button" class="tp-avb" aria-label="Mon compte" aria-haspopup="menu" aria-expanded="false" title="' + esc(V2.user ? V2.user.name : '') + '" onclick="V2.userMenu(this)"><span class="v2-av">' + esc(initials) + '</span></button>' +
         '</div>' +
@@ -826,7 +829,7 @@
     opsopharmacies: 'var(--pil-opp)', opsoachats: 'var(--pil-cat)', opsobord: 'var(--pil-pilo)', opsoprix: 'var(--pil-fiche)', opsoprevision: 'var(--pil-fiche)'
   };
   function accentFor(name) {
-    if (name === 'marketing') return (window.V2_BRAND && window.V2_BRAND.opso) ? 'var(--pil-fiche)' : 'var(--pil-rose)';
+    if (name === 'marketing') return V2.enGroupement() ? 'var(--pil-fiche)' : 'var(--pil-rose)';
     return ROUTE_ACCENT[name] || 'var(--accent)';
   }
 
@@ -855,7 +858,7 @@
   // 30/09/2026 — Will : « [le client OPSO] doit voir uniquement ce qui concerne OPSO ». L'espace OPSO
   // ne demande que ce que ses écrans lisent (carte-opso-donnees.md) ; le reste lui est refusé
   // côté Supabase (jarvis_peut_lire_protege) : le demander afficherait « chiffres non téléchargés ».
-  if (window.V2_BRAND && window.V2_BRAND.opso) V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'wmlca'];
+  if (V2.enGroupement()) V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'wmlca'];
   // ════ L'attente du premier lancement : « La jauge » (20/10/2026) ════
   // Mesure du 20/10 (iPhone simulé, vue « Tous », 45 tranches de ventes) : 111 s d'écran « Chargement… »
   // sans le moindre signe de vie. Will a choisi la jauge : une barre n / total, le compte « Ventes du
@@ -969,7 +972,7 @@
       // sans quoi un clic depuis l'accueil partiel ne montrerait rien.
       // Pas pour OPSO (son accueil met le CA groupement en tête).
       var partiel = V2.route.name === 'home' && window.WML_OFFICINES && !V2.donneesSecours
-        && !(window.V2_BRAND && window.V2_BRAND.opso);
+        && !V2.enGroupement();
       if (!partiel) {
         if (!root.querySelector('.v2-boot-splash')) {
           root.innerHTML = splashHtml();
@@ -1170,7 +1173,7 @@
   var _docAcc = { uid: null, ok: false, vu: false, p: null };
   function docCle() { return 'jarvis_doc_acces:' + ((V2.user && V2.user.id) || ''); }
   function docOk() {
-    if (!V2.user || !V2.user.id || (window.V2_BRAND && window.V2_BRAND.opso)) return false;
+    if (!V2.user || !V2.user.id || V2.enGroupement()) return false;
     if (_docAcc.uid !== V2.user.id) {
       _docAcc = { uid: V2.user.id, ok: false, vu: false, p: null };
       try { var m = sessionStorage.getItem(docCle()); if (m === '1' || m === '0') { _docAcc.ok = (m === '1'); _docAcc.vu = true; } } catch (e) {}
@@ -1180,7 +1183,7 @@
   // Rend une promesse { true | false | null } ; une seule question par utilisateur et par session. Un échec (réseau, réponse illisible) rend null SANS le mémoriser : nouvelle tentative au prochain appel.
   V2.documentsVerifier = function () {
     docOk();
-    if (!V2.user || !V2.user.id || (window.V2_BRAND && window.V2_BRAND.opso)) return Promise.resolve(false);
+    if (!V2.user || !V2.user.id || V2.enGroupement()) return Promise.resolve(false);
     if (_docAcc.vu) return Promise.resolve(_docAcc.ok);
     if (_docAcc.p) return _docAcc.p;
     var uid = _docAcc.uid, c = V2.sb && V2.sb();
@@ -1210,7 +1213,7 @@
   var _bvEnCours = false;
   function bvGroupe() {
     var u = V2.user;
-    if (_bvEnCours || !u || !u.id || u.commercial === 'Will' || u.id === BV_SANS || (window.V2_BRAND && window.V2_BRAND.opso)) return;
+    if (_bvEnCours || !u || !u.id || u.commercial === 'Will' || u.id === BV_SANS || V2.enGroupement()) return;
     try { if (localStorage.getItem(BV_CLE + u.id) === '1') return; } catch (e) {}
     _bvEnCours = true;
     V2.documentsVerifier().then(function (doc) {
@@ -1334,7 +1337,7 @@
   // 10/11/2026 (Will) — équipe OPS : liste dans v2-comptes.js depuis le 20/11/2026 (absente sous Phirst : liste vide). Écran ouvert à tout compte connecté hors rôle opso ; ceci ne décide QUE de l'endroit de l'entrée.
   var TOURN_EQUIPE = (window.V2_COMPTES && window.V2_COMPTES.tournees) || [];
   V2.tourneesEquipe = function () { return !!(V2.user && TOURN_EQUIPE.indexOf(String(V2.user.email || '').toLowerCase()) >= 0); };
-  function tournInterdit() { return !!((window.V2_BRAND && window.V2_BRAND.opso) || (V2.user && (V2.user.opsoOnly || V2.user.role === 'opso'))); }
+  function tournInterdit() { return !!(V2.enGroupement() || (V2.user && (V2.user.opsoOnly || V2.user.role === 'opso'))); }
   if (G4_PORTES.tournees) Object.defineProperty(G4_PORTES.tournees, 'fam', { enumerable: true, get: function () { return V2.tourneesEquipe() ? 'accueil' : 'dev'; } });
   var G4_CLE_ORDRE = 'jarvis_accueil_ordre2';
   var _g4Ordre = null;        // [{e, o, p}] : écran, ouvertures, personnes (jamais affichés)
@@ -1696,10 +1699,10 @@
       var d = G4_PORTES[k];
       if (!d) return false;
       if (k === 'lgo' && escale) return false;       // pas de « Logiciels officine » en Escale
-      if (k === 'blocnotes' && (window.V2_BRAND && window.V2_BRAND.opso)) return false;   // 16/10/2026 : pas de Bloc-notes côté OPSO
+      if (k === 'blocnotes' && V2.enGroupement()) return false;   // 16/10/2026 : pas de Bloc-notes côté OPSO
       if (k === 'tournees' && tournInterdit()) return false;   // 10/11/2026 : jamais pour le rôle opso
       if (k === 'documents' && !docOk()) return false;   // 16/10/2026 : cachée tant que documents_acces_ok() n'a pas rendu true
-      if (k === 'doccom' && (escale || (window.V2_BRAND && window.V2_BRAND.opso))) return false;   // 22/11/2026 : documents à l'en-tête Intégral
+      if (k === 'doccom' && (escale || V2.enGroupement())) return false;   // 22/11/2026 : documents à l'en-tête Intégral
       if (k === 'remontees' && V2.pages.discussion) return false;   // 15/10/2026 (Will) : les remontées vivent dans Le QG
       return k === 'academy' || !!V2.pages[d.page];  // un outil dont l'écran n'est pas chargé n'apparaît pas
     }));
@@ -1739,7 +1742,7 @@
   function u2Nouveau(k) {
     var u = G4_UNE, b = window.V2_BRAND || {}, d = new Date();
     var jour = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
-    return !!(u && u.page === k && !b.escale && !b.opso && V2.pages[u.page] && jour <= u.fin);
+    return !!(u && u.page === k && !b.escale && !V2.enGroupement() && V2.pages[u.page] && jour <= u.fin);
   }
 
   // ── Le centre : « les grandes portes » (maquette 2 choisie par Will, 02/10/2026) ──
@@ -2157,7 +2160,7 @@
   V2.tbMaj = function () {
     var b = document.body, n = document.getElementById('tb-bas');
     // sans v2-tel.css (Phirst charge ce fichier sans cette feuille), la barre s'afficherait sans style, même à l'ordinateur : on ne la pose pas
-    if (!V2.user || (window.V2_BRAND && window.V2_BRAND.opso) || !V2.accueilCinq || !V2.accueilCinq.barre || !document.querySelector('link[href*="v2-tel.css"]')) {
+    if (!V2.user || V2.enGroupement() || !V2.accueilCinq || !V2.accueilCinq.barre || !document.querySelector('link[href*="v2-tel.css"]')) {
       if (n && n.parentNode) n.parentNode.removeChild(n);
       b.classList.remove('bnav-on'); return;
     }
@@ -2281,7 +2284,7 @@
   // Visible seulement à l'ordinateur, dans tous les habillages (v2.css, « accueil sobre » et « douze habillages ») ; jamais côté OPSO.
   function u2Citation() {
     var L = window.V2_CITATIONS;
-    if (!L || !L.length || (window.V2_BRAND && window.V2_BRAND.opso)) return '';
+    if (!L || !L.length || V2.enGroupement()) return '';
     var d = new Date(), j = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000), c = L[((j % L.length) + L.length) % L.length];
     // 23/11/2026 — une marque peut remplacer la signature « Écrit pour JARVIS » (réglage citationMaison ; '' = sans signature, choix de Will pour Phirst).
     // Sans ce réglage (JARVIS, Escale), rien ne change : les 365 citations ont toutes un auteur.
@@ -2297,7 +2300,7 @@
     _u2.entree = true; _u2.ouvert = false; _u2.opener = null; _u2.sec = null; _u2.sig = {}; _u2.mode = u2Mode(); _u2.sig.rtools = u2OutilsHtml([]);
     u2Verrou(false);
     var etat = u2Etat();
-    var barreAcc = !(window.V2_BRAND && window.V2_BRAND.opso);   // marqueur de l'accueil sobre (v2.css) ; OPSO strictement inchangé
+    var barreAcc = !V2.enGroupement();   // marqueur de l'accueil sobre (v2.css) ; OPSO strictement inchangé
     root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + (barreAcc ? ' u2-barre' : '') + '"' + u2StyleAttr() + '>' +
       '<button type="button" class="u2-skip" data-u2-skip>Aller aux outils</button>' + topbar() +
       '<div class="pb-band" id="pb-band" role="region" aria-label="Personnaliser mon accueil" hidden></div>' +
@@ -2434,7 +2437,7 @@
       // jamais de prénom en dur ailleurs que via V2.user.name. Même critère
       // que le reste de l'app (relanceEstAMoi, v2-pilotage.js) : un commercial
       // renseigné ET qui ne voit pas tout le monde.
-      var isBrandApart = !!(window.V2_BRAND && window.V2_BRAND.opso);
+      var isBrandApart = V2.enGroupement();
       var uComm = (V2.user && V2.user.commercial) ? String(V2.user.commercial) : '';
       var voitTous = !!(V2.user && V2.user.voitTous);
       var mesOfficines = (!isBrandApart && uComm && !voitTous)
@@ -2451,18 +2454,18 @@
         { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: partiel ? '…' : V2.fmtK(caTotal) + ' €', t: 'Pilotage', d: 'Votre chiffre d\'affaires, votre marge pharmacien, vos objectifs et qui commande quoi. Le tableau de bord de votre tournée.', go: 'Voir mon pilotage' },
       ];
       // Infos du matin (brief quotidien) — app JARVIS
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
+      if (!V2.enGroupement() && V2.pages.infos) {
         P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'Le mur du matin : échéances de marge, sanctions, concurrents au registre, officines en difficulté — puis l\'essentiel en 30 secondes et 30 sources gratuites résumées.', go: 'Lire le matin' });
       }
       // LA CARTE (ex-« Copilote », renommée le 27/08/2026 à la demande de Will).
       // L'ancien nom reste une route valide (#copilote → carte) pour les favoris.
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) {
+      if (!V2.enGroupement() && V2.pages.carte) {
         P.push({ k: 'carte', cls: 'p1', accent: 'var(--ip-blue)', ico: 'pharma', tag: 'Terrain', t: 'La carte', d: 'Toutes les officines de France : vos clients, les prospects autour, un clic pour la fiche, un autre pour la tournée du jour.', go: 'Ouvrir la carte' });
       }
       // Tuile « Par molécule » retirée le 11/08/2026 : l'écran existe toujours,
       // il est atteignable depuis Produits (lien de bas de page) et depuis ⌘K.
       // Base Biosimilaires (marché FR × réseau IP) — app JARVIS
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) {
+      if (!V2.enGroupement() && V2.pages.biosimilaires) {
         P.push({ k: 'biosimilaires', cls: 'p3', accent: '#6D4FC4', ico: 'cat', tag: 'Marché FR', t: 'Biosimilaires', d: 'La base complète des biosimilaires France : substituables en officine et labos partenaires (Zentiva, EG, Teva) en tête, croisés à vos ventes et stocks réseau.', go: 'Ouvrir la base' });
       }
       // Appro Intégral : tuile retirée le 11/08/2026, rétablie le 02/09/2026 à la demande
@@ -2470,25 +2473,25 @@
       // 3/6/12 mois) et ⌘K seul ne suffit pas — une feature sans porte visible reste
       // introuvable, y compris pour le reste de l'équipe.
       // ⚠️ Bloc à part, conditionné sur V2.pages.appro.
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.appro) {
+      if (!V2.enGroupement() && V2.pages.appro) {
         P.push({ k: 'appro', cls: 'p5', accent: '#6D5AE6', ico: 'spark', tag: 'Achats', t: 'Appro Intégral', d: 'Ce qu\'il faut acheter et quand : couverture de stock par référence, ruptures à sécuriser, et la courbe du marché à 3, 6 et 12 mois avec sa fourchette — pour pré-acheter au bon moment et négocier avec les laboratoires.', go: 'Ouvrir l\'appro' });
       }
       // Concurrents — UNE entrée depuis le 14/09/2026 (demande de Will) : grossistes,
       // leurs prix et l'actualité du secteur. L'ex-tuile « Grossistes concurrents »
       // est fondue dedans (#grossistes redirige). Conditions de tiers : jamais côté OPSO.
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) {
+      if (!V2.enGroupement() && V2.pages.concurrents) {
         P.push({ k: 'concurrents', cls: 'p5', accent: '#0E7C86', ico: 'spark', tag: 'Veille', t: 'Concurrents', d: 'La carte de tous les grossistes de France : cliquez sur un point, la fiche s\'ouvre avec ses chiffres, ses prix face à notre net et son actualité.', go: 'Ouvrir les concurrents' });
       }
       // Remontées équipe (mur d'idées interne) — app JARVIS
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.remontees) {
+      if (!V2.enGroupement() && V2.pages.remontees) {
         P.push({ k: V2.pages.discussion ? 'discussion' : 'remontees', cls: 'p6', accent: '#7C3AED', ico: 'spark', tag: 'Équipe', t: V2.pages.discussion ? 'Le QG' : 'Remontées', d: V2.pages.discussion ? 'Le QG de l\'équipe : écrivez à tous, partagez photos et documents, proposez une idée et suivez les remontées, au même endroit.' : 'Le mur d\'idées de l\'équipe : proposez une amélioration de l\'appli, votez pour celles des autres, suivez leur avancement.', go: V2.pages.discussion ? 'Ouvrir Le QG' : 'Voir les remontées' });
       }
       // Prise de RDV par mailing — app JARVIS
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.rdv) {
+      if (!V2.enGroupement() && V2.pages.rdv) {
         P.push({ k: 'rdv', cls: 'p1', accent: '#0050E6', ico: 'cal', tag: 'Terrain', t: 'Rendez-vous', d: 'Envoyez un lien de réservation à une officine : elle choisit son créneau elle-même, calé sur la géographie de votre journée. L\'invitation part dans votre agenda.', go: 'Voir mes rendez-vous' });
       }
       // Pilier marketing : uniquement en mode OPSO (module v2-marketing chargé)
-      if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) {
+      if (V2.enGroupement() && V2.pages.marketing) {
         P.splice(2, 0, { k: 'marketing', cls: 'p2', ico: 'fiche', tag: 'A4', t: 'Fiches marketing OPSO', d: 'Le catalogue : les produits classés par nombre de pharmacies qui les commandent, avec PPHT et prix net, prêt à imprimer.', go: 'Ouvrir le catalogue' });
       } else if (V2.pages.marketing) {
         // App JARVIS : espace Marketing de Pauline & Will (supports + sélections à pousser)
@@ -2496,7 +2499,7 @@
       }
       // Groupements : fusionné dans le Copilote (carte unique + outils terrain). Plus de carte séparée.
       // Mode OPSO : le suivi groupement passe en tête (1ʳᵉ tuile de l'accueil)
-      if (window.V2_BRAND && window.V2_BRAND.opso) {
+      if (V2.enGroupement()) {
         var piIdx = P.map(function (x) { return x.k; }).indexOf('pilotage');
         if (piIdx >= 0) {
           var pil = P.splice(piIdx, 1)[0];
@@ -2557,7 +2560,7 @@
       P = P.filter(function (p) { return p.doc ? true : p.route ? !!V2.pages[p.route.name] : !!V2.pages[p.k]; });
       // Accueil regroupé "par moment d'usage" (hors OPSO qui garde son ordre suivi-groupement)
       var pilHtml, todoTuile = false, g4Mode = false;
-      if (window.V2_BRAND && window.V2_BRAND.opso) {
+      if (V2.enGroupement()) {
         // 01/10/2026 — Will : « l'accueil doit être les différentes features,
         // pas directement le pilotage » → l'accueil ne montre plus que les
         // espaces ; le tableau de bord est l'écran « opsobord ».
@@ -2602,13 +2605,13 @@
               : '<b>' + nbPharma + '</b> officines actives') + tiennesTxt + '</p>' +
           '</div>' +
           '<div class="v2-search" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
-            '<input readonly aria-hidden="true" tabindex="-1" placeholder="' + ((window.V2_BRAND && window.V2_BRAND.opso) ? 'Chercher' : 'Cherchez') + ' une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
+            '<input readonly aria-hidden="true" tabindex="-1" placeholder="' + (V2.enGroupement() ? 'Chercher' : 'Cherchez') + ' une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           relancesCardHtml() +
           // Accueil « objets bien rangés » : la grande tuile To do list suffit, la petite carte faisait doublon.
           (V2.todo && !todoTuile ? V2.todo.cardHtml() : '') +
           pilHtml +
         '</div>';
-      if (window.V2_BRAND && window.V2_BRAND.opso && V2.opsoGroupement) { V2.opsoGroupement.espaces(root); }
+      if (V2.enGroupement() && V2.opsoGroupement) { V2.opsoGroupement.espaces(root); }
     },
     // appelé par V2.render() dès qu'on quitte l'accueil : boucles arrêtées, écouteurs retirés
     quitter: function () { u2Demonter(); }
@@ -2622,37 +2625,37 @@
     var idx = [];
     // Pages
     var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['offilog', 'Offilog · parapharmacie & prix concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) PAGES.splice(3, 0, ['concurrents', 'Concurrents · la carte des grossistes, leurs prix, actualité', 'spark']);
+    if (!V2.enGroupement() && V2.pages.concurrents) PAGES.splice(3, 0, ['concurrents', 'Concurrents · la carte des grossistes, leurs prix, actualité', 'spark']);
     // 04/09/2026 — l'app OPSO redevient un simple visu groupement : plus de
     // fiches commerciales chez elle (v2-fiches n'y est plus chargé).
-    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
+    if (V2.enGroupement() && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
     // 29/09/2026 — écrans OPSO Pharmacies / Meilleurs achats, atteignables au clavier.
-    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsobord) PAGES.push(['opsobord', 'Tableau de bord · chiffre, rémunération, trajectoire', 'grid']);
-    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsopharmacies) PAGES.push(['opsopharmacies', 'Pharmacies · évolution par officine', 'pharma']);
-    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
+    if (V2.enGroupement() && V2.pages.opsobord) PAGES.push(['opsobord', 'Tableau de bord · chiffre, rémunération, trajectoire', 'grid']);
+    if (V2.enGroupement() && V2.pages.opsopharmacies) PAGES.push(['opsopharmacies', 'Pharmacies · évolution par officine', 'pharma']);
+    if (V2.enGroupement() && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprix) PAGES.push(['opsoprix', 'Offre Privilège OPSO Santé · PFHT, prix habituel, prix négocié', 'cat']);
     // 19/11/2026 — Prévision du contrat : absente de la palette pour tout compte hors V2.PLAN_OPSO_ACCES
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprevision && V2.opsoPrevisionOk && V2.opsoPrevisionOk()) PAGES.push(['opsoprevision', 'Prévision du contrat · curseurs, simulations et suivi réel', 'grid']);
     // Une seule entrée « La carte » (l'entrée « Copilote » en doublon est retirée le 27/08/2026).
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) PAGES.splice(1, 0, ['carte', 'La carte · officines, clients, prospects, tournée', 'pharma']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.produits) PAGES.splice(1, 0, ['produits', 'Produits · catalogue des 7 établissements', 'cat']);
+    if (!V2.enGroupement() && V2.pages.carte) PAGES.splice(1, 0, ['carte', 'La carte · officines, clients, prospects, tournée', 'pharma']);
+    if (!V2.enGroupement() && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
+    if (!V2.enGroupement() && V2.pages.produits) PAGES.splice(1, 0, ['produits', 'Produits · catalogue des 7 établissements', 'cat']);
     // molecules / catalogue / appro restent dans ⌘K : c'est le chemin de secours
     // depuis qu'ils ont quitté les tuiles de l'accueil.
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.splice(4, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.appro) PAGES.push(['appro', 'Appro Intégral · vue achats détaillée', 'spark']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.marchefr) PAGES.push(['marchefr', 'Le marché · le marché français d’une référence, région par région', 'cat']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) PAGES.splice(4, 0, ['biosimilaires', 'Base Biosimilaires (marché FR)', 'cat']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.blocnotes) PAGES.push(['blocnotes', 'Bloc-notes · écrire ou dicter ; le robot met le CRM à jour le soir', 'fiche']);   // 16/10/2026
+    if (!V2.enGroupement() && V2.pages.molecules) PAGES.splice(4, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
+    if (!V2.enGroupement() && V2.pages.appro) PAGES.push(['appro', 'Appro Intégral · vue achats détaillée', 'spark']);
+    if (!V2.enGroupement() && V2.pages.marchefr) PAGES.push(['marchefr', 'Le marché · le marché français d’une référence, région par région', 'cat']);
+    if (!V2.enGroupement() && V2.pages.biosimilaires) PAGES.splice(4, 0, ['biosimilaires', 'Base Biosimilaires (marché FR)', 'cat']);
+    if (!V2.enGroupement() && V2.pages.blocnotes) PAGES.push(['blocnotes', 'Bloc-notes · écrire ou dicter ; le robot met le CRM à jour le soir', 'fiche']);   // 16/10/2026
     if (!tournInterdit() && V2.pages.tournees) PAGES.push(['tournees', 'Tournées · quelle tournée de livraison travailler en premier', 'pharma']);   // 10/11/2026
     if (docOk() && V2.pages.documents) PAGES.push(['documents', 'Documents · tarifs, conditions et catalogues, rangés par dossier', 'fiche']);   // 16/10/2026 : seulement si documents_acces_ok() = true
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.mallette) PAGES.push(['mallette', 'La Mallette · les documents à envoyer, en un seul PDF ou séparés', 'fiche']);   // 16/10/2026
-    if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.pages.lgo) PAGES.push(['lgo', 'Logiciels officine · importer le catalogue (LGPI, Winpharma, LEO…)', 'list']);
+    if (!V2.enGroupement() && V2.pages.mallette) PAGES.push(['mallette', 'La Mallette · les documents à envoyer, en un seul PDF ou séparés', 'fiche']);   // 16/10/2026
+    if (!(V2.enGroupement() || (window.V2_BRAND && window.V2_BRAND.escale)) && V2.pages.lgo) PAGES.push(['lgo', 'Logiciels officine · importer le catalogue (LGPI, Winpharma, LEO…)', 'list']);
     // Le module Rendez-vous n'était atteignable que par sa tuile. Mis en avant
     // le 17/08, il doit aussi se trouver au clavier — c'est le chemin de ceux
     // qui l'utiliseront tous les jours.
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.rdv) {
+    if (!V2.enGroupement() && V2.pages.rdv) {
       PAGES.splice(1, 0, ['rdv', 'Rendez-vous · prise de RDV & campagnes', 'cal']);
       if (V2.pages.campagne) PAGES.push(['campagne', 'Campagne de rendez-vous · un par un ou groupé en copie cachée', 'cal']);
       if (V2.pages.rdvradar) PAGES.push(['rdvradar', 'Qui inviter · les officines à relancer en priorité', 'cal']);
@@ -2666,7 +2669,7 @@
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
     // 14/10/2026 — chaque grossiste est trouvable au clavier (« Sagitta », « Giphar »…) et ouvre sa fiche.
     // La base se charge à la demande : au premier ⌘K on la demande, l'index se reconstruit à son arrivée.
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) {
+    if (!V2.enGroupement() && V2.pages.concurrents) {
       if (window.GROSSISTES_DATA && window.GROSSISTES_DATA.grossistes) {
         window.GROSSISTES_DATA.grossistes.forEach(function (g) {
           if (g.fusionne_dans) return;
@@ -2678,10 +2681,10 @@
       }
     }
     // Espace Groupements (sous-vue de pharma avec param) — recherchable dans ⌘K
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.pharma) {
+    if (!V2.enGroupement() && V2.pages.pharma) {
       idx.push({ grp: 'Pages', label: 'Groupements · listes & listings produits', ico: 'list', action: function () { V2.go('pharma', 'groupements'); } });
     }
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carteGrp) {
+    if (!V2.enGroupement() && V2.pages.carteGrp) {
       idx.push({ grp: 'Pages', label: 'Carte groupements · clients & prospects par groupement', ico: 'pharma', action: function () { V2.go('carteGrp'); } });
     }
     // Tournée prospect : intégrée au Copilote (Organisateur de tournée) — recherchable via l'entrée « Copilote ».
@@ -2961,7 +2964,7 @@
       V2._pfrLoading = false;
       // la colonne CA protégée se recolle dès que la carte publique est là
       // (jamais côté OPSO : segmentation et commercial affecté du réseau Intégral, 30/09/2026)
-      if (window.PHARMA_FR && V2.loadFiles && !(window.V2_BRAND && window.V2_BRAND.opso)) { try { V2.loadFiles(['pharmafrca', 'pharmafrseg', 'pharmafrcomm']); } catch (e) {} }
+      if (window.PHARMA_FR && V2.loadFiles && !V2.enGroupement()) { try { V2.loadFiles(['pharmafrca', 'pharmafrseg', 'pharmafrcomm']); } catch (e) {} }
       try { V2.reconcilePharma(); } catch (e) {}
       var cbs = V2._pfrCbs || []; V2._pfrCbs = [];
       cbs.forEach(function (f) { try { f(); } catch (e) {} });
@@ -3108,7 +3111,7 @@
     if (document.getElementById('v2-shell-styles')) return;
     // --v2-spark : étincelle chaude de marque (orange IP). Neutralisée en vert
     // sous OPSO pour ne JAMAIS faire fuiter l\'orange dans l\'autre marque.
-    var isOpso = !!(window.V2_BRAND && window.V2_BRAND.opso);
+    var isOpso = V2.enGroupement();
     var SPARK = isOpso ? 'var(--info)' : '#F39A1B';
     var css =
       // Variable locale d\'étincelle, posée sur la racine du shell.
@@ -3213,7 +3216,7 @@
     if (!logged) { if (V2.enMaintenance || maintenanceVue()) V2.renderMaintenance(); else V2.renderLogin(); return; }
     try { localStorage.removeItem('v2-maintenance'); } catch (e) {}
     root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de vos données…</div></div>';
-    var opso = !!(window.V2_BRAND && window.V2_BRAND.opso);
+    var opso = V2.enGroupement();   // mode groupement (OPSO, Essentiels) : chargement allégé
     // PPHT et PROD_STATS ne sont plus des balises d'index.html (CRM) : ils doivent
     // être en mémoire AVANT bench (applyPPHT, déclenché à l'arrivée de bench, en a
     // besoin — sinon les nets princeps sont figés faux, sans erreur). OPSO les a
@@ -3232,7 +3235,7 @@
       // encore demandé ici : ce loadData() tombait à CHAQUE ouverture sur le repli
       // (≈ 480 Ko, jamais affiché). Le vrai loadData() du premier rendu vient après
       // cette attente : les achats par officine sont donc bien déjà en mémoire.
-      (opso ? V2.loadFiles(['opsostats', 'opsolisting']) : Promise.resolve()),
+      ((window.V2_BRAND && window.V2_BRAND.opso) ? V2.loadFiles(['opsostats', 'opsolisting']) : Promise.resolve()),   // fichiers propres à OPSO
       // le léger d'abord (bench public + colonnes protégées, petites tables) ;
       // establishments (4,3 Mo protégé) part EN FOND après le premier rendu :
       // l'attendre bloquerait la première connexion le temps du téléchargement.
