@@ -191,3 +191,12 @@ test('mapOfficines : bornée au périmètre chez Essentiels, intacte chez JARVIS
   assert.equal(nb(null), 10);                                   // JARVIS
   assert.equal(nb({ id: 'opso', jeuVentes: 'OPSO' }), 10);      // OPSO (périmètre posé plus tard par le listing)
 });
+
+// 26/11/2026 — revue de sécurité : Supabase vient de la copie figée du dépôt (comme crm/v2 et phirst/v2), jamais d'un site externe sans version fixe.
+test('Essentiels charge Supabase depuis la copie figée du dépôt, et elle existe', () => {
+  const html = lire('essentiels/v2/index.html');
+  assert.ok(!/cdn\.jsdelivr\.net\/npm\/@supabase/.test(html), 'Supabase chargé depuis un site externe');
+  const m = /<script src="(\.\.\/\.\.\/crm\/v2\/vendor\/supabase\/supabase-[\d.]+\.min\.js)\?v=/.exec(html);
+  assert.ok(m, 'copie figée de Supabase absente');
+  readFileSync(new URL('../essentiels/v2/' + m[1], import.meta.url));
+});
