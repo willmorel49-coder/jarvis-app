@@ -106,14 +106,22 @@ test('les ancres de la charte Essentiels sont écrites exactement', () => {
 
 // ── 4. ordre des feuilles
 const ORDRE = ['crm/v2/v2.css', 'crm/v2/v2-pieces.css', 'groupements/v2/groupement-theme.css', null, 'groupements/v2/groupement-ux.css'];
-for (const [page, theme] of [['opso/v2/index.html', 'opso-theme.css'], ['essentiels/v2/index.html', 'essentiels-theme.css']]) {
-  test(page + ' : cinq feuilles dans l\'ordre v2, v2-pieces, groupement-theme, thème du groupement, groupement-ux', () => {
+// Essentiels a l'écran Offilog de JARVIS (classes .olm) : sa feuille v2-offilog-m1.css vient AVANT le thème, qui repeint ses bleus (étape 5b).
+for (const [page, theme, offilog] of [['opso/v2/index.html', 'opso-theme.css', false], ['essentiels/v2/index.html', 'essentiels-theme.css', true]]) {
+  test(page + ' : feuilles dans l\'ordre v2, v2-pieces, (Offilog de JARVIS), groupement-theme, thème du groupement, groupement-ux', () => {
     const html = lire(page);
     const hrefs = [...html.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m => m[1].replace(/^(\.\.\/)+/, ''));
-    const attendu = ['crm/v2/v2.css', 'crm/v2/v2-pieces.css', 'groupements/v2/groupement-theme.css', theme, 'groupements/v2/groupement-ux.css'];
+    const attendu = ['crm/v2/v2.css', 'crm/v2/v2-pieces.css'].concat(offilog ? ['crm/v2/v2-offilog-m1.css'] : [], ['groupements/v2/groupement-theme.css', theme, 'groupements/v2/groupement-ux.css']);
     assert.deepEqual(hrefs, attendu);
   });
 }
+
+// La feuille du catalogue Offilog restyle *, html et body : elle ne vit que DANS l'iframe du module, jamais dans une page de groupement.
+test('Offilog : v2-offilog-vitrine.css jamais chargée par une page de groupement ; Essentiels charge le module du catalogue', () => {
+  for (const page of ['opso/v2/index.html', 'essentiels/v2/index.html']) assert.ok(!/<link[^>]+v2-offilog-vitrine\.css/.test(lire(page)), page);
+  assert.match(lire('essentiels/v2/index.html'), /<script src="\.\.\/\.\.\/crm\/v2\/v2-offilog-vitrine\.js/);
+  assert.match(lire('crm/v2/v2-offilog-vitrine.css'), /(^|\n)html\s*\{/, 'la feuille du catalogue a bien des règles globales (sinon ce test ne protège rien)');
+});
 
 // ── tuile « Tableau de bord »
 test('Tableau de bord : Essentiels ne promet pas la rémunération ; OPSO garde son texte d\'avant (repli)', () => {

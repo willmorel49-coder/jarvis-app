@@ -32,6 +32,8 @@
   <!-- Socle visuel V2 (partagé) → règles communes des groupements → thème Essentiels (valeurs) → feuille d'écrans commune -->
   <link rel="stylesheet" href="../../crm/v2/v2.css?v=20261126e" />
   <link rel="stylesheet" href="../../crm/v2/v2-pieces.css?v=20261126e" />
+  <!-- Écran Offilog de JARVIS (trois onglets, classes .olm) : sans cette feuille il s'affiche sans mise en forme. Ses bleus sont repeints dans essentiels-theme.css. -->
+  <link rel="stylesheet" href="../../crm/v2/v2-offilog-m1.css?v=20261126e" />
   <link rel="stylesheet" href="../../groupements/v2/groupement-theme.css?v=20261126e" />
   <link rel="stylesheet" href="essentiels-theme.css?v=20261126e" />
   <link rel="stylesheet" href="../../groupements/v2/groupement-ux.css?v=20261126e" />
@@ -74,6 +76,8 @@
        *-data OPSO), PAS opso-prix / opso-remuneration / opso-prevision* : propres à OPSO. La page des 254 produits
        Essentiels = étape 7. -->
   <script src="../../crm/v2/v2-offilog.js?v=20261126e"></script>
+  <!-- Onglet « Le catalogue » d'Offilog : le module injecte lui-même sa feuille (v2-offilog-vitrine.css) DANS son iframe ; elle ne se charge jamais dans la page (règles sur *, html, body). -->
+  <script src="../../crm/v2/v2-offilog-vitrine.js?v=20261126e"></script>
   <!-- Produits froids : sans eux, la famille « Froid » du Pilotage est sous-estimée -->
   <script src="../../crm/v2/froid-data.js?v=20261126e"></script>
   <script src="../../crm/v2/v2-pilotage.js?v=20261126e"></script>

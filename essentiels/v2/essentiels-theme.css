@@ -351,3 +351,54 @@ html:not([data-hab]) .v2-btn-primary:hover{box-shadow:0 12px 24px -8px rgba(47,1
 html:not([data-hab]) body .v2-card.dr{border-color:#e3e8e2}
 html:not([data-hab]):root:root body{background-color:#F2F6F2;background-image:radial-gradient(1200px 640px at 26% -10%,#FFFFFF 0%,#f8fbf8 38%,#F2F6F2 100%)}
 .v2-top{box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 8px 20px -14px rgba(10,14,9,.14)}
+
+/* ═══ Écran Offilog (feuille de JARVIS crm/v2/v2-offilog-m1.css, chargée avant ce thème) — étape 5b, 26/11/2026 ═══
+   Ses bleus repeints par le même calcul « socle » que le reste du thème (etape5b/outils/surcharges-m1.py) : mêmes sélecteurs,
+   mêmes propriétés ; ce fichier vient après la feuille Offilog, il l'emporte à spécificité égale. Les variables --o-* sont celles de la feuille. */
+.v2-wrap.olm{--o-bleu:var(--ip-blue,#2f7d1a);--o-nuit:var(--ip-blue-d,#154e04);--o-gris:#505e4d;--o-filet:#dbe3d9;--o-ombre:0 1px 0 #fff inset,0 1px 2px rgba(10,16,9,.07),0 3px 8px rgba(10,16,9,.04),0 22px 40px -26px rgba(19,67,5,.4);--o-ombre-l:0 1px 0 #fff inset,0 1px 2px rgba(10,16,9,.07),0 3px 8px rgba(10,16,9,.035),0 16px 28px -20px rgba(19,67,5,.42);--o-carte:radial-gradient(240px 160px at 100% 0%,rgba(47,125,26,.07),transparent 72%),linear-gradient(180deg,#fff,#f7faf6)}
+.olm-logo{border:1px solid var(--au-fil,#dbe3d9);box-shadow:0 1px 2px rgba(10,16,9,.08)}
+.olm-o-ic{background:linear-gradient(180deg,#fff,#ecf3eb);box-shadow:0 0 0 1px #c5d8c0,0 1px 0 #fff inset}
+.olm-onglet.on{box-shadow:0 14px 24px -14px rgba(19,77,0,.7),0 1px 0 rgba(255,255,255,.3) inset}
+.olm .off-search input::placeholder{color:#5f6a5c}
+.olm .offr,.olm-conc{background:linear-gradient(180deg,#fff,#f3f7f2);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(10,16,9,.06)}
+.olm .offr-n,.olm-conc .cnt{background:#ecf2eb}
+.olm .offr.on,.olm-conc.on{box-shadow:0 8px 16px -8px rgba(19,77,0,.6),0 1px 0 rgba(255,255,255,.25) inset}
+.olm .offsr i{background:#ecf2eb}
+.olm-rail:has(.offsr-w)::after{background:linear-gradient(90deg,rgba(243,246,242,0),#f3f6f2)}
+@media (max-width:760px){
+.olm-rail::after{background:linear-gradient(90deg,rgba(243,246,242,0),#f3f6f2)}
+}
+.olm-c-media{border-bottom:1px solid #e8eee7}
+.olm-ph{background:linear-gradient(180deg,#fff 0%,#f0f7ee 46%,#d9e7d6 100%);box-shadow:0 0 0 1px #c5d8c0,inset 0 3px 0 #fff,0 14px 24px -14px rgba(47,125,26,.45)}
+.olm-c-media:has(.olm-ph){background:linear-gradient(180deg,#f3f6f2,#ebf1e9)}
+.olm-c-rang{box-shadow:0 1px 2px rgba(10,16,9,.08)}
+.olm .off-mkt-add{box-shadow:0 1px 2px rgba(10,16,9,.1)}
+.olm .off-mkt-add.on{box-shadow:0 6px 12px -6px rgba(19,77,0,.7)}
+.olm-c-conc{border-top:1px solid #e8eee7}
+.olm-pl-b{box-shadow:0 1px 0 #fff inset,0 8px 16px -12px rgba(19,77,0,.6)}
+.olm-pl-b:hover{background:#f1f8f0}
+.olv-vig{background:linear-gradient(180deg,#f3f6f2,#e7eee5);box-shadow:0 0 0 1px #ccddc9,0 22px 36px -18px rgba(5,38,0,.55),0 3px 8px rgba(10,16,9,.12)}
+.off-insp .olm-f-r{border-bottom:1px solid #e8eee7}
+.off-insp .olm-f-n i{color:#505e4d}
+.off-insp .olm-f-e{color:#505e4d}
+.off-insp .olm-f-r.ref{background:#eff5ee}
+.off-insp .olm-f-r.ref .olm-f-p{color:var(--ip-blue,#2f7d1a)}
+.off-insp .olm-f-vide{color:#505e4d}
+.olm .olo-photo{background:#f5f9f4}
+.olm .olo-h{background:#eef5ed}
+.olm .olo-r.cl:hover{background:#f5f9f4}
+.olm .olo-promo{background:#eff5ee}
+.olm .olp-tr{background:#eef5ed}
+/* Tuiles de rayon (onglet « Trouver un produit ») : la tuile des groupements (groupement-ux.css, #v2-root .offr…, plus forte) l'emporte ;
+   la pastille et l'alignement de la feuille de JARVIS s'y mêlaient (chiffre blanc sur blanc dans la tuile active, pastilles à cheval sur le bord). */
+.olm .offr{align-items:stretch;gap:0;padding:12px 16px;font-size:inherit;font-weight:inherit;line-height:inherit}
+.olm .offr-n{display:block;min-width:0;height:auto;padding:0;border-radius:0;background:none}
+.olm .offr.on .offr-n{background:none}
+@media (max-width:760px){
+  .olm-rail:has(> .offr-w){margin-left:0;margin-right:0}
+  .olm-rail:has(> .offr-w)::after{display:none}
+}
+/* Contraste mesuré sur pixels (etape5b) : le reflet blanc de l'onglet actif (.22 chez JARVIS) mettait le libellé blanc à 4,4:1 → .06 (4,58:1 au plus clair, calculé) ;
+   la teinte « froid » (#8bb382 chez Essentiels) écrit les textes du volet produit (badge du rang, prix, « Le marché », podium des marques) : 2,1 à 4,3:1 → vert foncé du thème, sur l'écran Offilog seulement. */
+.olm-onglet.on{background:radial-gradient(220px 120px at 100% 0%,rgba(255,255,255,.06),transparent 72%),var(--o-bleu)}
+.olm,.off-insp{--pil-froid:#256614}
