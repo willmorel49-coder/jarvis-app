@@ -27,6 +27,10 @@ window.V2_COMPTES = {
   // Will, Pascale, Alexandre (même accès que Will), claude-test (preuves). Ni Emmanuel (OPSO, le client), ni Arthur, ni Guy.
   // Le verrou réel est côté serveur (jarvis_acces_plan_opso, crm/v2/_sql/plan-opso-2027.sql) : cette liste ne fait qu'afficher la tuile.
   planOpso: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'alexandre.morel@me.com', 'claude-test@integralpharma.fr'],
+  // 26/11/2026 — Will : « pour pascale et moi on doit pouvoir avoir ça pour les suivis groupement genre essentiel, opso etc. et y'a pascale et moi en contact groupement ».
+  // Entrée « Groupements » du menu du compte (liens vers Essentiels Pharma et OPSO). Comme planOpso : cette liste ne fait qu'AFFICHER l'entrée ; le vrai verrou
+  // est celui de chaque app côté serveur (jarvis_acces_essentiels, jarvis_acces_opso).
+  contactsGroupement: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr'],
   // 10/11/2026 (Will) — équipe OPS : Will, Alexandre Morel (même accès que Will), Arthur Lehouerou, Valérie Morlaix, Karine (KV).
   // Lu par v2-app.js (V2.tourneesEquipe).
   tournees: ['william.morel@me.com', 'alexandre.morel@me.com', 'arthur.lehouerou@integralpharma.fr', 'valerie.morlaix@integralpharma.fr', 'karine.vezzaro@integralpharma.fr']

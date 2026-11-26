@@ -507,6 +507,29 @@
       var prem = m.querySelector('.v2-um-item'); if (prem) m.insertBefore(b, prem); else m.appendChild(b);
     }).catch(function () {});
   }
+  // 26/11/2026 — « Groupements » : entrée du menu du compte pour le suivi des apps de groupement (Will : « pascale et moi on doit pouvoir avoir ça
+  // pour les suivis groupement genre essentiel, opso etc. »). Posée seulement pour les comptes de V2.CONTACTS_GROUPEMENT (v2-comptes.js) : la liste
+  // décide de l'affichage, le vrai verrou reste celui de chaque app côté serveur (jarvis_acces_essentiels, jarvis_acces_opso).
+  // Un groupement de plus = une ligne dans ce tableau. Chemins relatifs : même origine, donc même session. Escale et Phirst n'en sont pas.
+  var GROUPEMENTS_APPS = [
+    { nom: 'Essentiels Pharma', url: '../../essentiels-pharma/index.html' },
+    { nom: 'OPSO', url: '../../opso/v2/index.html' }
+  ];
+  function groupementsMenu(m) {
+    var mail = String((V2.user && V2.user.email) || '').toLowerCase();
+    if (!m || !mail || (V2.CONTACTS_GROUPEMENT || []).indexOf(mail) < 0 || m.querySelector('.grp-um')) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'v2-um-item grp-um'; b.setAttribute('role', 'menuitem'); b.setAttribute('aria-expanded', 'false');
+    b.innerHTML = ICO('list', 16, 2) + 'Groupements';
+    var l = document.createElement('div'); l.className = 'grp-um-liste'; l.hidden = true;
+    l.innerHTML = GROUPEMENTS_APPS.map(function (g) {
+      return '<a class="v2-um-item" role="menuitem" style="text-decoration:none;padding-left:42px" href="' + g.url + '" target="_blank" rel="noopener">' + esc(g.nom) +
+        '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span></a>';
+    }).join('');
+    b.onclick = function () { l.hidden = !l.hidden; b.setAttribute('aria-expanded', String(!l.hidden)); };
+    var sortie = m.querySelector('.v2-um-item[onclick*="signOut"]');
+    if (sortie) { m.insertBefore(b, sortie); m.insertBefore(l, sortie); } else { m.appendChild(b); m.appendChild(l); }
+  }
   V2.userMenu = function (btn) {
     if (u2PanneauAvatar(btn)) return;   // accueil u2 sous 1100 px : le panneau « Mon espace » remplace ce menu
     var installed = false;
@@ -533,6 +556,7 @@
     // 24/10/2026 — « Sécurité » : ligne posée seulement si la base répond oui (v2-securite.js).
     if (m && V2.securite && V2.securite.menu) V2.securite.menu(m);
     if (m) fopsMenu(m);
+    if (m) groupementsMenu(m);
   };
 
   // ── Partage d'un PDF (mail/WhatsApp sur mobile, sinon téléchargement) ──
@@ -1965,6 +1989,7 @@
     if (e && V2.listings2027 && V2.listings2027.menu) { try { V2.listings2027.menu(e); } catch (x) {} }
     if (e && V2.securite && V2.securite.menu) { try { V2.securite.menu(e); } catch (x) {} }
     if (e) { try { fopsMenu(e); } catch (x) {} }
+    if (e) { try { groupementsMenu(e); } catch (x) {} }
   }
   function u2Rail() {
     var mode = u2Mode();

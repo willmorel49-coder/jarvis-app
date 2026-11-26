@@ -92,6 +92,7 @@
   V2.ESCALE_COMMS = COMPTES.escale || [];
   V2.OPSO_ACCES = COMPTES.opso || [];
   V2.PLAN_OPSO_ACCES = COMPTES.planOpso || [];
+  V2.CONTACTS_GROUPEMENT = COMPTES.contactsGroupement || [];
   V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
