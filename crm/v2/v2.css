@@ -2072,6 +2072,24 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
   .pha-wrap.fdr-on .flg-fl{display:none}
 }
 @media (prefers-reduced-motion:reduce){.pha-wrap.fdr-on .fdr .flg-b{transition:none}.pha-wrap.fdr-on .fdr .flg-b:hover{transform:none}}
+/* 26/11/2026 (Will, planche ordinateur B7 v1) : à l'ordinateur, les deux listings passent au poids d'un bouton ordinaire (contour bleu, fond blanc), sur UNE ligne avec l'Excel ;
+   le bleu plein ne désigne plus que « Choisir quoi lui transmettre ». Le téléphone (≤ 640 px) garde ses tuiles d'avant. Fonds en propriétés séparées (Safari). */
+@media (min-width:641px){
+  .pha-wrap.fdr-on .flg{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+  .pha-wrap.fdr-on .fdr .flg-h{flex:0 0 100%;margin:0 0 2px}
+  .pha-wrap.fdr-on .flg-row{display:contents}
+  .pha-wrap.fdr-on .fdr .flg-b{display:inline-flex;align-items:center;gap:8px;width:auto;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #BFD0F5;background-image:none;background-color:#FFFFFF;color:#0047CC;box-shadow:none;transform:none;font:700 15px/1.2 Inter,system-ui,sans-serif}
+  .pha-wrap.fdr-on .fdr .flg-b:hover{transform:none;background-color:#EEF3FF;border-color:#0050E6;box-shadow:none}
+  .pha-wrap.fdr-on .fdr .flg-b:active{transform:none;background-color:#E3ECFF}
+  .pha-wrap.fdr-on .flg-ic{width:20px;height:20px;border-radius:0;background-color:transparent;box-shadow:none;color:#0047CC}
+  .pha-wrap.fdr-on .flg-ic svg{width:20px;height:20px}
+  .pha-wrap.fdr-on .fdr .flg-t b{font:700 15px/1.2 Inter,system-ui,sans-serif;letter-spacing:0;color:#0047CC}
+  .pha-wrap.fdr-on .fdr .flg-t small{display:none}
+  .pha-wrap.fdr-on .flg-n{padding:0;border-radius:0;background-color:transparent;color:#4A5672;font:600 14px/1.2 Inter,system-ui,sans-serif}
+  .pha-wrap.fdr-on .flg-n::before{content:"· "}
+  .pha-wrap.fdr-on .flg-fl{display:none}
+  .pha-wrap.fdr-on .fdr .flg-x{margin:0;border-radius:999px}
+}
 .fdr-dlg{border:0;padding:0;margin:auto;border-radius:var(--r-card,20px);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 48px);background:#FFFFFF;color:var(--ink,#1A2030);box-shadow:0 24px 64px rgba(11,27,63,.22);overflow:auto}
 .fdr-dlg::backdrop{background:rgba(11,27,63,.38)}
 .fdr-dlg-h{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;background:linear-gradient(180deg,#F1F6FF,#FFFFFF);border-bottom:1px solid var(--line,#E3E8F2)}
