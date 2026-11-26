@@ -91,7 +91,9 @@ test('Phirst et OPSO, qui chargent aussi v2.css, gardent leur bouton', () => {
   const f = feuillesDe(ailleurs('phirst/v2/index.html'));
   assert.ok(f.indexOf('v2.css') >= 0 && f.indexOf('phirst-finitions.css') > f.indexOf('v2.css'), 'phirst-finitions.css après v2.css');
   // OPSO : son fond et son ombre sont en !important ; de la règle « grisé », seul le filet d'1 px peut l'atteindre
-  const opso = regles(ailleurs('opso/v2/opso-theme.css'));
+  // 26/11/2026 (option B, étape 5) : les règles du thème OPSO vivent dans la feuille commune aux apps de groupement,
+  // chargée par opso/v2 (et essentiels/v2) ; opso-theme.css ne garde que la palette.
+  const opso = regles(ailleurs('groupements/v2/groupement-theme.css'));
   const o = trouve(opso, '.v2-btn-primary').find(x => /background:/.test(x.decl));
   assert.ok(o, 'la règle du bouton principal d\'OPSO');
   assert.match(o.decl, /background:[^;]*!important/);
