@@ -99,3 +99,29 @@ test('Documents commerciaux : partage refusé = PDF téléchargé ; feuille ferm
   x = visionneuse(refus('AbortError')); x.f.envoyer({ titre: 'Contrat' }, null); await new Promise(r => setImmediate(r));
   assert.equal(x.vus.partages, 1); assert.deepEqual(x.vus.telechargements, []);
 });
+
+// ── Partage commun (V2.shareOrSaveBlob, v2-app.js) : « Partager » des listings et du PDF prospect, Outlook sur iPhone ──
+const app = lire('crm/v2/v2-app.js');
+function partageCommun(share) {
+  const n = navigateur(share), pret = [];
+  n.V2.pdfPret = (f, t) => pret.push(f.name);
+  const corps = bloc(app, '  V2.shareOrSaveBlob = function (blob, filename, title) {', '\n  };\n');
+  class File { constructor(b, nom) { this.name = nom; } }
+  const p = new Function('V2', 'document', 'navigator', 'URL', 'setTimeout', 'File', corps + '\nreturn V2.shareOrSaveBlob;')(
+    n.V2, n.document, n.navigator, n.URL, n.setTimeout, File)({}, 'Liste-essai.pdf', 'Liste');
+  return Promise.resolve(p).then(() => ({ vus: n.vus, pret }));
+}
+
+test('Partage commun : refusé par le navigateur (PDF fabriqué trop longtemps après le clic) = encadré « Le PDF est prêt »', async () => {
+  let r = await partageCommun(refus('NotAllowedError'));
+  assert.equal(r.vus.partages, 1); assert.deepEqual(r.pret, ['Liste-essai.pdf']);
+  r = await partageCommun(refus('AbortError'));
+  assert.deepEqual(r.pret, []);
+  r = await partageCommun(() => Promise.resolve());
+  assert.deepEqual(r.pret, []);
+  // l'encadré relance le partage dans le clic, et se replie sur le téléchargement si le partage est encore refusé
+  const enc = bloc(app, '  V2.pdfPret = function (file, title) {', '\n  };\n');
+  assert.match(enc, /else navigator\.share\(\{ files: \[file\]/);
+  assert.match(enc, /if \(e2 && e2\.name === 'AbortError'\) return;[\s\S]*enregistrer\(\);/);
+  assert.match(enc, /textContent = file\.name/);
+});

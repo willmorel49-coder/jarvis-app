@@ -544,7 +544,13 @@
       if (navigator.share && navigator.canShare) {
         var file = new File([blob], filename, { type: 'application/pdf' });
         if (navigator.canShare({ files: [file] })) {
-          return navigator.share({ files: [file], title: title || filename }).catch(function () {});
+          // 26/11/2026 — Safari REFUSE la feuille de partage ouverte plusieurs secondes après le clic (le temps de fabriquer
+          // le PDF : NotAllowedError, mesuré sous WebKit) et ce refus était avalé : « Partager » ne faisait rien.
+          // Refus = encadré « Le PDF est prêt » : le partage part au clic suivant, dans le geste.
+          return navigator.share({ files: [file], title: title || filename }).catch(function (e) {
+            if (e && e.name === 'AbortError') return;   // feuille fermée par l'utilisateur
+            V2.pdfPret(file, title || filename);
+          });
         }
       }
     } catch (e) {}
@@ -553,6 +559,39 @@
     a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(u); }, 2000);
     return Promise.resolve();
+  };
+  // L'encadré « Le PDF est prêt » (posé sur <body>, en haut de l'écran : les messages de l'app et la barre du bas restent visibles)
+  V2.pdfPret = function (file, title) {
+    var ex = document.getElementById('v2-pdf-pret'); if (ex && ex.parentNode) ex.parentNode.removeChild(ex);
+    var b = document.createElement('div'); b.id = 'v2-pdf-pret';
+    b.setAttribute('role', 'dialog'); b.setAttribute('aria-labelledby', 'v2-pdf-pret-t');
+    b.style.cssText = 'position:fixed;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);z-index:250;display:flex;align-items:center;flex-wrap:wrap;gap:12px 16px;width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;padding:14px 16px 14px 20px;border-radius:16px;background:#fff;border:1px solid #BFCDE8;box-shadow:0 18px 44px -12px rgba(0,26,104,.38),0 2px 6px rgba(0,26,104,.1);color:#1A2030;font-family:var(--font,system-ui,sans-serif)';
+    var bt = 'min-height:44px;padding:0 16px;font-size:15px;font-weight:700;white-space:nowrap;justify-content:center;';
+    b.innerHTML = '<div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 160px"><b id="v2-pdf-pret-t" style="font-size:16px;font-weight:800">Le PDF est prêt</b><span data-nom style="font-size:14px;color:#3D4960;overflow-wrap:anywhere"></span></div>' +
+      '<div style="display:flex;gap:8px;flex:1 1 auto">' +
+        '<button type="button" class="v2-btn v2-btn-primary" data-pret="envoyer" style="' + bt + 'flex:1">' + ICO('spark', 15, 2) + ' Envoyer</button>' +
+        '<button type="button" class="v2-btn v2-btn-ghost" data-pret="pdf" style="' + bt + 'flex:1">' + ICO('download', 15, 2) + ' Télécharger</button>' +
+        '<button type="button" class="v2-btn v2-btn-ghost" data-pret="x" aria-label="Fermer" style="' + bt + 'padding:0;width:44px">' + ICO('close', 15, 2) + '</button></div>';
+    b.querySelector('[data-nom]').textContent = file.name;
+    var fermer = function () { if (b.parentNode) b.parentNode.removeChild(b); };
+    var enregistrer = function () {
+      var u = URL.createObjectURL(file), a = document.createElement('a');
+      a.href = u; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
+      fermer(); V2.toast('PDF enregistré dans vos téléchargements');
+    };
+    b.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest ? e.target.closest('[data-pret]') : null; if (!t) return;
+      var q = t.getAttribute('data-pret');
+      if (q === 'x') fermer();
+      else if (q === 'pdf') enregistrer();
+      else navigator.share({ files: [file], title: title || file.name }).then(fermer, function (e2) {
+        if (e2 && e2.name === 'AbortError') return;
+        console.error('partage du PDF', e2); enregistrer();
+      });
+    });
+    document.body.appendChild(b);
+    try { b.querySelector('[data-pret="envoyer"]').focus(); } catch (e) {}
   };
 
   // ── Installation PWA (écran d'accueil) ────────
