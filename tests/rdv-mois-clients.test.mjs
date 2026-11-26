@@ -89,7 +89,8 @@ test('Vos clients : celles qui ont un rendez-vous à venir, quand, et les autres
   assert.match(h, /<h2 class="tm-cht">Vos clients<\/h2>/, 'marqueur : la section est là');
 
   const venir = base.lus.filter((q) => q.t === 'rdv').map((q) => q.f.join(','));
-  assert.ok(venir.some((f) => f.includes('user_id=u-moi') && f.includes('statut=confirme') && f.includes('date>=' + AUJ) && !f.includes('date<=')), 'ses rendez-vous confirmés à partir d’aujourd’hui, sans borne de fin');
+  // 26/11/2026 — lus depuis le 1er janvier (« Suivi depuis le 1er janvier ») ; l'écran garde ensuite à venir = à partir d'aujourd'hui
+  assert.ok(venir.some((f) => f.includes('user_id=u-moi') && f.includes('statut=confirme') && f.includes('date>=' + AUJ.slice(0, 4) + '-01-01') && !f.includes('date<=')), 'ses rendez-vous confirmés depuis le 1er janvier, sans borne de fin');
 
   assert.match(h, /<b>2<\/b> sur 5 ont un rendez-vous à venir · <b>2<\/b> sans rendez-vous · <b>1<\/b> ne veut plus être sollicitée/, 'les comptes tombent juste : 5 à lui = 2 posées + 2 à proposer + 1 qui a dit stop');
   assert.doesNotMatch(h, /Collegue/, 'une officine d’un collègue n’apparaît pas');

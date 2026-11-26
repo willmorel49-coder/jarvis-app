@@ -1170,7 +1170,8 @@
             var m = R.apparier(ev.titre, idx.porte, idx.nat, alias, idx.villes);
             if (!m.officine) continue;
             var cipEv = String(m.officine.id);
-            if (ev.date < auj) {
+            // 26/11/2026 — « Appeler phie … » n'est pas une visite (choix de Will) : il ne vaut pas « vue il y a 2 mois »
+            if (ev.date < auj && !(R.rappel && R.rappel(ev.titre))) {
               if (!derniereVisite[cipEv] || ev.date > derniereVisite[cipEv]) {
                 derniereVisite[cipEv] = ev.date;
               }

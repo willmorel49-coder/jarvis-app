@@ -30,6 +30,7 @@
   function dow(s) { return dt(s).getDay(); }
   function num(s) { return +String(s).slice(8, 10); }
   function auj() { return iso(new Date()); }
+  function debutAnnee() { return auj().slice(0, 4) + '-01-01'; }
   function maj(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function libJour(s) { return JOURS[dow(s)] + ' ' + num(s) + ' ' + MOIS[+s.slice(5, 7) - 1]; }
   function court(n) { return maj(String(n || '').replace(/^pharmacie\s+/i, '').replace(/^(du |de la |de l’|de l'|des |de )/i, '').toLowerCase().replace(/(^|[\s-])\S/g, function (m) { return m.toUpperCase(); })); }
@@ -128,7 +129,8 @@
       // une officine hors du fichier de l'équipe n'est pas montrée (« Appeler phie du chapitre » sortait à Marseille,
       // une homonyme sur trois ; la vraie est à Rennes). Elle reste une heure occupée, comme avant ce chargement.
       if (m && m.officine && m.etat !== 'reconnu' && idx.idsPorte && !idx.idsPorte[String(m.officine.id)]) return;
-      if (m && m.officine) liste.push({ date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier, cip: String(m.officine.id), nom: m.officine.name, ville: m.officine.ville || '', etat: m.etat });
+      if (m && m.officine) liste.push({ date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier, cip: String(m.officine.id), nom: m.officine.name, ville: m.officine.ville || '', etat: m.etat,
+        rappel: R.rappel ? R.rappel(ev.titre) : '' });   // 26/11/2026 — « Appeler phie … » n'est pas un rendez-vous (choix de Will)
     });
     RECO_CLE = cle; RECO_LISTE = liste;
     return liste;
@@ -431,14 +433,16 @@
   var A_INVITER = [];  // les CIP de « Sans rendez-vous à venir » qui ont une adresse mail : le bouton d'envoi groupé
   function lireVenir() {
     if (VENIR) return;
-    var e = VENIR = { etat: 'cours', rdv: [] }, c = sb(), u = uid();
+    var e = VENIR = { etat: 'cours', rdv: [], passes: [] }, c = sb(), u = uid(), a = auj();
     if (!c || !u) { e.etat = 'ko'; return; }
+    // 26/11/2026 — lus depuis le 1er janvier : les passés nourrissent le « Suivi depuis le 1er janvier »
     Promise.all([
-      c.from('rdv').select('cip,nom,date,heure').eq('user_id', u).eq('statut', 'confirme').gte('date', auj()).order('date').order('heure'),
+      c.from('rdv').select('cip,nom,date,heure').eq('user_id', u).eq('statut', 'confirme').gte('date', debutAnnee()).order('date').order('heure'),
       c.rpc ? c.rpc('rdv_opposes').then(function (o) { return o; }, function () { return null; }) : null
     ]).then(function (r) {
       if (r[0] && r[0].error) throw new Error('lecture');
-      e.rdv = (r[0] && r[0].data) || []; e.etat = 'ok';
+      var tous = (r[0] && r[0].data) || [];
+      e.rdv = tous.filter(function (x) { return x.date >= a; }); e.passes = tous.filter(function (x) { return x.date < a; }); e.etat = 'ok';
       var o = {}; ((r[1] && r[1].data) || []).forEach(function (x) { o[String(x && x.cip != null ? x.cip : x)] = 1; }); OPPOSES = o;
     }).catch(function () { e.etat = 'ko'; }).then(function () { if (VENIR === e) redessiner(); });
     // « vue il y a 7 mois » : visites notées et rendez-vous passés, lus une fois (v2-rdv.js)
@@ -474,15 +478,33 @@
       if (!a_lui[k]) { horsRdv[k + '|' + date] = 1; horsOff[k] = 1; }
       if (!x || date + h < x.date + x.h) prochain[k] = { date: date, h: h, src: src, conf: !!conf };
     }
+    // 26/11/2026 — Will : « voir qui a eu des rendez-vous depuis janvier 2026 et qui n'en a pas eu, pour avoir un suivi par
+    // pharma ». cip -> { date: 'sur' | 'conf' } : un jour compté une fois, quelle que soit la source.
+    var debA = debutAnnee(), suivi = {}, appel = {};
+    function vue(cip, d, conf) {
+      var k = String(cip || ''), s;
+      if (!k || !a_lui[k] || !d || d < debA || d > a) return;
+      s = suivi[k] = suivi[k] || {};
+      s[d] = (s[d] === 'sur' || !conf) ? 'sur' : 'conf';
+    }
     if (lu === 'ok') VENIR.rdv.forEach(function (r) { poser(r.cip, r.date, hm(r.heure), 'jarvis'); });
+    if (lu === 'ok') VENIR.passes.forEach(function (r) { vue(r.cip, r.date); });
     reconnus().forEach(function (x) {
       // « à confirmer » n'est qu'une ressemblance (24/11/2026 : « Phie cœur de bourg » tombait sur la PHARMACIE DE BOURG
       // d'un collègue) : gardée pour SES clients, avec la mention, jamais comptée chez ceux des autres.
       var conf = x.etat !== 'reconnu';
       if (conf && !a_lui[x.cip]) return;
+      // un appel, un mail, une vérification ne sont pas une visite (choix cliqué de Will) : montrés, jamais comptés
+      if (x.rappel) {
+        if (a_lui[x.cip] && x.date >= debA && x.date <= a && (!appel[x.cip] || x.date > appel[x.cip].date)) appel[x.cip] = { date: x.date, type: x.rappel };
+        return;
+      }
       if (x.date >= a) poser(x.cip, x.date, x.jour_entier ? '' : hm(x.debut), 'agenda', conf);
       else if (!vu[x.cip] || x.date > vu[x.cip]) vu[x.cip] = x.date;
+      vue(x.cip, x.date, conf);
     });
+    // le « vu le … » coché par l'équipe (v2-visites.js) : la dernière visite seulement
+    if (V2.visite && V2.visite.all) { try { var va = V2.visite.all() || {}; Object.keys(va).forEach(function (k) { vue(k, String(va[k] || '').slice(0, 10)); }); } catch (e) {} }
     var hors = Object.keys(horsRdv).length, horsO = Object.keys(horsOff).length;
     liste.forEach(function (p) {
       var k = String(p.id), n = prochain[k];
@@ -518,13 +540,51 @@
     var ho = String((AGENDA && AGENDA.hote) || '');
     if (AGENDA && AGENDA.etat === 'ok' && !AGENDA.branche) h += '<p class="tm-cnote">Tant que votre agenda n’est pas branché, seuls les rendez-vous notés dans JARVIS comptent.</p>';
     else if (/outlook|office/.test(ho)) h += '<p class="tm-cnote">Outlook ne partage que vos heures occupées, sans les noms : seuls les rendez-vous notés dans JARVIS comptent.</p>';
-    function ligneL(x) {
-      var p = x.p, k = String(p.id), o = V2.rdvInfo ? V2.rdvInfo(k) : {}, mail = String(o.email || '').trim(), tel = String(o.tel || '').replace(/[^0-9+]/g, '');
-      var act = mail && V2.rdv ? '<button type="button" class="tm-btn tm-prim tm-ca" onclick="V2.rdv.proposer(\'' + esc(k) + '\')">Proposer un RDV</button>'
+    function agir(k) {
+      var o = V2.rdvInfo ? V2.rdvInfo(k) : {}, mail = String(o.email || '').trim(), tel = String(o.tel || '').replace(/[^0-9+]/g, '');
+      return mail && V2.rdv ? '<button type="button" class="tm-btn tm-prim tm-ca" onclick="V2.rdv.proposer(\'' + esc(k) + '\')">Proposer un RDV</button>'
         : tel ? '<a class="tm-btn tm-ca" href="tel:' + esc(tel) + '">Appeler</a>' : '<span class="tm-cs">ni mail ni téléphone</span>';
-      return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.go(\'pharma\',\'' + esc(k) + '\')"><b>' + esc(court(p.name)) + '</b><small>' +
-        esc([sousOff(k, '', p.ville, p.cp), x.vu ? ilYa(x.vu) : 'aucune visite notée'].filter(Boolean).join(' · ')) + '</small></button>' + act + '</div>';
     }
+    function ligneL(x) {
+      var p = x.p, k = String(p.id);
+      return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.go(\'pharma\',\'' + esc(k) + '\')"><b>' + esc(court(p.name)) + '</b><small>' +
+        esc([sousOff(k, '', p.ville, p.cp), x.vu ? ilYa(x.vu) : 'aucune visite notée'].filter(Boolean).join(' · ')) + '</small></button>' + agir(k) + '</div>';
+    }
+    function leJour(d) { return num(d) + ' ' + MOIS[+d.slice(5, 7) - 1]; }
+    // ── « Suivi depuis le 1er janvier » (26/11/2026) : qui a eu un rendez-vous cette année, et qui n'en a eu aucun ──
+    var sansS = [], avecS = [], stopS = 0;
+    liste.forEach(function (p) {
+      var k = String(p.id), s = suivi[k], j = s ? Object.keys(s).sort() : [];
+      if (OPPOSES && OPPOSES[k]) { stopS++; return; }   // celle qui a dit stop n'est dans aucune liste (règle du 24/11), comptée seulement
+      if (j.length) { avecS.push({ p: p, n: j.length, der: j[j.length - 1], conf: j.every(function (d) { return s[d] === 'conf'; }), pro: prochain[k] || null }); return; }
+      var v = V2.rdvVuLe ? V2.rdvVuLe(k) : null;
+      if (vu[k] && (!v || vu[k] > v)) v = vu[k];
+      sansS.push({ p: p, ap: appel[k] || null, pro: prochain[k] || null, vu: v || '' });
+    });
+    // sans rendez-vous prévu d'abord, puis jamais vue, puis la plus ancienne visite
+    sansS.sort(function (x, y) { return (!!x.pro - !!y.pro) || (x.vu === y.vu ? String(x.p.name || '').localeCompare(String(y.p.name || '')) : (x.vu < y.vu ? -1 : 1)); });
+    // la plus longtemps sans visite d'abord : c'est elle qu'il faut revoir
+    avecS.sort(function (x, y) { return x.der === y.der ? String(x.p.name || '').localeCompare(String(y.p.name || '')) : (x.der < y.der ? -1 : 1); });
+    function ligneA(x) {
+      var p = x.p, k = String(p.id), droite;
+      droite = x.pro ? '<span class="tm-cq">RDV le ' + esc(leJour(x.pro.date)) + '</span>' : agir(k);
+      return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.go(\'pharma\',\'' + esc(k) + '\')"><b>' + esc(court(p.name)) + '</b><small>' +
+        esc([sousOff(k, '', p.ville, p.cp), x.ap ? (x.ap.type === 'appel' ? 'appelée le ' : 'tâche notée le ') + leJour(x.ap.date) : '',
+             x.vu ? ilYa(x.vu) : 'aucune visite notée'].filter(Boolean).join(' · ')) + '</small></button>' + droite + '</div>';
+    }
+    function ligneV(x) {
+      var p = x.p, k = String(p.id);
+      return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.go(\'pharma\',\'' + esc(k) + '\')" aria-label="' + esc(joli(p.name) + ', ' + x.n + ' rendez-vous depuis janvier, le dernier le ' + leJour(x.der)) + '"><b>' + esc(court(p.name)) + '</b><small>' +
+        esc([sousOff(k, '', p.ville, p.cp), x.n + ' rendez-vous', x.conf ? 'à confirmer' : '', x.pro ? 'prochain le ' + leJour(x.pro.date) : ''].filter(Boolean).join(' · ')) +
+        '</small></button><span class="tm-cq">' + esc(leJour(x.der)) + '</span></div>';
+    }
+    var nAp = sansS.filter(function (x) { return x.ap; }).length;
+    var suiviHtml = '<section class="tm-carte tm-clients tm-suivi" aria-label="Suivi depuis le 1er janvier"><h2 class="tm-cht">Suivi depuis le 1<sup>er</sup> janvier ' + debA.slice(0, 4) + '</h2>' +
+      '<p class="tm-chp"><b>' + avecS.length + '</b> sur ' + tot + ' ont eu un rendez-vous depuis janvier · <b>' + sansS.length + '</b> aucun' +
+      (nAp ? ' (' + nAp + ' avec seulement un appel ou un mail)' : '') +
+      (stopS ? ' · <b>' + stopS + '</b> ne ' + (stopS > 1 ? 'veulent' : 'veut') + ' plus être sollicitée' + (stopS > 1 ? 's' : '') : '') + '</p>' +
+      '<div class="tm-jauge" aria-hidden="true"><i style="width:' + Math.round(avecS.length * 100 / tot) + '%"></i></div>' +
+      '<p class="tm-cnote">Comptés : les visites de votre agenda personnel, vos rendez-vous JARVIS et les visites cochées. Un appel ou un mail noté dans l’agenda n’est pas un rendez-vous : il est seulement signalé.</p>';
     function ligneP(x) {
       var p = x.p, n = x.n, quand = maj(J3[dow(n.date)]) + '. ' + num(n.date) + ' ' + MOIS[+n.date.slice(5, 7) - 1] + (n.h ? ' · ' + n.h.replace(':', 'h') : '');
       return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.todoMois.allerA(\'' + n.date + '\')" aria-label="' + esc(joli(p.name) + ', ' + quand + ' : voir ce jour dans le mois') + '"><b>' + esc(court(p.name)) + '</b><small>' +
@@ -539,7 +599,9 @@
       col('l', 'Sans rendez-vous à venir', libres, ligneL, 'Toutes ont un rendez-vous à venir.') +
       col('p', 'Rendez-vous posé', poses, ligneP, 'Aucun rendez-vous à venir pour l’instant.') + '</div>' +
       (hors ? '<p class="tm-cnote">Vous avez aussi ' + hors + ' rendez-vous à venir chez ' + (horsO > 1 ? horsO + ' officines qui ne sont pas' : 'une officine qui n’est pas') + ' dans vos clients (prospect ou client d’un collègue) : ' + (hors > 1 ? 'ils ne sont pas' : 'il n’est pas') + ' dans ces listes.</p>' : '') +
-      '</section>';
+      '</section>' + suiviHtml + '<div class="tm-ccols">' +
+      col('a', 'Aucun rendez-vous depuis janvier', sansS, ligneA, 'Toutes ont eu un rendez-vous depuis janvier.') +
+      col('v', 'Vues depuis janvier', avecS, ligneV, 'Aucun rendez-vous depuis janvier.') + '</div></section>';
   }
   // 26/11/2026 — téléphone, To do seulement (choix de Will, planche « 11 choix », sujet 2, version 3) : les tâches en retard
   // remontent juste sous les onglets et l'agenda à brancher tient en une ligne ; tout le reste garde son ordre.

@@ -333,6 +333,22 @@
              source: meilleur.source, etat: etat };
   };
 
+  // 26/11/2026 — choix cliqué de Will : un appel n'est pas un rendez-vous (il est montré à part, jamais compté).
+  // Son agenda nomme aussi l'officine dans des rappels : « Appeler phie … », « Tel Prise de rdv Phie … »,
+  // « Faire mail Phie … », « Vérifie Repatha Phie … », « Pas reçu Phie … », « 1 Munjaro 2,5mg Phie … »,
+  // « Pharmavie … appeler ». « Allez voir phie … » est bien une visite.
+  // Rend 'appel', 'tache' (mail, vérification, commande) ou '' (une visite).
+  var MOTS_APPEL = /\b(APPELER|RAPPELER|APPEL|APPELE|APPELEE|CALL|TEL|TELEPHONER)\b/;
+  var PREMIER_TACHE = { MAIL: 1, EMAIL: 1, ENVOYER: 1, ENVOYEZ: 1, FAIRE: 1, VERIFIER: 1, VERIFIE: 1, VERIF: 1,
+                        PAS: 1, COMMANDER: 1, COMMANDE: 1, RELANCER: 1 };
+  M.rappel = function (titre) {
+    var n = M.normaliser(titre);
+    if (!n) return '';
+    if (MOTS_APPEL.test(n)) return 'appel';
+    if (PREMIER_TACHE[n.split(' ')[0]] || /\b\d+ ?MG\b/.test(n)) return 'tache';
+    return '';
+  };
+
   M._SEUIL_RECONNU = SEUIL_RECONNU;
   M._SEUIL_CONFIRMER = SEUIL_CONFIRMER;
 
