@@ -8,6 +8,8 @@
 (function () {
   "use strict";
   var V2 = window.V2 || (window.V2 = {});
+  // Couleur d'une variable de thème (--grp-*), pour les attributs SVG où var() ne fonctionne pas ; repli = valeur OPSO.
+  function cv(nom, repli) { try { var v = getComputedStyle(document.documentElement).getPropertyValue(nom).trim(); return v || repli; } catch (e) { return repli; } }
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   var fmtEUR = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
@@ -155,7 +157,7 @@
   };
   var CAT_ORDER = ['pr_low', 'pr_mid', 'pr_high', 'tch', 'gen', 'biosim', 'nr', 'x'];
   // Une seule famille de couleur (le vert OPSO), du plus profond au plus pâle : une teinte par catégorie.
-  var SEG_TONES = { all: '#4e9f70', pr_low: '#306345', pr_mid: '#4e9f70', pr_high: '#99bfa9', tch: '#c3d9cc', gen: '#598870', biosim: '#9fb7aa', nr: '#ccd7d1', x: '#dfe9e2' };
+  var SEG_TONES = { all: 'var(--grp-accent)', pr_low: 'var(--grp-vert-306345)', pr_mid: 'var(--grp-accent)', pr_high: 'var(--grp-vert-99bfa9)', tch: 'var(--grp-vert-c3d9cc)', gen: 'var(--grp-vert-598870)', biosim: 'var(--grp-vert-9fb7aa)', nr: 'var(--grp-vert-ccd7d1)', x: 'var(--grp-vert-dfe9e2)' };
 
   function periodeLabel(moisArr) {
     if (!moisArr.length) return '';
@@ -444,11 +446,12 @@
         + '<div id="og-mpm"></div>'
       + '</section>'
       // ── Le potentiel du catalogue : rotations du réseau × prix nets du catalogue (17/11/2026) ──
-      + '<section class="v2-card og-block oa-pot" aria-labelledby="oa-pot-t">'
+      // Rendu seulement si les rotations du groupement existent (sinon le bloc resterait sur « Chargement… »).
+      + ((window.OPSO_ROTATIONS && window.OPSO_ROTATIONS.r) ? ('<section class="v2-card og-block oa-pot" aria-labelledby="oa-pot-t">'
         + '<header class="oa-head"><h2 class="oa-h" id="oa-pot-t">Le potentiel du catalogue</h2><span class="oa-chip" id="og-pot-per"></span>' + infoBtn('og-pot-note', 'Comment c\'est calculé') + '</header>'
         + '<p class="oa-note" id="og-pot-note" hidden></p>'
         + '<div id="og-pot"><p class="mpm-note">Chargement du catalogue…</p></div>'
-      + '</section>'
+      + '</section>') : '')
       // ── Produits : barres horizontales ──
       + '<section class="v2-card og-block oa-prod" aria-labelledby="oa-prod-t">'
         + '<header class="oa-head"><h2 class="oa-h" id="oa-prod-t">Ce que les adhérentes achètent</h2></header>'
@@ -691,7 +694,7 @@
       var tabButtons = [], segParts = [];
       tabsDef.forEach(function (t, i) {
         var part = DATA.total ? (t.ca / DATA.total) * 100 : 0;
-        var tone = SEG_TONES[t.k] || '#4e9f70';
+        var tone = SEG_TONES[t.k] || 'var(--grp-accent)';
         var b = document.createElement('button');
         b.className = 'oa-cat'; b.type = 'button'; b.setAttribute('aria-pressed', 'false');
         b.style.setProperty('--tone', tone);
@@ -869,8 +872,8 @@
         chart.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
         var defs = el('defs', {});
         var grad = el('linearGradient', { id: 'og-aire', x1: '0', y1: '0', x2: '0', y2: '1' });
-        grad.appendChild(el('stop', { offset: '0%', 'stop-color': '#4e9f70', 'stop-opacity': '0.32' }));
-        grad.appendChild(el('stop', { offset: '100%', 'stop-color': '#4e9f70', 'stop-opacity': '0' }));
+        grad.appendChild(el('stop', { offset: '0%', 'stop-color': cv('--grp-accent', '#4e9f70'), 'stop-opacity': '0.32' }));
+        grad.appendChild(el('stop', { offset: '100%', 'stop-color': cv('--grp-accent', '#4e9f70'), 'stop-opacity': '0' }));
         defs.appendChild(grad); chart.appendChild(defs);
         yTicks.forEach(function (t) {
           var y = yAt(t);
@@ -890,15 +893,15 @@
         if (realPts.length) {
           var areaD = smoothPath(realPts) + ' L' + realPts[realPts.length - 1][0].toFixed(1) + ',' + yAt(0).toFixed(1) + ' L' + realPts[0][0].toFixed(1) + ',' + yAt(0).toFixed(1) + ' Z';
           chart.appendChild(el('path', { d: areaD, fill: 'url(#og-aire)', stroke: 'none', 'class': 'og-aire' }));
-          chart.appendChild(el('path', { d: smoothPath(realPts), fill: 'none', stroke: '#3e7f59', 'stroke-width': 3.5, pathLength: 1, 'class': 'og-line' }));
+          chart.appendChild(el('path', { d: smoothPath(realPts), fill: 'none', stroke: cv('--grp-accent-d', '#3e7f59'), 'stroke-width': 3.5, pathLength: 1, 'class': 'og-line' }));
           realPts.forEach(function (p, pi) {
             var last = pi === realPts.length - 1;
-            if (last) chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: 9, fill: 'rgba(78,159,112,.16)', 'class': 'og-pt' }));
-            chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: last ? 5 : 3.5, fill: '#fff', stroke: '#3e7f59', 'stroke-width': 2.2, 'class': 'og-pt' }));
+            if (last) chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: 9, fill: 'rgba(' + cv('--grp-accent-rgb', '78,159,112') + ',.16)', 'class': 'og-pt' }));
+            chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: last ? 5 : 3.5, fill: '#fff', stroke: cv('--grp-accent-d', '#3e7f59'), 'stroke-width': 2.2, 'class': 'og-pt' }));
           });
           // Étiquette du dernier point réel : le cumul atteint, lisible sans légende.
           var lp = realPts[realPts.length - 1];
-          var tl = el('text', { x: lp[0] - 12, y: lp[1] - 14, 'text-anchor': 'end', 'font-size': 14, 'font-weight': 700, fill: '#3e7f59', 'class': 'og-pt oa-endlbl' });
+          var tl = el('text', { x: lp[0] - 12, y: lp[1] - 14, 'text-anchor': 'end', 'font-size': 14, 'font-weight': 700, fill: cv('--grp-accent-d', '#3e7f59'), 'class': 'og-pt oa-endlbl' });
           tl.textContent = fmtK(arrBase[nReal - 1]); chart.appendChild(tl);
         }
         if (nSlots > nReal) {
@@ -906,9 +909,9 @@
           chart.appendChild(el('path', { d: pathFromPoints(basePts), fill: 'none', stroke: '#8a91a3', 'stroke-width': 2, 'stroke-dasharray': '5 5', 'class': 'og-pt' }));
           if (n > 0) {
             var simPts = []; for (var si = nReal - 1; si < nSlots; si++) simPts.push([xAt(si), yAt(arrSim[si])]);
-            chart.appendChild(el('path', { d: pathFromPoints(simPts), fill: 'none', stroke: '#4e9f70', 'stroke-width': 2.5, 'stroke-dasharray': '5 5', 'class': 'og-pt' }));
+            chart.appendChild(el('path', { d: pathFromPoints(simPts), fill: 'none', stroke: cv('--grp-accent', '#4e9f70'), 'stroke-width': 2.5, 'stroke-dasharray': '5 5', 'class': 'og-pt' }));
             var lastSim = simPts[simPts.length - 1];
-            chart.appendChild(el('circle', { cx: lastSim[0], cy: lastSim[1], r: 3.5, fill: '#4e9f70' }));
+            chart.appendChild(el('circle', { cx: lastSim[0], cy: lastSim[1], r: 3.5, fill: cv('--grp-accent', '#4e9f70') }));
           }
           var lastBase = basePts[basePts.length - 1];
           chart.appendChild(el('circle', { cx: lastBase[0], cy: lastBase[1], r: 3.5, fill: '#8a91a3' }));
@@ -1019,20 +1022,20 @@
   }
   var MPM_CSS = ''
     + '.mpm-cols,.mpm-r{display:grid;grid-template-columns:64px minmax(0,1fr) 118px 128px 150px;align-items:center;column-gap:14px}'
-    + '.mpm-cols{font-size:12px;font-weight:600;color:#5d6577;text-transform:uppercase;letter-spacing:.06em;padding:0 0 8px;border-bottom:1px solid rgba(33,57,43,.1)}'
+    + '.mpm-cols{font-size:12px;font-weight:600;color:#5d6577;text-transform:uppercase;letter-spacing:.06em;padding:0 0 8px;border-bottom:1px solid rgba(var(--grp-ombre-rgb),.1)}'
     + '.mpm-cols span:nth-child(3),.mpm-ca{text-align:right}'
     + '.mpm-rows{list-style:none;margin:0;padding:0}'
-    + '.mpm-r{padding:10px 0;border-bottom:1px dashed rgba(33,57,43,.12)}'
-    + '.mpm-m{font-weight:700;color:#18221d;font-size:15px}'
-    + '.mpm-bar{height:12px;border-radius:999px;background:#edf2ee;overflow:hidden}'
-    + '.mpm-bar i{display:block;height:100%;width:calc(var(--w) * 100%);border-radius:inherit;background:linear-gradient(90deg,#3e7f59,#4e9f70)}'
-    + '.mpm-ca{font-size:15px;font-weight:700;color:#18221d;font-variant-numeric:tabular-nums;white-space:nowrap}'
-    + '.mpm-ph{font-size:14px;color:#34403a;white-space:nowrap}'
-    + '.mpm-ph b{font-size:17px;font-weight:800;color:#265038;font-variant-numeric:tabular-nums}'
-    + '.mpm-new{justify-self:start;font-size:13px;font-weight:700;color:#265038;background:#e3efe7;border-radius:999px;padding:3px 10px;white-space:nowrap}'
+    + '.mpm-r{padding:10px 0;border-bottom:1px dashed rgba(var(--grp-ombre-rgb),.12)}'
+    + '.mpm-m{font-weight:700;color:var(--grp-ink);font-size:15px}'
+    + '.mpm-bar{height:12px;border-radius:999px;background:var(--grp-vert-edf2ee);overflow:hidden}'
+    + '.mpm-bar i{display:block;height:100%;width:calc(var(--w) * 100%);border-radius:inherit;background:linear-gradient(90deg,var(--grp-accent-d),var(--grp-accent))}'
+    + '.mpm-ca{font-size:15px;font-weight:700;color:var(--grp-ink);font-variant-numeric:tabular-nums;white-space:nowrap}'
+    + '.mpm-ph{font-size:14px;color:var(--grp-ink-2);white-space:nowrap}'
+    + '.mpm-ph b{font-size:17px;font-weight:800;color:var(--grp-deep);font-variant-numeric:tabular-nums}'
+    + '.mpm-new{justify-self:start;font-size:13px;font-weight:700;color:var(--grp-deep);background:var(--grp-vert-e3efe7);border-radius:999px;padding:3px 10px;white-space:nowrap}'
     + '.mpm-new.is-none,.mpm-new.is-start{background:none;color:#5d6577;font-weight:500;padding-left:0}'
     + '.mpm-noms{grid-column:2/-1;list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}'
-    + '.mpm-noms li{font-size:13px;color:#265038;background:#f1f7f3;border:1px solid rgba(78,159,112,.25);border-radius:8px;padding:3px 8px}'
+    + '.mpm-noms li{font-size:13px;color:var(--grp-deep);background:var(--grp-vert-f1f7f3);border:1px solid rgba(var(--grp-accent-rgb),.25);border-radius:8px;padding:3px 8px}'
     + '.mpm-wait{grid-column:2/-1;font-size:13px;color:#5d6577}'
     + '.mpm-note{font-size:13px;color:#5d6577;line-height:1.5;margin:12px 0 0}'
     + '#v2-root .oa-mpm{padding:24px 26px 20px}'
@@ -1105,9 +1108,9 @@
   }
   var OFA_CSS = ''
     + '.ofa-rows{list-style:none;margin:0;padding:0}'
-    + '.ofa-r{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 16px;padding:10px 0;border-bottom:1px dashed rgba(33,57,43,.12)}'
-    + '.ofa-n{font-weight:700;color:#18221d;font-size:15px}'
-    + '.ofa-v{font-size:14px;color:#34403a;font-variant-numeric:tabular-nums}'
+    + '.ofa-r{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 16px;padding:10px 0;border-bottom:1px dashed rgba(var(--grp-ombre-rgb),.12)}'
+    + '.ofa-n{font-weight:700;color:var(--grp-ink);font-size:15px}'
+    + '.ofa-v{font-size:14px;color:var(--grp-ink-2);font-variant-numeric:tabular-nums}'
     + '.ofa-v.is-none{color:#5d6577}'
     + '@media (max-width:700px){.ofa-r{flex-direction:column;align-items:flex-start}}';
   // Rend { html, periode } ; chaîne vide si la table Offilog n'est pas chargée.
@@ -1185,23 +1188,23 @@
     + '#v2-root .oa-pot{padding:24px 26px 20px}'
     + '@media (min-width:1000px){.oa.og-wrap>.oa-pot.og-block{grid-column:1/-1}}'
     + '.pot-trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:4px 0 0}'
-    + '.pot-c{border-radius:14px;padding:16px 18px;background:#f4f7f5;border:1px solid rgba(33,57,43,.08)}'
-    + '.pot-c.is-top{background:linear-gradient(160deg,#ffffff 0%,#e6f1ea 100%);border-color:rgba(78,159,112,.35);box-shadow:0 1px 0 #fff inset,0 10px 24px -18px rgba(38,80,56,.55)}'
-    + '.pot-l{display:block;font-size:13px;color:#4c5a52;line-height:1.35}'
-    + '.pot-v{display:block;margin-top:6px;font-size:26px;font-weight:800;color:#18221d;font-variant-numeric:tabular-nums;white-space:nowrap}'
-    + '.pot-c.is-top .pot-v{color:#265038}'
-    + '.pot-s{display:block;margin-top:2px;font-size:13px;color:#4c5a52;font-variant-numeric:tabular-nums}'
-    + '.pot-auj{margin:12px 0 0;font-size:14px;color:#34403a}'
-    + '.pot-auj b{color:#18221d;font-variant-numeric:tabular-nums}'
+    + '.pot-c{border-radius:14px;padding:16px 18px;background:var(--grp-vert-f4f7f5);border:1px solid rgba(var(--grp-ombre-rgb),.08)}'
+    + '.pot-c.is-top{background:linear-gradient(160deg,#ffffff 0%,var(--grp-vert-e6f1ea) 100%);border-color:rgba(var(--grp-accent-rgb),.35);box-shadow:0 1px 0 #fff inset,0 10px 24px -18px rgba(var(--grp-deep-rgb),.55)}'
+    + '.pot-l{display:block;font-size:13px;color:var(--grp-vert-4c5a52);line-height:1.35}'
+    + '.pot-v{display:block;margin-top:6px;font-size:26px;font-weight:800;color:var(--grp-ink);font-variant-numeric:tabular-nums;white-space:nowrap}'
+    + '.pot-c.is-top .pot-v{color:var(--grp-deep)}'
+    + '.pot-s{display:block;margin-top:2px;font-size:13px;color:var(--grp-vert-4c5a52);font-variant-numeric:tabular-nums}'
+    + '.pot-auj{margin:12px 0 0;font-size:14px;color:var(--grp-ink-2)}'
+    + '.pot-auj b{color:var(--grp-ink);font-variant-numeric:tabular-nums}'
     + '.pot-h3{margin:22px 0 8px;font-size:12px;font-weight:600;color:#5d6577;text-transform:uppercase;letter-spacing:.06em}'
     + '.pot-rows{list-style:none;margin:0;padding:0}'
-    + '.pot-r{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 92px 112px;align-items:center;column-gap:14px;padding:9px 0;border-bottom:1px dashed rgba(33,57,43,.12)}'
-    + '.pot-n{font-size:14px;color:#18221d;font-weight:600;min-width:0}'
+    + '.pot-r{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 92px 112px;align-items:center;column-gap:14px;padding:9px 0;border-bottom:1px dashed rgba(var(--grp-ombre-rgb),.12)}'
+    + '.pot-n{font-size:14px;color:var(--grp-ink);font-weight:600;min-width:0}'
     + '.pot-n small{display:block;font-weight:400;font-size:12.5px;color:#5d6577;margin-top:1px}'
-    + '.pot-bar{height:10px;border-radius:999px;background:#edf2ee;overflow:hidden}'
-    + '.pot-bar i{display:block;height:100%;width:calc(var(--w) * 100%);border-radius:inherit;background:linear-gradient(90deg,#3e7f59,#4e9f70)}'
-    + '.pot-b{font-size:13px;color:#4c5a52;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}'
-    + '.pot-e{font-size:15px;font-weight:700;color:#18221d;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}'
+    + '.pot-bar{height:10px;border-radius:999px;background:var(--grp-vert-edf2ee);overflow:hidden}'
+    + '.pot-bar i{display:block;height:100%;width:calc(var(--w) * 100%);border-radius:inherit;background:linear-gradient(90deg,var(--grp-accent-d),var(--grp-accent))}'
+    + '.pot-b{font-size:13px;color:var(--grp-vert-4c5a52);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}'
+    + '.pot-e{font-size:15px;font-weight:700;color:var(--grp-ink);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}'
     + '@media (max-width:640px){'
       + '#v2-root .oa-pot{padding:20px 16px 14px}'
       + '.pot-trio{grid-template-columns:1fr;gap:8px}'

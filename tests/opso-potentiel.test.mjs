@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-const src = readFileSync(new URL('../opso/v2/opso-groupement.js', import.meta.url), 'utf8');
+const src = readFileSync(new URL('../groupements/v2/groupement-bord.js', import.meta.url), 'utf8');
 function fonction(s, nom) {
   const i = s.indexOf('function ' + nom + '('); assert.ok(i >= 0, nom + ' introuvable');
   let p = 0, j = s.indexOf('{', i);

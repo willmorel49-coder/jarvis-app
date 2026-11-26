@@ -292,7 +292,7 @@ test('v2-carte : libellés des mois de l\'export et de la fiche — l\'année su
 });
 
 test('opso-groupement : période affichée « janv. 2026–janv. 2027 » sur deux années', () => {
-  const src = lire('opso/v2/opso-groupement.js');
+  const src = lire('groupements/v2/groupement-bord.js');
   const MOIS_ABREV = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   const periodeLabel = new Function('MOIS_ABREV', fonction(src, 'periodeLabel') + ';return periodeLabel;')(MOIS_ABREV);
   assert.equal(periodeLabel([{ y: 2026, m: 1 }, { y: 2026, m: 12 }, { y: 2027, m: 1 }]), 'janv. 2026–janv. 2027');

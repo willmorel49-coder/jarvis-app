@@ -8,6 +8,8 @@
 window.V2_GROUPEMENT = {
   id: 'opso',
   nom: 'OPSO Santé',
+  // Forme courte, pour les phrases (« adhérentes OPSO », colonne « dont OPSO »).
+  court: 'OPSO',
   // Clé de la liste des comptes admis dans crm/v2/v2-comptes.js (garde d'écran) ;
   // le vrai verrou reste côté Supabase (jarvis_acces_opso).
   acces: 'opso',

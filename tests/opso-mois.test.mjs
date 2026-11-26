@@ -1,4 +1,4 @@
-// « Mois par mois » OPSO (17/11/2026) : calcul des nouvelles pharmacies (opso/v2/opso-groupement.js, nouvellesParMois).
+// « Mois par mois » OPSO (17/11/2026) : calcul des nouvelles pharmacies (groupements/v2/groupement-bord.js, nouvellesParMois).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RACINE = dirname(dirname(fileURLToPath(import.meta.url)));
-const src = readFileSync(join(RACINE, 'opso/v2/opso-groupement.js'), 'utf8');
+const src = readFileSync(join(RACINE, 'groupements/v2/groupement-bord.js'), 'utf8');
 function fonction(s, nom) {
   const a = s.indexOf('function ' + nom + '(');
   assert.ok(a >= 0, nom + ' absente');
@@ -37,7 +37,7 @@ test('passage d\'année et nom manquant', () => {
   assert.equal(r.nonDatees, 0);
 });
 
-// « Offilog · adhérentes clientes » : calcul pur (opso/v2/opso-groupement.js, offilogAdherentesCalc).
+// « Offilog · adhérentes clientes » : calcul pur (groupements/v2/groupement-bord.js, offilogAdherentesCalc).
 const offilogCalc = new Function(fonction(src, 'offilogAdherentesCalc') + ';return offilogAdherentesCalc;')();
 const OFF = {
   vm: ['2026-01', '2026-02'],

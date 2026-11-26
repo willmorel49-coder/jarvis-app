@@ -21,6 +21,10 @@
   'use strict';
   var V2 = window.V2 = window.V2 || {};
   V2.pages = V2.pages || {};
+  // Nom du groupement lu dans le réglage (groupements/config/<id>.js) : nom complet, nom court, et forme pour un nom de fichier.
+  function gNom() { return (V2.groupement && V2.groupement.nom) || ''; }
+  function gCourt() { return (V2.groupement && (V2.groupement.court || V2.groupement.nom)) || ''; }
+  function gFichier() { return gNom().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-'); }
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
   var eur = function (v) { return V2.fmtEur ? V2.fmtEur(v) : v.toFixed(2).replace('.', ',') + ' €'; };
   var ent = function (v) { return Number(v).toLocaleString('fr-FR'); };
@@ -109,7 +113,7 @@
   var HAUT_PRIX = 25;   // mm : hauteur de l'en-tête de page (.oc-r-haut) ; opso-prix.js place le reste dessous
   // Pages 2 et 3 sous UN titre, celui de l'offre (Guy, 21/10/2026 : « je ne vois pas la différence entre prix OPSO et offre
   // privilège OPSO ») ; titre LU dans le fichier privilège, ce libellé ne sert que s'il est illisible.
-  function titrePrix() { return (_offreEtat === 'ok' && _offre && _offre.titre) || 'Offre Privilège OPSO Santé'; }
+  function titrePrix() { return (_offreEtat === 'ok' && _offre && _offre.titre) || 'Offre Privilège ' + gNom(); }
   function lancerPrix(root) {
     if (_prixEtat) return;
     _prixEtat = 'charge';
@@ -242,11 +246,11 @@
       (dispo ? '<span class="oc-nom-b"><span class="oc-nom">' + esc(it.nom) + '</span><span class="oc-dispo">' + esc(dispo) + '</span></span>'
         : '<span class="oc-nom">' + esc(it.nom) + '</span>') +
       '<span class="oc-jauge"><span class="oc-barre"><i style="width:' + w + '%"></i></span>' +
-        '<b>' + pct(it.n, tot) + '</b>' + (it.opso ? '<em>' + it.opso + (it.opso > 1 ? ' adhérentes' : ' adhérente') + ' OPSO</em>' : '') + '</span>' +
+        '<b>' + pct(it.n, tot) + '</b>' + (it.opso ? '<em>' + it.opso + (it.opso > 1 ? ' adhérentes' : ' adhérente') + ' ' + gCourt() + '</em>' : '') + '</span>' +
       '<span class="oc-prix' + (deux ? ' deux' : '') + '">' + prix + '</span></div>';
   }
   function piedHtml(d, num, total) {
-    return '<footer class="oc-pied oc-pied-cat"><span>Intégral Pharma, groupe de grossistes-répartiteurs, pour les adhérentes d’OPSO Santé</span>' +
+    return '<footer class="oc-pied oc-pied-cat"><span>Intégral Pharma, groupe de grossistes-répartiteurs, pour les adhérentes d’' + gNom() + '</span>' +
       '<span>' + esc(periodeTexte(d.R.periode)) + ' · ' + num + ' / ' + total + '</span></footer>';
   }
   function nbPagesPrix(d) { return d.prix ? d.prix.pages.length : 0; }
@@ -263,15 +267,15 @@
     var ex = d.rayons[0] && d.rayons[0].items[0];
     return '<section class="oc-page oc-couv">' +
       '<header class="oc-couv-haut"><div class="oc-halo"></div>' +
-        '<div class="oc-lockup"><img class="l-ip" src="' + LOGO_IP + '" alt="Intégral Pharma"><span class="by">by</span><img class="l-opso" src="' + esc(logoOpso()) + '" alt="OPSO Santé"></div>' +
+        '<div class="oc-lockup"><img class="l-ip" src="' + LOGO_IP + '" alt="Intégral Pharma"><span class="by">by</span><img class="l-opso" src="' + esc(logoOpso()) + '" alt="' + esc(gNom()) + '"></div>' +
         '<h1>' + TITRE + '</h1>' +
-        '<p class="oc-accroche">Les produits les plus commandés dans le réseau Intégral, et ceux que les adhérentes d’OPSO Santé commandent déjà.</p>' +
-        '<p class="oc-chiffre"><b>' + d.opsoPharmas + '</b> adhérentes OPSO Santé commandent chez Intégral Pharma</p>' +
+        '<p class="oc-accroche">Les produits les plus commandés dans le réseau Intégral, et ceux que les adhérentes d’' + gNom() + ' commandent déjà.</p>' +
+        '<p class="oc-chiffre"><b>' + d.opsoPharmas + '</b> adhérentes ' + gNom() + ' commandent chez Intégral Pharma</p>' +
       '</header>' +
       '<div class="oc-couv-bas' + (dec ? ' oc-dense' : '') + '"><h2>Au sommaire</h2><ol class="oc-tuiles">' + tuiles + '</ol>' +
         (ex ? '<div class="oc-lire"><h2>Comment lire une ligne</h2>' +
           '<p>La barre et le pourcentage donnent la part des pharmacies du réseau Intégral qui ont commandé le produit (' + esc(periodeTexte(d.R.periode)) + '). ' +
-          '« N adhérentes OPSO » : combien de pharmacies d’OPSO Santé le commandent.</p>' +
+          '« N adhérentes ' + gCourt() + ' » : combien de pharmacies d’' + gNom() + ' le commandent.</p>' +
           '<p>PPHT : prix pharmacien hors taxes. Prix net : prix HT facturé par Intégral Pharma, abandon de marge déduit. Autres génériques et non remboursables : prix net seul.</p></div>' : '') +
       '</div>' + piedHtml(d, 1, total) + '</section>';
   }
@@ -336,14 +340,14 @@
       '.oc-apercu .oc-page{transform:scale(var(--s,1));transform-origin:0 0}',
       '#oc-print{display:none}',
       // ════ LES PAGES (charte OPSO : vert, lime, anthracite) ════
-      '.oc-page{--vert:#11a63c;--vert-f:#0d8530;--anthra:#2a2d2f;--gris:#64686a;--lime:#dddf4b;--lime-p:#f3f4c4;',
+      '.oc-page{--vert:var(--grp-cat-accent);--vert-f:var(--grp-cat-accent-d);--anthra:#2a2d2f;--gris:#64686a;--lime:#dddf4b;--lime-p:#f3f4c4;',
       ' width:210mm;height:297mm;position:relative;overflow:hidden;background:#fff;color:var(--anthra);font-family:"Varela Round",system-ui,-apple-system,sans-serif;font-size:10pt;line-height:1.25;',
       ' -webkit-print-color-adjust:exact;print-color-adjust:exact}',
       '.oc-page *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}',
       ':where(.oc-page) :where(h1,h2,p,ol,li,header,footer,section){margin:0;padding:0;font-weight:400;font-family:inherit;letter-spacing:normal;text-transform:none;color:inherit;list-style:none}',
       // couverture
       '.oc-couv-haut{position:relative;height:150mm;padding:14mm 14mm 0;color:#fff;overflow:hidden;',
-      ' background:radial-gradient(ellipse 60% 70% at 85% 8%, rgba(221,223,75,.6) 0%, rgba(221,223,75,0) 60%),radial-gradient(circle at 10% 110%, rgba(255,255,255,.2) 0%, rgba(255,255,255,0) 45%),linear-gradient(165deg,#18bd4c 0%,#11a63c 45%,#0b7a2b 100%);',
+      ' background:radial-gradient(ellipse 60% 70% at 85% 8%, rgba(221,223,75,.6) 0%, rgba(221,223,75,0) 60%),radial-gradient(circle at 10% 110%, rgba(255,255,255,.2) 0%, rgba(255,255,255,0) 45%),linear-gradient(165deg,var(--grp-cat-vert-18bd4c) 0%,var(--grp-cat-accent) 45%,var(--grp-cat-vert-0b7a2b) 100%);',
       ' border-radius:0 0 0 22mm}',
       '.oc-halo{position:absolute;right:-40mm;top:-50mm;width:150mm;height:150mm;border-radius:50%;background:repeating-radial-gradient(circle, rgba(255,255,255,.10) 0 .35mm, rgba(255,255,255,0) .35mm 7mm)}',
       '.oc-lockup{position:relative;display:flex;align-items:center;gap:3mm}',
@@ -356,7 +360,7 @@
       '.oc-couv-bas{padding:12mm 14mm 0}',
       '.oc-couv-bas h2{font-size:13pt;color:var(--vert-f);margin-bottom:4mm}',
       '.oc-tuiles{display:grid;grid-template-columns:1fr 1fr;gap:4mm}',
-      '.oc-tuiles li{position:relative;padding:4mm 5mm 4mm 17mm;border-radius:4mm;background:radial-gradient(ellipse 90% 90% at 30% 20%, #ffffff 0%, #f1f9f0 60%, #e2f1e4 100%);min-height:19mm}',
+      '.oc-tuiles li{position:relative;padding:4mm 5mm 4mm 17mm;border-radius:4mm;background:radial-gradient(ellipse 90% 90% at 30% 20%, #ffffff 0%, var(--grp-cat-vert-f1f9f0) 60%, var(--grp-cat-vert-e2f1e4) 100%);min-height:19mm}',
       '.oc-tuiles b{display:block;font-weight:400;font-size:12pt;line-height:1.2}',
       '.oc-tuiles span:last-child{display:block;font-size:9.5pt;color:var(--gris);margin-top:1mm}',
       '.oc-t-num{position:absolute;left:5mm;top:4.2mm;font-size:13pt;color:var(--vert)}',
@@ -369,7 +373,7 @@
       '.oc-lire{margin-top:9mm;padding-top:5mm;border-top:.3mm solid rgba(42,45,47,.12)}',
       '.oc-lire p{font-size:10pt;color:var(--gris);line-height:1.45;margin-top:1.6mm;max-width:170mm}',
       // pages de rayon
-      '.oc-r-haut{position:relative;height:25mm;padding:8mm 12mm 0;color:#fff;background:radial-gradient(ellipse 50% 120% at 92% 0%, rgba(221,223,75,.5) 0%, rgba(221,223,75,0) 60%),linear-gradient(160deg,#16b848 0%,#11a63c 50%,#0d8530 100%);display:flex;align-items:baseline;justify-content:space-between;gap:6mm}',
+      '.oc-r-haut{position:relative;height:25mm;padding:8mm 12mm 0;color:#fff;background:radial-gradient(ellipse 50% 120% at 92% 0%, rgba(221,223,75,.5) 0%, rgba(221,223,75,0) 60%),linear-gradient(160deg,var(--grp-cat-vert-16b848) 0%,var(--grp-cat-accent) 50%,var(--grp-cat-accent-d) 100%);display:flex;align-items:baseline;justify-content:space-between;gap:6mm}',
       '.oc-r-haut h2{font-size:19pt;line-height:1;color:#fff}',
       '.oc-r-haut h2 small{font-size:11pt;color:rgba(255,255,255,.8)}',
       '.oc-r-sous{font-size:9.5pt;color:rgba(255,255,255,.92);white-space:nowrap}',
@@ -383,9 +387,9 @@
       '.oc-entete,.oc-ligne{display:grid;grid-template-columns:7mm 10mm minmax(0,1fr) 56mm 46mm;align-items:center;column-gap:2.5mm;padding:0 10mm 0 8mm}',
       '.oc-entete{height:9mm;font-size:8.5pt;color:var(--gris);text-transform:uppercase;letter-spacing:.04em}',
       '.oc-ligne{height:10.6mm;border-top:.25mm solid rgba(42,45,47,.08)}',
-      '.oc-ligne:nth-child(odd){background:linear-gradient(90deg,rgba(17,166,60,.045),rgba(17,166,60,0) 70%)}',
+      '.oc-ligne:nth-child(odd){background:linear-gradient(90deg,rgba(var(--grp-cat-accent-rgb),.045),rgba(var(--grp-cat-accent-rgb),0) 70%)}',
       '.oc-rang{font-size:9pt;color:var(--gris);text-align:right}',
-      '.oc-vign{position:relative;width:9mm;height:9mm;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 40% 30%, #fff 0%, #eef8e6 70%, #d9efd9 100%);display:flex;align-items:center;justify-content:center}',
+      '.oc-vign{position:relative;width:9mm;height:9mm;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 40% 30%, #fff 0%, #eef8e6 70%, var(--grp-cat-vert-d9efd9) 100%);display:flex;align-items:center;justify-content:center}',
       '.oc-mono{font-size:8pt;color:var(--vert-f)}',
       '.oc-vign img{position:absolute;inset:8%;width:84%;height:84%;object-fit:contain;background:#fff;border-radius:50%}',
       '.oc-nom{font-size:9.5pt;line-height:1.15;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}',
@@ -394,7 +398,7 @@
       '.oc-dispo{font-size:7pt;line-height:1;color:var(--gris);white-space:nowrap}',
       '.oc-jauge{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:2mm;align-items:center}',
       '.oc-barre{height:2.4mm;border-radius:2mm;background:#edf0ee;overflow:hidden}',
-      '.oc-barre i{display:block;height:100%;border-radius:2mm;background:linear-gradient(90deg,#0d8530,#11a63c 70%,#8fd14a)}',
+      '.oc-barre i{display:block;height:100%;border-radius:2mm;background:linear-gradient(90deg,var(--grp-cat-accent-d),var(--grp-cat-accent) 70%,#8fd14a)}',
       '.oc-jauge b{font-weight:400;font-size:11pt;color:var(--anthra);text-align:right;min-width:11mm}',
       '.oc-jauge em{grid-column:1/-1;font-style:normal;font-size:8pt;color:var(--vert-f);margin-top:.6mm}',
       '.oc-prix{display:grid;grid-template-columns:1fr;text-align:right;white-space:nowrap}',
@@ -432,7 +436,7 @@
     }
     var nb = 0; d.rayons.forEach(function (x) { nb += x.items.length; });
     root.innerHTML = page('<div class="oc-barre-outils"><div><h1 class="v2-h1" style="margin:0 0 4px">Le catalogue</h1>' +
-      '<p>' + nb + ' produits parmi les plus commandés dans le réseau Intégral (' + esc(periodeTexte(d.R.periode)) + '), avec le nombre d’adhérentes OPSO Santé qui les commandent.</p></div>' +
+      '<p>' + nb + ' produits parmi les plus commandés dans le réseau Intégral (' + esc(periodeTexte(d.R.periode)) + '), avec le nombre d’adhérentes ' + gNom() + ' qui les commandent.</p></div>' +
       '<div class="oc-actions"><button class="v2-btn primary" id="oc-btn-pdf" onclick="V2.opsoCatalogue.pdf()">Télécharger en PDF</button>' +
       '<button class="v2-btn primary" id="oc-btn-csv" onclick="V2.opsoCatalogue.csv()">Télécharger en Excel (CSV)</button></div></div>' +
       '<div class="oc-apercu">' + pagesHtml(d).replace(/<section class="oc-page/g, '<div class="oc-cadre"><section class="oc-page').replace(/<\/section>/g, '</section></div>') + '</div>');
@@ -503,7 +507,7 @@
   }
   function csv() {
     var d = construire(); if (!d) return null;
-    var lignes = [['Rayon', 'Rang', 'Produit', 'CIP13', 'Part des pharmacies du réseau', 'dont OPSO', 'PPHT', 'Prix net', 'Disponibilité',
+    var lignes = [['Rayon', 'Rang', 'Produit', 'CIP13', 'Part des pharmacies du réseau', 'dont ' + gCourt(), 'PPHT', 'Prix net', 'Disponibilité',
       'Boîtes / mois - pharmacie qui le commande', 'Boîtes / mois - moyenne du réseau']];
     // Page « Les prix OPSO Santé » : prix net = prix OPSO ; pas de part du réseau ni de PPHT (la page ne les montre pas).
     if (d.prix) d.prix.sections.forEach(function (sec) {
@@ -523,7 +527,7 @@
       });
     });
     var per = periodeTexte(d.R.periode).replace(/^commandes de /, '').replace(/[\\/:*?"<>|]/g, ' ');
-    return { texte: '﻿' + lignes.map(function (l) { return l.map(champ).join(';'); }).join('\r\n') + '\r\n', nom: 'Catalogue OPSO - ' + per + '.csv' };
+    return { texte: '﻿' + lignes.map(function (l) { return l.map(champ).join(';'); }).join('\r\n') + '\r\n', nom: 'Catalogue ' + gCourt() + ' - ' + per + '.csv' };
   }
   function telechargerCsv() { telechargerTexte(csv()); }
   function telechargerTexte(c) {
@@ -551,7 +555,7 @@
   function telechargerPdf() {
     if (pdfEnCours) return;
     var d = construire(); if (!d) { V2.toast && V2.toast('Le catalogue charge encore, réessayez dans un instant', 'error'); return; }
-    pdfDePages({ html: pagesHtml(d), bouton: 'oc-btn-pdf', nom: 'Catalogue-Integral-Pharma-OPSO-Sante.pdf', fini: 'Catalogue téléchargé' });
+    pdfDePages({ html: pagesHtml(d), bouton: 'oc-btn-pdf', nom: 'Catalogue-Integral-Pharma-' + gFichier() + '.pdf', fini: 'Catalogue téléchargé' });
   }
   // Même PDF direct pour tout écran A4 de la famille (« Les prix », opso-prix.js, 20/10/2026) : on lui passe ses pages,
   // l'id de son bouton, le nom du fichier et le message de fin.
@@ -616,7 +620,7 @@
     csv: telechargerCsv,
     imprimer: function () {
       var avant = document.title;
-      document.title = 'Catalogue-Integral-Pharma-OPSO-Sante';
+      document.title = 'Catalogue-Integral-Pharma-' + gFichier();
       preparer().then(function (box) {
         if (!box) return;
         if (V2.opsoPrix && V2.opsoPrix.ajusterNoms) V2.opsoPrix.ajusterNoms(box);

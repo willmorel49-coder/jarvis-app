@@ -16,6 +16,8 @@
 (function () {
   "use strict";
   var V2 = window.V2 || (window.V2 = {});
+  // Couleur d'une variable de thème (--grp-*), pour les attributs SVG où var() ne fonctionne pas ; repli = valeur OPSO.
+  function cv(nom, repli) { try { var v = getComputedStyle(document.documentElement).getPropertyValue(nom).trim(); return v || repli; } catch (e) { return repli; } }
   V2.pages = V2.pages || {};
 
   var esc = V2.esc || function (s) { return String(s == null ? '' : s); };
@@ -198,7 +200,7 @@
   // Anneau de proportion (arc dessiné une fois à l'entrée).
   function anneau(frac, cls, clair) {
     var f = Math.max(0, Math.min(1, frac || 0));
-    var c0 = clair ? '#ffffff' : '#92b9a2', c1 = clair ? '#cbe4d6' : '#3e7f59';
+    var c0 = clair ? '#ffffff' : cv('--grp-vert-92b9a2', '#92b9a2'), c1 = clair ? cv('--grp-vert-cbe4d6', '#cbe4d6') : cv('--grp-accent-d', '#3e7f59');
     return '<svg class="opx-ring ' + (cls || '') + '" viewBox="0 0 120 120" aria-hidden="true">' +
       '<defs><linearGradient id="opxg' + (cls || 'r') + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + c0 + '"/><stop offset="1" stop-color="' + c1 + '"/></linearGradient></defs>' +
       '<circle class="t" cx="60" cy="60" r="50"/>' +
@@ -354,7 +356,7 @@
       moy: moy,
       html: '<div class="opx-ch" style="--n:' + n + '">' +
         '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
-          '<defs><linearGradient id="opxarea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4e9f70" stop-opacity=".22"/><stop offset="1" stop-color="#4e9f70" stop-opacity="0"/></linearGradient></defs>' +
+          '<defs><linearGradient id="opxarea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + cv('--grp-accent', '#4e9f70') + '" stop-opacity=".22"/><stop offset="1" stop-color="' + cv('--grp-accent', '#4e9f70') + '" stop-opacity="0"/></linearGradient></defs>' +
           '<path class="a" d="' + a + '"/><line class="m" x1="0" x2="' + W + '" y1="' + yMoy.toFixed(1) + '" y2="' + yMoy.toFixed(1) + '"/><path class="l" d="' + d + '"/></svg>' +
         '<div class="opx-ch-cols">' + cols + '</div></div>'
     };
