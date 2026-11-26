@@ -154,3 +154,13 @@ test('OPSO : pas de bloc `produits` → aucune page ; opso/v2 ne charge pas le m
   const i = ess.indexOf('groupements/v2/groupement-produits.js'), d = ess.indexOf('groupements/v2/groupement-documents.js'), b = ess.indexOf('groupements/v2/groupement-bord.js');
   assert.ok(d > 0 && i > d && b > i, 'ordre documents → produits → bord');
 });
+
+test('clé de catégorie hors lettres/chiffres/tiret : écartée, jamais insérée dans un onclick', async () => {
+  const piege = JSON.parse(JSON.stringify(FAUX));
+  piege.categories.push({ cle: "x');alert(1);('", titre: 'Piège' });
+  const { V2, racineEcran } = monter(CONF_ESS, { produits: piege });
+  V2.pages.produitsgroupement.render(racineEcran);
+  await attendre();
+  assert.doesNotMatch(racineEcran.innerHTML, /alert\(1\)|Piège/);
+  assert.match(racineEcran.innerHTML, /V2\.gprodCat\('chers'\)/);
+});

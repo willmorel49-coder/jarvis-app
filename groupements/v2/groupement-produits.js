@@ -174,7 +174,9 @@
     '</section>';
   }
   function corps(d) {
-    var cats = (d.categories || []).filter(function (c) { return c && c.cle; });
+    // Clé de catégorie insérée dans un onclick : lettres, chiffres, tiret seulement (revue de sécurité du 26/11/2026 ;
+    // esc() ne protège pas une chaîne JS dans un attribut, l'apostrophe y redevient une apostrophe).
+    var cats = (d.categories || []).filter(function (c) { return c && /^[a-z0-9_-]+$/i.test(String(c.cle || '')); });
     var lignes = d.lignes;
     var parCat = {};
     lignes.forEach(function (l) { parCat[l.cat] = (parCat[l.cat] || 0) + 1; });
