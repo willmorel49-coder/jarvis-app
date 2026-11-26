@@ -169,6 +169,23 @@
       D.loin.length + '</b> plus loin' + (D.sanspos.length ? ', <b>' + D.sanspos.length + '</b> sans position' : '') + '.';
   };
 
+  // Badges recouverts (calcul pur) : bx = boîtes {x, y, w, h, no} en pixels de la carte, ovl = boutons posés sur la carte, sz = {x, y}.
+  // Un badge est recouvert s'il sort du cadre, s'il est sous un bouton (plus de 30 % de sa boîte), ou si un badge plus bas (même hauteur :
+  // numéro plus petit) couvre plus de 30 % de la PLUS PETITE des deux boîtes (le seuil de la sonde). 26/11/2026 : la boîte était fixe
+  // (36 × 26) pour des badges de 42 et 50 px ; O19 restait posé sur O17 (1 chevauchement vu dans le Safari de Will chez OPSO).
+  C.recouverts = function (bx, ovl, sz) {
+    function surface(a, b) { var w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y); return w > 0 && h > 0 ? w * h : 0; }
+    return bx.map(function (b) {
+      if (b.x < 0 || b.y < 0 || b.x + b.w > sz.x || b.y + b.h > sz.y) return true;
+      if ((ovl || []).some(function (o) { return surface(b, o) > 0.3 * b.w * b.h; })) return true;
+      var yi = Math.round(b.y + b.h / 2);
+      return bx.some(function (o) {
+        if (o === b) return false; var yo = Math.round(o.y + o.h / 2);
+        return (yo > yi || (yo === yi && o.no < b.no)) && surface(b, o) > 0.3 * Math.min(b.w * b.h, o.w * o.h);
+      });
+    });
+  };
+
   if (typeof module !== 'undefined' && module.exports) module.exports = C;
 
   // ───────────────────────── Affichage (navigateur seulement) ─────────────────────────
@@ -274,28 +291,30 @@
       if (!carte || !carte._loaded || !items.length) return;
       var sz = carte.getSize(), pris = [], R0 = carte.getContainer().getBoundingClientRect();
       function inter(a, b) { return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h; }
-      function surface(a, b) { var w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y); return w > 0 && h > 0 ? w * h : 0; }
       var ovl = [];
       Array.prototype.forEach.call(carte.getContainer().querySelectorAll('.gtrn-btns, .leaflet-control-zoom, .leaflet-control-attribution, .gtrn-band.on'), function (x) {
         var r = x.getBoundingClientRect(); if (r.width) ovl.push({ x: r.left - R0.left - 4, y: r.top - R0.top - 4, w: r.width + 8, h: r.height + 8 });
       });
       pris = pris.concat(ovl);
       var HB = tactile() ? 22 : 18, VB = tactile() ? 22 : 13;
-      items.forEach(function (it) { var p = carte.latLngToContainerPoint(it.m.getLatLng()); it.p = p; it.b = { x: p.x - HB, y: p.y - VB, w: 2 * HB, h: 2 * VB }; pris.push(it.b); });
+      // 26/11/2026 : boîte MESURÉE sur le badge entier (42 et 50 px chez OPSO), jamais plus petite que l'ancienne boîte fixe ; sans marge :
+      // mesuré sur la vraie carte OPSO, la marge de 2 px réduisait 5 numéros de plus en points, sans rien gagner en lisibilité.
+      // Le petit point est retiré le temps de la mesure (même tâche : rien n'est peint entre-temps).
+      items.forEach(function (it) { var el = it.m.getElement(); if (el) el.classList.remove('gtrn-petit'); });
       items.forEach(function (it) {
-        var b = it.b, aire = 0.3 * b.w * b.h;
-        it.dessous = b.x < 0 || b.y < 0 || b.x + b.w > sz.x || b.y + b.h > sz.y || ovl.some(function (o) { return surface(b, o) > aire; }) || items.some(function (o) {
-          if (o === it) return false; var yo = Math.round(o.p.y), yi = Math.round(it.p.y);
-          return (yo > yi || (yo === yi && o.e.no < it.e.no)) && surface(b, o.b) > aire;
-        });
+        var el = it.m.getElement(), bb = el && el.querySelector('.gtrn-b'), p = carte.latLngToContainerPoint(it.m.getLatLng());
+        it.p = p; it.hb = Math.max(HB, bb ? bb.offsetWidth / 2 : 0); it.vb = Math.max(VB, bb ? bb.offsetHeight / 2 : 0);
+        it.b = { x: p.x - it.hb, y: p.y - it.vb, w: 2 * it.hb, h: 2 * it.vb, no: it.e.no }; pris.push(it.b);
       });
+      var rec = C.recouverts(items.map(function (it) { return it.b; }), ovl, sz);
+      items.forEach(function (it, i) { it.dessous = rec[i]; });
       // 26/11/2026 (passe WebKit : 138 badges en grappes chez OPSO) : un badge recouvert devient un petit point ; il reprend son numéro
       // au survol, à la sélection, ou dès qu'un zoom lui laisse la place.
       items.forEach(function (it) { var el = it.m.getElement(); if (el) el.classList.toggle('gtrn-petit', !!it.dessous); });
       items.forEach(function (it) {
         var el = it.m.getElement(); if (!el) return; var lab = el.querySelector('.gtrn-lb'); if (!lab) return;
         var lw = lab.offsetWidth, lh = lab.offsetHeight, p = it.p, g = 5, ox = p.x - el.offsetWidth / 2, oy = p.y - el.offsetHeight / 2;
-        var c = [{ x: p.x + HB + g, y: p.y - lh / 2 }, { x: p.x - HB - g - lw, y: p.y - lh / 2 }, { x: p.x - lw / 2, y: p.y - VB - g - lh }, { x: p.x - lw / 2, y: p.y + VB + g }];
+        var c = [{ x: p.x + it.hb + g, y: p.y - lh / 2 }, { x: p.x - it.hb - g - lw, y: p.y - lh / 2 }, { x: p.x - lw / 2, y: p.y - it.vb - g - lh }, { x: p.x - lw / 2, y: p.y + it.vb + g }];
         var ok = null;
         for (var i = 0; i < c.length && !ok && !it.dessous; i++) {
           var r = { x: c[i].x, y: c[i].y, w: lw, h: lh };

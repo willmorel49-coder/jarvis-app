@@ -202,3 +202,20 @@ test('passe WebKit du 26/11 : badge recouvert = petit point (numéro rendu à la
   assert.match(t, /tournées des 2 autres établissements du groupe pas encore reçues/);
   assert.doesNotMatch(t, /Autre en attente/);
 });
+
+test('chevauchement OPSO du 26/11 : un badge posé sur son voisin passe en petit point ; boîte mesurée, pas fixe ; 30 % de la plus petite boîte', () => {
+  const sz = { x: 800, y: 600 };
+  // Boîtes mesurées : un badge à trois chiffres de 50 × 26, son voisin de 42 × 26 un peu plus bas ; ils se recouvrent sur 18 × 19 = 342 px²,
+  // soit plus de 30 % de la petite boîte (328) mais moins de 30 % de la grande (390) : l'ancienne règle laissait le grand posé dessus.
+  const large = { x: 100, y: 100, w: 50, h: 26, no: 106 }, voisin = { x: 132, y: 107, w: 42, h: 26, no: 98 };
+  const r = C.recouverts([large, voisin], [], sz);
+  assert.deepEqual(r, [true, false], 'le badge du dessus est réduit en point, le voisin garde son numéro');
+  // Éloignés : aucun n'est réduit.
+  assert.deepEqual(C.recouverts([large, { ...voisin, x: 300 }], [], sz), [false, false]);
+  // Hors cadre et sous un bouton : réduit.
+  assert.deepEqual(C.recouverts([{ x: -3, y: 50, w: 36, h: 26, no: 1 }], [], sz), [true]);
+  assert.deepEqual(C.recouverts([{ x: 10, y: 10, w: 36, h: 26, no: 1 }], [{ x: 0, y: 0, w: 60, h: 40 }], sz), [true]);
+  // Le placement mesure le badge réel et passe par cette règle.
+  assert.match(MODULE, /it\.hb = Math\.max\(HB, bb \? bb\.offsetWidth \/ 2 : 0\)/);
+  assert.match(MODULE, /var rec = C\.recouverts\(items\.map\(function \(it\) \{ return it\.b; \}\), ovl, sz\);/);
+});
