@@ -538,6 +538,8 @@
     planOpso2027: 'Barème de RFA et ce qui nous reste (interne)',
     opsoprevision: 'Curseurs, simulations et suivi réel (interne)'
   };
+  // 26/11/2026 — écran « Documents » (groupement-documents.js, chargé AVANT ce fichier) : sa ligne vient du réglage.
+  if (V2.groupementDocs && V2.groupementDocs.tuileCourte) ESPACES[V2.groupementDocs.route] = V2.groupementDocs.tuileCourte;
   // Mini-aperçu de chaque espace : un chiffre réel ou une forme, jamais une phrase.
   function apercu(k, DATA) {
     if (k === 'opsobord') return '<b class="og-num">' + fmtEUR.format(Math.round(DATA.total / 1000)) + '</b><small>k€</small>';
@@ -552,6 +554,7 @@
       return n ? '<b class="og-num">' + fmtEUR.format(n) + '</b><small>réf.</small>' : '<span class="oa-pv-shape oa-pv-shape--o"><i></i><i></i><i></i></span>';
     }
     if (k === 'marketing') return '<span class="oa-pv-shape oa-pv-shape--m"><i></i><i></i><i></i></span>';
+    if (V2.groupementDocs && k === V2.groupementDocs.route && V2.groupementDocs.nb) return '<b class="og-num">' + V2.groupementDocs.nb + '</b><small>doc.</small>';
     return '';
   }
   function compacterEspaces(scope, DATA) {

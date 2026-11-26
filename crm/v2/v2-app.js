@@ -2531,6 +2531,11 @@
         if (V2.pages.opsoprix) {
           P.push({ k: 'opsoprix', cls: 'p2', accent: 'var(--pil-fiche)', ico: 'cat', tag: 'À part', t: 'Offre Privilège OPSO Santé', d: 'Pour chaque produit : le prix fabricant (PFHT), notre prix habituel sur facture et le prix négocié pour OPSO Santé. Mounjaro, Hélicidine, offre Sanofi et UPSA, Wegovy comprimés à venir.', go: 'Voir les prix' });
         }
+        // 26/11/2026 — écran « Documents » (groupements/v2/groupement-documents.js) : seulement si le réglage du groupement
+        // en porte (Essentiels Pharma ; OPSO n'en a pas). Textes lus dans le réglage.
+        if (V2.groupementDocs && V2.pages[V2.groupementDocs.route]) {
+          P.push({ k: V2.groupementDocs.route, cls: 'p2', accent: 'var(--pil-fiche)', ico: 'fiche', tag: '', t: 'Documents', d: V2.groupementDocs.tuile, go: 'Ouvrir les documents' });
+        }
       }
       // 11/09/2026 — espace ESCALE PHARMA. 24/09/2026 — Will : « features communes,
       // pas de distinctions » : même accueil, mêmes portes que le CRM ; seules les
@@ -2636,6 +2641,7 @@
     if (V2.enGroupement() && V2.pages.opsobord) PAGES.push(['opsobord', ((V2.groupement && V2.groupement.textes && V2.groupement.textes.bordPalette) || 'Tableau de bord · chiffre, rémunération, trajectoire'), 'grid']);
     if (V2.enGroupement() && V2.pages.opsopharmacies) PAGES.push(['opsopharmacies', 'Pharmacies · évolution par officine', 'pharma']);
     if (V2.enGroupement() && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
+    if (V2.enGroupement() && V2.groupementDocs && V2.pages[V2.groupementDocs.route]) PAGES.push([V2.groupementDocs.route, V2.groupementDocs.palette, 'fiche']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprix) PAGES.push(['opsoprix', 'Offre Privilège OPSO Santé · PFHT, prix habituel, prix négocié', 'cat']);
     // 19/11/2026 — Prévision du contrat : absente de la palette pour tout compte hors V2.PLAN_OPSO_ACCES
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprevision && V2.opsoPrevisionOk && V2.opsoPrevisionOk()) PAGES.push(['opsoprevision', 'Prévision du contrat · curseurs, simulations et suivi réel', 'grid']);

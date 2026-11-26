@@ -1129,3 +1129,40 @@
   #v2-root .opx-pp-r { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; }
   #v2-root .opx-pp-rk { display: grid; }
 }
+
+/* ── Écran « Documents » d'un groupement (groupement-documents.js, 26/11/2026) ──
+   Préfixe gdoc- (libre dans tout le dépôt le 26/11). Chez OPSO, aucun élément ne porte ces classes. */
+#v2-root .gdoc-page .opx-sub { min-height: 22px; }
+#v2-root .gdoc-dates { color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gdoc-dates .gdoc-d { color: var(--grp-ink); font-weight: 700; }
+#v2-root .gdoc-attente { opacity: .8; }
+#v2-root .gdoc-grille { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+#v2-root .gdoc-carte {
+  display: flex; flex-direction: column; gap: 8px; padding: 22px 22px 20px; border-radius: 24px;
+  border: 1px solid rgba(var(--grp-ombre-rgb),.07);
+  background: linear-gradient(200deg, var(--grp-vert-f0f6f3) 0%, #ffffff 42%, var(--grp-vert-fbfbfb) 100%);
+  box-shadow: 0 1px 0 #fff inset, 0 14px 30px -24px rgba(var(--grp-ombre-rgb),.35);
+}
+#v2-root .gdoc-ico { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; color: var(--grp-accent-d); background: rgba(var(--grp-accent-rgb),.10); }
+#v2-root .gdoc-t { margin: 6px 0 0; font-family: var(--grp-police-titre, 'Varela Round'), system-ui, sans-serif; font-weight: var(--grp-poids-titre, 400); font-size: 18px; line-height: 1.25; color: var(--grp-ink); }
+#v2-root .gdoc-p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gdoc-actions { display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 10px; }
+#v2-root .gdoc-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 8px 12px; text-align: left; cursor: pointer;
+  border-radius: 14px; border: 1px solid rgba(var(--grp-ombre-rgb),.12); background: #fff; color: var(--grp-ink);
+  font-family: inherit; font-size: 14px; font-weight: 600; line-height: 1.3;
+  transition: border-color .15s ease, color .15s ease, transform .15s ease;
+}
+#v2-root .gdoc-btn:hover, #v2-root .gdoc-btn:focus-visible { border-color: var(--grp-accent); color: var(--grp-accent-d); outline: none; }
+#v2-root .gdoc-btn:active { transform: translateY(1px); }
+#v2-root .gdoc-fmt { flex: none; min-width: 52px; padding: 4px 8px; border-radius: 8px; text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--grp-accent-d); background: rgba(var(--grp-accent-rgb),.10); }
+#v2-root .gdoc-btn-t { flex: 1; min-width: 0; }
+#v2-root .gdoc-fl { flex: none; display: grid; color: var(--grp-accent-d); }
+#v2-root .gdoc-refus { margin-top: 20px; padding: 20px 22px; border-radius: 20px; border: 1px solid rgba(var(--grp-ombre-rgb),.10); background: #fff; display: flex; flex-direction: column; gap: 4px; font-size: 15px; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gdoc-refus b { color: var(--grp-ink); }
+@media (max-width: 999px) { #v2-root .gdoc-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) {
+  #v2-root .gdoc-grille { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 14px; }
+  #v2-root .gdoc-carte { padding: 18px 16px 16px; border-radius: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { #v2-root .gdoc-btn { transition: none; } #v2-root .gdoc-btn:active { transform: none; } }

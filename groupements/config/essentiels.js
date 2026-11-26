@@ -34,5 +34,27 @@ window.V2_GROUPEMENT = {
     bordTuile: 'Le chiffre, le mois, ce qu\'elles achètent, la trajectoire',
     bordTuileLong: 'Le chiffre du groupement, le mois, ce que les adhérentes achètent et la trajectoire de l\'année.',
     bordPalette: 'Tableau de bord · chiffre, mois, trajectoire'
+  },
+  // Écran « Documents » (étape 6, 26/11/2026 ; écran commun groupements/v2/groupement-documents.js).
+  // Les fichiers vivent dans le seau privé `donnees-protegees`, dossier ci-dessous : verrou serveur
+  // essentiels_deux_comptes + jarvis_acces_essentiels() (Will, Pascale, Alexandre). Ici, seulement leurs NOMS.
+  // Les dates (« prix au », « valables jusqu'au », tarif relevé) se LISENT dans le fichier `dates`, jamais ici.
+  documents: {
+    dossier: 'essentiels/2026-11-26/',
+    dates: 'produits-app.json',
+    accesServeur: 'jarvis_acces_essentiels',
+    tuile: 'Le fichier de vos produits avec nos prix nets, et les deux catalogues en PDF ou en version web.',
+    tuileCourte: 'Prix nets et catalogues',
+    palette: 'Documents · prix nets, catalogues',
+    groupes: [
+      { titre: 'Vos produits et nos prix nets', d: 'Le fichier Excel, à trier et filtrer à votre façon.',
+        docs: [{ cle: 'essPrixExcel', fichier: 'prix-nets-integral.xlsx', type: 'fichier', format: 'Excel', bouton: 'Télécharger le fichier', titre: 'Vos produits et nos prix nets (Excel)' }] },
+      { titre: 'Catalogue réseau', d: 'Les volumes du réseau, le PPHT, notre prix net et l\'abandon de marge.',
+        docs: [{ cle: 'essResPdf', fichier: 'catalogue-reseau.pdf', type: 'pdf', format: 'PDF', bouton: 'Ouvrir le PDF', titre: 'Catalogue réseau (PDF)' },
+               { cle: 'essResHtml', fichier: 'catalogue-reseau.html', type: 'html', format: 'Web', bouton: 'Version interactive, avec filtres', titre: 'Catalogue réseau, version interactive' }] },
+      { titre: 'Catalogue adhérents', d: 'Sans volumes : le PPHT, le prix net HT et le prix net TTC, par ordre alphabétique.',
+        docs: [{ cle: 'essAdhPdf', fichier: 'catalogue-adherents.pdf', type: 'pdf', format: 'PDF', bouton: 'Ouvrir le PDF', titre: 'Catalogue adhérents (PDF)' },
+               { cle: 'essAdhHtml', fichier: 'catalogue-adherents.html', type: 'html', format: 'Web', bouton: 'Version interactive, avec filtres', titre: 'Catalogue adhérents, version interactive' }] }
+    ]
   }
 };
