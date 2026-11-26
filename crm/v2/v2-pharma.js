@@ -2697,7 +2697,7 @@
       (voir ? '<button type="button" class="fbs-a" onclick="V2.fbVoir()">' + fbIc('voir', 22) + '<span>Voir la liste</span></button>' : '') +
       '<button type="button" class="fbs-a" onclick="V2.fbPdf(\'' + k + '\')">' + fbIc('pdf', 22) + '<span>PDF</span></button>' +
       '<button type="button" class="fbs-a" onclick="V2.pharmaListXlsx(\'' + c.pid + '\',\'' + k + '\')">' + fbIc('excel', 22) + '<span>Excel</span></button></div>' +
-      '<button type="button" class="fbs-send" onclick="V2.fbEnvoyer(\'' + k + '\')">' + fbIc('envoi', 20) + 'Envoyer au pharmacien</button>';
+      '<button type="button" class="fbs-send" onclick="V2.fbEnvoyer(\'' + k + '\')">' + fbIc('envoi', 20) + 'Préparer l’envoi au pharmacien</button>';
     return { t: g ? 'Listing groupe d’achat' : 'Listing réseau Intégral', s: (g ? esc(c.grp) + ' · ' : '') + fbNb(n) + ' · ce qu’elle n’a pas encore', ic: g ? 'groupe' : 'reseau', h: h };
   }
   function fbFeuilleLogiciel() {
@@ -2711,7 +2711,7 @@
       '<li>' + fbIc('pdf', 20) + '<span>Mode d’emploi<small>PDF, à ouvrir en premier</small></span></li>' +
       '<li>' + fbIc('excel', 20) + '<span>Fichier à importer<small>CSV</small></span></li>' +
       '<li>' + fbIc('excel', 20) + '<span>Le même contenu<small>Excel</small></span></li></ul>' +
-      '<button type="button" class="fbs-send' + (c.sel ? '' : ' is-off') + '" id="fbs-lgo-go" aria-disabled="' + (c.sel ? 'false' : 'true') + '" onclick="V2.fbCatalogue()">' + fbIc('envoi', 20) + 'Envoyer au pharmacien</button>';
+      '<button type="button" class="fbs-send' + (c.sel ? '' : ' is-off') + '" id="fbs-lgo-go" aria-disabled="' + (c.sel ? 'false' : 'true') + '" onclick="V2.fbCatalogue()">' + fbIc('envoi', 20) + 'Préparer l’envoi au pharmacien</button>';
     return { t: 'Catalogue pour son logiciel', s: 'Les produits les plus commandés du réseau, hors génériques', ic: 'logiciel', h: h };
   }
   V2.fbOuvre = function (k, el) {
@@ -4122,7 +4122,7 @@
   // ══════════════════════════════════════════════════════════════════════════
   // 21/11/2026 (Will) : « Produits à proposer » retiré de la fiche — ces produits sont déjà dans les listes.
   var FDR_CH = [[1, 'Chiffres'], [2, 'Produits qui ne sont plus commandés'], [3, 'Par catégorie et tranche de prix'], [4, 'Génériqueurs et biosimilaires'], [5, 'Côté Intégral']];
-  var FDR_SOM = ['Chiffres', 'Plus commandés', 'Catégories', 'Génériqueurs', 'Intégral'];
+  var FDR_SOM = ['Chiffres', 'Ne commande plus', 'Catégories', 'Génériqueurs', 'Intégral'];   // 26/11/2026 — « Plus commandés » se lisait comme « Les plus commandés » (le contraire)
   function fdrRond(tag, attrs, ic, nom, pri) {
     return '<' + tag + ' class="fdr-rond' + (pri ? ' pri' : '') + '" ' + attrs + '><span class="fdr-rond-i">' + fbIc(ic, 22) + '</span><span class="fdr-rond-l">' + nom + '</span></' + tag + '>';
   }
@@ -4522,7 +4522,7 @@
   // 23/11/2026 (Will, après son essai sur iPhone) : « il faut vraiment qu'on remette les boutons pour listing produits integral et listing groupement
   // sur les fiches des officines et que ce soit voyant ». Ils avaient disparu avec la fiche « Le rendez-vous » (20/11 : fbBloc ne s'affiche plus),
   // seul « Choisir quoi lui transmettre » y menait encore. Deux grandes tuiles en tête de la fiche, dans les DEUX vues (des listes pour le pharmacien,
-  // sans aucune marge), qui ouvrent la feuille d'avant (fbFeuilleListe : 5 premiers, Voir la liste, PDF, Excel, Envoyer au pharmacien).
+  // sans aucune marge), qui ouvrent la feuille d'avant (fbFeuilleListe : 5 premiers, Voir la liste, PDF, Excel, Préparer l’envoi au pharmacien).
   // État posé par fbBloc (fbC, vérifié sur CETTE officine) ; officine d'un collègue ou aucun produit à proposer : pas de bloc. Préfixe CSS : flg-.
   function fdrListings(c) {
     var f = fbC;
@@ -8552,7 +8552,8 @@
       '.tx-ic-x{background:#1E7A45}',
       '.tx-ic-g{background:var(--ip-blue)}',
       '.tx-lgo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}',
-      '.tx-lgo-s{min-height:44px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 11px;font:inherit;font-size:16px;color:var(--ip-ink);background:var(--card-2);cursor:pointer}',
+      // 26/11/2026 — à l'ordinateur aussi : WebKit ignore min-height sur un menu natif (petit menu gris de 22 px) → apparence propre, 44 px, flèche dessinée (même dessin que v2.css sous 640 px)
+      '.tx-lgo-s{-webkit-appearance:none;appearance:none;height:44px;min-height:44px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 34px 8px 11px;font:inherit;font-size:16px;color:var(--ip-ink);background:var(--card-2);background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27 viewBox=%270 0 12 8%27%3E%3Cpath d=%27M1 1.5l5 5 5-5%27 fill=%27none%27 stroke=%27%235B6478%27 stroke-width=%271.8%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:12px 8px;cursor:pointer}',
       '.tx-lgo .tx-lgo-n{width:auto}',
       '.tx-lgo-pas{font-size:13px;font-weight:700;color:var(--info,#0050E6);cursor:pointer;min-height:44px;display:inline-flex;align-items:center;text-decoration:underline;text-underline-offset:3px}',
       '.tx-hint{display:block;margin-top:3px;font-size:13px;font-weight:600;color:var(--ip-ink)}',

@@ -1529,6 +1529,10 @@ html:root:root body .ofl-chip.ofl-chip-0, html:root:root body .ofl-chip.ofl-chip
 .ofl-off { cursor: default; }
 .ofl-filtres > .ofl-sel, html:root:root body .ofl .ofl-filtres > .v2-select { --ofl-w: 100%; width: 168px; }
 .ofl-filtres > .ofl-sel:nth-last-of-type(1) { width: 176px; }
+/* 26/11/2026 — à l'ordinateur, « Commercial : mon secteur » était coupé en « Commercial : mon » dans 168 px : le menu Commercial prend la largeur de son plus long choix (plafond 250 px) */
+html:root:root body .ofl .ofl-filtres > .v2-select:has(> #v2-pharma-comm) { --ofl-w: auto; width: auto; min-width: 168px; }
+/* … sans faire passer « Excel » et « Créer un prospect » à la ligne à 1280 (il manquait 11 px) : écarts de 6 px comme au téléphone, boutons à 12 px de bord */
+@media (min-width: 641px) { .ofl-filtres, .ofl-act { gap: 6px; } .ofl-act .ofl-btn { padding: 0 12px; } }
 .ofl-btn-x { padding: 0 11px; }
 .ofl-off:hover { border-color: var(--line); }
 .ofl-act { margin-left: auto; display: inline-flex; gap: 8px; }
@@ -2043,7 +2047,7 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
   .pha-wrap.fdr-on .flg-fl{display:none}
 }
 @media (prefers-reduced-motion:reduce){.pha-wrap.fdr-on .fdr .flg-b{transition:none}.pha-wrap.fdr-on .fdr .flg-b:hover{transform:none}}
-.fdr-dlg{border:0;padding:0;border-radius:var(--r-card,20px);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 48px);background:#FFFFFF;color:var(--ink,#1A2030);box-shadow:0 24px 64px rgba(11,27,63,.22);overflow:auto}
+.fdr-dlg{border:0;padding:0;margin:auto;border-radius:var(--r-card,20px);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 48px);background:#FFFFFF;color:var(--ink,#1A2030);box-shadow:0 24px 64px rgba(11,27,63,.22);overflow:auto}
 .fdr-dlg::backdrop{background:rgba(11,27,63,.38)}
 .fdr-dlg-h{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;background:linear-gradient(180deg,#F1F6FF,#FFFFFF);border-bottom:1px solid var(--line,#E3E8F2)}
 .fdr-dlg-h h2{margin:0;font:700 20px/1.25 Inter,system-ui,sans-serif;color:#0B1B3F}
