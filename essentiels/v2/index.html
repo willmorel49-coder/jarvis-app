@@ -30,14 +30,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://images.weserv.nl">
   <!-- Socle visuel V2 (partagé) → règles communes des groupements → thème Essentiels (valeurs) → feuille d'écrans commune -->
-  <link rel="stylesheet" href="../../crm/v2/v2.css?v=20261126v" />
-  <link rel="stylesheet" href="../../crm/v2/v2-pieces.css?v=20261126v" />
-  <link rel="stylesheet" href="../../groupements/v2/groupement-theme.css?v=20261126v" />
-  <link rel="stylesheet" href="essentiels-theme.css?v=20261126v" />
-  <link rel="stylesheet" href="../../groupements/v2/groupement-ux.css?v=20261126v" />
+  <link rel="stylesheet" href="../../crm/v2/v2.css?v=20261126w" />
+  <link rel="stylesheet" href="../../crm/v2/v2-pieces.css?v=20261126w" />
+  <link rel="stylesheet" href="../../groupements/v2/groupement-theme.css?v=20261126w" />
+  <link rel="stylesheet" href="essentiels-theme.css?v=20261126w" />
+  <link rel="stylesheet" href="../../groupements/v2/groupement-ux.css?v=20261126w" />
 
   <!-- Copie figée du dépôt (comme crm/v2 et phirst/v2), jamais la « dernière 2.x » d'un site externe (revue de sécurité, 26/11/2026). -->
-  <script src="../../crm/v2/vendor/supabase/supabase-2.112.2.min.js?v=20261126v"></script>
+  <script src="../../crm/v2/vendor/supabase/supabase-2.112.2.min.js?v=20261126w"></script>
   <script>
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
@@ -61,37 +61,37 @@
   <div class="v2" id="v2-root"></div>
 
   <!-- Socle (modules partagés crm/v2) -->
-  <script src="../../crm/v2/v2-icons.js?v=20261126v"></script>
+  <script src="../../crm/v2/v2-icons.js?v=20261126w"></script>
   <!-- Données officines + ventes WML : `wml-officines-data.js` n'est pas chargé ici (691 officines clientes et leurs
        ventes, protégées) : v2-app.js le demande au chargeur après connexion, comme pour JARVIS et OPSO. -->
   <!-- 26/11/2026 — réglage du groupement (couche commune OPSO / Essentiels Pharma) : AVANT v2-boot.js, qui le lit. -->
-  <script src="../../groupements/config/essentiels.js?v=20261126v"></script>
+  <script src="../../groupements/config/essentiels.js?v=20261126w"></script>
   <!-- Table de départ des groupements (GRP_DEPART = les 28 officines Essentiels) : le périmètre « alias » la lit. -->
-  <script src="../../crm/v2/groupement-alias.js?v=20261126v"></script>
+  <script src="../../crm/v2/groupement-alias.js?v=20261126w"></script>
   <!-- Comptes nommés (clé `essentiels` = garde d'écran) : AVANT v2-boot.js, qui les lit. -->
-  <script src="../../crm/v2/v2-comptes.js?v=20261126v"></script>
-  <script src="../../crm/v2/v2-boot.js?v=20261126v"></script>
+  <script src="../../crm/v2/v2-comptes.js?v=20261126w"></script>
+  <script src="../../crm/v2/v2-boot.js?v=20261126w"></script>
   <!-- Piliers : suivi groupement, SANS Offilog (Will, 26/11/2026 : Essentiels a sa propre centrale d'achat ; réglage offilog:false).
        PAS v2-marketing, PAS groupement-catalogue (ni leurs *-data OPSO), PAS opso-prix / opso-remuneration / opso-prevision* :
        propres à OPSO. -->
   <!-- Produits froids : sans eux, la famille « Froid » du Pilotage est sous-estimée -->
-  <script src="../../crm/v2/froid-data.js?v=20261126v"></script>
-  <script src="../../crm/v2/v2-pilotage.js?v=20261126v"></script>
+  <script src="../../crm/v2/froid-data.js?v=20261126w"></script>
+  <script src="../../crm/v2/v2-pilotage.js?v=20261126w"></script>
   <!-- Écran Documents (liste dans le réglage) : AVANT groupement-bord.js, qui lit sa ligne de tuile au chargement -->
-  <script src="../../groupements/v2/groupement-documents.js?v=20261126v"></script>
+  <script src="../../groupements/v2/groupement-documents.js?v=20261126w"></script>
   <!-- Page « Vos produits et nos prix nets » (étape 7) : lit le fichier protégé par l'écran Documents ; AVANT groupement-bord.js (ligne de tuile) -->
-  <script src="../../groupements/v2/groupement-produits.js?v=20261126v"></script>
+  <script src="../../groupements/v2/groupement-produits.js?v=20261126w"></script>
   <!-- Fiche « Le groupement » et page « Reco produits » (étape 8) : AVANT groupement-bord.js (ligne de tuile) ; la reco lit son fichier par l'écran Documents -->
-  <script src="../../groupements/v2/groupement-fiche.js?v=20261126v"></script>
-  <script src="../../groupements/v2/groupement-reco.js?v=20261126v"></script>
+  <script src="../../groupements/v2/groupement-fiche.js?v=20261126w"></script>
+  <script src="../../groupements/v2/groupement-reco.js?v=20261126w"></script>
   <!-- Carte « Nos tournées et les adhérentes » (étape 8b) : calculs purs du bloc T10 de JARVIS réutilisés, puis l'écran commun ; AVANT groupement-bord.js (ligne de tuile) -->
-  <script src="../../crm/v2/v2-tournees-essentiels.js?v=20261126v"></script>
-  <script src="../../groupements/v2/groupement-tournees.js?v=20261126v"></script>
+  <script src="../../crm/v2/v2-tournees-essentiels.js?v=20261126w"></script>
+  <script src="../../groupements/v2/groupement-tournees.js?v=20261126w"></script>
   <!-- Espace groupement (tableau de bord, le cap + le mois) -->
-  <script src="../../groupements/v2/groupement-bord.js?v=20261126v"></script>
+  <script src="../../groupements/v2/groupement-bord.js?v=20261126w"></script>
   <!-- Écrans Pharmacies + Meilleurs achats -->
-  <script src="../../groupements/v2/groupement-pharmacies.js?v=20261126v"></script>
+  <script src="../../groupements/v2/groupement-pharmacies.js?v=20261126w"></script>
   <!-- App (boot en dernier) -->
-  <script src="../../crm/v2/v2-app.js?v=20261126v"></script>
+  <script src="../../crm/v2/v2-app.js?v=20261126w"></script>
 </body>
 </html>
