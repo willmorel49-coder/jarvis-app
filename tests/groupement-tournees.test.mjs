@@ -203,7 +203,7 @@ test('passe WebKit du 26/11 : badge recouvert = petit point (numéro rendu à la
   assert.doesNotMatch(t, /Autre en attente/);
 });
 
-test('chevauchement OPSO du 26/11 : un badge posé sur son voisin passe en petit point ; boîte mesurée, pas fixe ; 30 % de la plus petite boîte', () => {
+test('chevauchement OPSO du 26/11 : un badge posé sur son voisin passe en petit point ; boîte mesurée, pas fixe (seuil resserré au contact : test suivant)', () => {
   const sz = { x: 800, y: 600 };
   // Boîtes mesurées : un badge à trois chiffres de 50 × 26, son voisin de 42 × 26 un peu plus bas ; ils se recouvrent sur 18 × 19 = 342 px²,
   // soit plus de 30 % de la petite boîte (328) mais moins de 30 % de la grande (390) : l'ancienne règle laissait le grand posé dessus.
@@ -218,6 +218,31 @@ test('chevauchement OPSO du 26/11 : un badge posé sur son voisin passe en petit
   // Le placement mesure le badge réel et passe par cette règle.
   assert.match(MODULE, /it\.hb = Math\.max\(HB, bb \? bb\.offsetWidth \/ 2 : 0\)/);
   assert.match(MODULE, /var rec = C\.recouverts\(items\.map\(function \(it\) \{ return it\.b; \}\), ovl, sz\);/);
+});
+
+test('numéros rognés du 26/11 (carte OPSO à 1280 px) : un badge qui touche un numéro ou un petit point posé par-dessus devient un point', () => {
+  const sz = { x: 800, y: 600 };
+  // 1. Moins de 30 % mais plus de 2 px : l'ancienne règle laissait le chiffre du dessous à moitié caché (O1 sous O2). Badges de 42 × 26 ;
+  //    le voisin, 4 px plus bas, est peint par-dessus et couvre 6 × 22 px (132 px², sous les 30 % de 1 092).
+  const dessous = { x: 100, y: 100, w: 42, h: 26, no: 17 }, dessus = { x: 136, y: 104, w: 42, h: 26, no: 36 };
+  assert.deepEqual(C.recouverts([dessous, dessus], [], sz), [true, false], 'le badge du dessous devient un point, celui du dessus garde son numéro');
+  // 2. Tolérance de 2 px (l'anneau blanc) : 2 px de contact laissent les deux numéros ; 3 px non.
+  assert.deepEqual(C.recouverts([dessous, { ...dessus, x: 140 }], [], sz), [false, false]);
+  assert.deepEqual(C.recouverts([dessous, { ...dessus, x: 139 }], [], sz), [true, false]);
+  // 3. Un petit point posé par-dessus cache aussi un chiffre : c, le plus bas, recouvre b (b devient un point au centre de b) ;
+  //    a ne touche pas c (1 px) mais touche le point de b (5 px) : a devient un point. Ne regarder que les numéros en laissait 53 chez OPSO.
+  const a = { x: 100, y: 115, w: 42, h: 26, no: 1 }, b = { x: 100, y: 130, w: 42, h: 26, no: 2 }, c = { x: 100, y: 140, w: 42, h: 26, no: 3 };
+  assert.deepEqual(C.recouverts([a, b, c], [], sz), [true, true, false]);
+  assert.equal(2 * C.DEMI_POINT, 14);
+  assert.match(lire('groupements/v2/groupement-ux.css'), /#v2-root \.gtrn-petit \.gtrn-mk \.gtrn-b \{[^}]*width: 14px; height: 14px;/, 'le point dessiné fait la taille de la règle');
+  // 4. Le contact se juge sur le badge DESSINÉ, pas sur la boîte de placement (44 × 44 au téléphone) : deux badges de 33 × 24
+  //    à 36 px l'un de l'autre ont des boîtes qui se recouvrent de 8 px, mais 3 px d'air entre eux : les deux gardent leur numéro.
+  const t1 = { x: 100, y: 100, w: 44, h: 44, no: 5, vw: 33, vh: 24 }, t2 = { x: 136, y: 100, w: 44, h: 44, no: 4, vw: 33, vh: 24 };
+  assert.deepEqual(C.recouverts([t1, t2], [], sz), [false, false]);
+  // 5. Égalité de hauteur : le plus petit numéro est peint dessus (ajouté en dernier), c'est l'autre qui devient un point.
+  assert.deepEqual(C.recouverts([{ ...t1, no: 9 }, { ...t2, x: 120, no: 8 }], [], sz), [true, false]);
+  // 6. Le placement passe le badge dessiné à la règle.
+  assert.match(MODULE, /no: it\.e\.no, vw: bb \? bb\.offsetWidth : 0, vh: bb \? bb\.offsetHeight : 0 \}/);
 });
 
 test('390 px, 26/11 : le bandeau ne cache jamais l’officine choisie (marge basse = bandeau réel, carte remontée si touchée dessous)', () => {

@@ -169,21 +169,31 @@
       D.loin.length + '</b> plus loin' + (D.sanspos.length ? ', <b>' + D.sanspos.length + '</b> sans position' : '') + '.';
   };
 
-  // Badges recouverts (calcul pur) : bx = boîtes {x, y, w, h, no} en pixels de la carte, ovl = boutons posés sur la carte, sz = {x, y}.
-  // Un badge est recouvert s'il sort du cadre, s'il est sous un bouton (plus de 30 % de sa boîte), ou si un badge plus bas (même hauteur :
-  // numéro plus petit) couvre plus de 30 % de la PLUS PETITE des deux boîtes (le seuil de la sonde). 26/11/2026 : la boîte était fixe
-  // (36 × 26) pour des badges de 42 et 50 px ; O19 restait posé sur O17 (1 chevauchement vu dans le Safari de Will chez OPSO).
+  // Badges recouverts (calcul pur) : bx = boîtes {x, y, w, h, no, vw, vh} en pixels de la carte (w × h = boîte de placement, au moins 36 × 26
+  // à l'ordinateur et 44 × 44 au téléphone ; vw × vh = badge DESSINÉ), ovl = boutons posés sur la carte, sz = {x, y}.
+  // On pose du dessus vers le dessous (Leaflet peint au-dessus le centre le plus bas ; à égalité le plus petit numéro, ajouté en dernier).
+  // Un badge devient un petit point s'il sort du cadre, s'il est sous un bouton (plus de 30 % de sa boîte), ou si son badge dessiné TOUCHE
+  // ce qui est déjà posé par-dessus lui, numéro gardé OU petit point (plus de TOL_BADGE px dans les deux sens : l'anneau blanc de 2 px peut toucher).
+  // 26/11/2026 : la règle de 30 % de la plus petite boîte laissait des chiffres à moitié cachés (carte OPSO à 1280 px : O1 sous O2, O48 sous O36,
+  // O17 sous O109 ; 9 numéros rognés mesurés dans le Safari de Will) ; ne regarder que les numéros en laissait 53 sous des petits points.
+  C.TOL_BADGE = 2; C.DEMI_POINT = 7; // petit point de 14 px (groupement-ux.css, .gtrn-petit)
   C.recouverts = function (bx, ovl, sz) {
+    var T = C.TOL_BADGE, P = C.DEMI_POINT;
     function surface(a, b) { var w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y); return w > 0 && h > 0 ? w * h : 0; }
-    return bx.map(function (b) {
-      if (b.x < 0 || b.y < 0 || b.x + b.w > sz.x || b.y + b.h > sz.y) return true;
-      if ((ovl || []).some(function (o) { return surface(b, o) > 0.3 * b.w * b.h; })) return true;
-      var yi = Math.round(b.y + b.h / 2);
-      return bx.some(function (o) {
-        if (o === b) return false; var yo = Math.round(o.y + o.h / 2);
-        return (yo > yi || (yo === yi && o.no < b.no)) && surface(b, o) > 0.3 * Math.min(b.w * b.h, o.w * o.h);
-      });
+    function touche(a, b) { return Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > T && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > T; }
+    function cy(b) { return Math.round(b.y + b.h / 2); }
+    var ordre = bx.map(function (b, i) { return i; }).sort(function (i, j) { return cy(bx[j]) - cy(bx[i]) || bx[i].no - bx[j].no; });
+    var res = [], poses = [];
+    ordre.forEach(function (i) {
+      var b = bx[i], mx = b.x + b.w / 2, my = b.y + b.h / 2, vw = b.vw || b.w, vh = b.vh || b.h;
+      var dessin = { x: mx - vw / 2, y: my - vh / 2, w: vw, h: vh };
+      var r = b.x < 0 || b.y < 0 || b.x + b.w > sz.x || b.y + b.h > sz.y ||
+        (ovl || []).some(function (o) { return surface(b, o) > 0.3 * b.w * b.h; }) ||
+        poses.some(function (o) { return touche(dessin, o); });
+      res[i] = r;
+      poses.push(r ? { x: mx - P, y: my - P, w: 2 * P, h: 2 * P } : dessin);
     });
+    return res;
   };
 
   // Le bandeau ne cache jamais l'officine choisie (calculs purs, en pixels de la carte). 26/11/2026, Safari de Will à 390 px : le bandeau
@@ -319,7 +329,7 @@
       items.forEach(function (it) {
         var el = it.m.getElement(), bb = el && el.querySelector('.gtrn-b'), p = carte.latLngToContainerPoint(it.m.getLatLng());
         it.p = p; it.hb = Math.max(HB, bb ? bb.offsetWidth / 2 : 0); it.vb = Math.max(VB, bb ? bb.offsetHeight / 2 : 0);
-        it.b = { x: p.x - it.hb, y: p.y - it.vb, w: 2 * it.hb, h: 2 * it.vb, no: it.e.no }; pris.push(it.b);
+        it.b = { x: p.x - it.hb, y: p.y - it.vb, w: 2 * it.hb, h: 2 * it.vb, no: it.e.no, vw: bb ? bb.offsetWidth : 0, vh: bb ? bb.offsetHeight : 0 }; pris.push(it.b);
       });
       var rec = C.recouverts(items.map(function (it) { return it.b; }), ovl, sz);
       items.forEach(function (it, i) { it.dessous = rec[i]; });
