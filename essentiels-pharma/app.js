@@ -2242,7 +2242,7 @@ function renderPharmacies() {
           <div class="section-header-title">
             <div class="section-header-icon" style="background:var(--bg3);color:var(--text2)">🎯</div>
             <div class="section-header-text">
-              <h2>Adhérents OPSO à activer en direct</h2>
+              <h2>Adhérents Essentiels Pharma à activer en direct</h2>
               <div class="section-header-sub">${filtered.length} pharmacie${filtered.length>1?'s':''} adhérente${filtered.length>1?'s':''} Essentiels Pharma qui ne commandent pas (encore) directement chez Intégral Pharma</div>
             </div>
           </div>
@@ -3778,7 +3778,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid #2F7D1A">
           <div class="card-header">
             <div>
-              <div class="card-title">📦 Groupement OPSO — ${wmlPeriod()}</div>
+              <div class="card-title">📦 Groupement Essentiels Pharma — ${wmlPeriod()}</div>
               <div class="card-subtitle">Achats totaux via le groupement · taux de conversion en commande directe IP</div>
             </div>
             ${convPct !== null ? `<div style="text-align:right">
