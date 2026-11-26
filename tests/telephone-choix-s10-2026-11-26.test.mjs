@@ -116,6 +116,7 @@ test('au-dessus de 380 px et à l\'ordinateur, rien ; Phirst et OPSO ne reçoive
   assert.match(ailleurs('phirst/v2/index.html'), /<html lang="fr" data-teinte="phirst">/);
   assert.match(P, /^html:not\(\[data-teinte\]\) /);
   // OPSO : body.bnav-on n'y est jamais posée (V2.tbMaj sort avant), et sa page ne charge pas v2-tel.css
-  assert.match(app, /if \(!V2\.user \|\| \(window\.V2_BRAND && window\.V2_BRAND\.opso\) \|\| [^{]*!document\.querySelector\('link\[href\*="v2-tel\.css"\]'\)\) \{\s*if \(n && n\.parentNode\) n\.parentNode\.removeChild\(n\);\s*b\.classList\.remove\('bnav-on'\); return;/);
+  // (26/11/2026 : la garde lit le réglage de groupement commun, V2.enGroupement(), qui couvre OPSO — commit 9499b7053)
+  assert.match(app, /if \(!V2\.user \|\| V2\.enGroupement\(\) \|\| [^{]*!document\.querySelector\('link\[href\*="v2-tel\.css"\]'\)\) \{\s*if \(n && n\.parentNode\) n\.parentNode\.removeChild\(n\);\s*b\.classList\.remove\('bnav-on'\); return;/);
   assert.doesNotMatch(ailleurs('opso/v2/index.html'), /v2-tel\.css/);
 });
