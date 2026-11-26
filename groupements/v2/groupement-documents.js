@@ -84,6 +84,25 @@
     });
   }
 
+  // Tout autre fichier JSON privé du même dossier (étape 8 : reco-produits.json) : même seau, même lecture, une fois par session.
+  var _fichiers = {};
+  function lireFichier(c, nom) {
+    if (_fichiers[nom]) return Promise.resolve(_fichiers[nom]);
+    if (!nom || !c.storage) return Promise.resolve(null);
+    return c.storage.from(SEAU).download(dossier + nom).then(function (r) {
+      if (!r || r.error || !r.data) return null;
+      return r.data.text();
+    }).then(function (t) {
+      if (!t) return null;
+      var j = JSON.parse(t);
+      if (j && typeof j === 'object') _fichiers[nom] = j;
+      return _fichiers[nom] || null;
+    }).catch(function (e) {
+      try { console.warn('[documents] fichier illisible (' + nom + ') :', e && e.message); } catch (x) {}
+      return null;
+    });
+  }
+
   function charger() {
     if (_etat.pret) return Promise.resolve(_etat);
     if (_prom) return _prom;
@@ -161,6 +180,7 @@
     palette: CFG.palette || 'Documents',
     charger: charger,
     produits: function () { var c = client(); return c ? lireProduits(c) : Promise.resolve(null); },
+    fichier: function (nom) { var c = client(); return c ? lireFichier(c, nom) : Promise.resolve(null); },
     etat: function () { return _etat; }
   };
 })();

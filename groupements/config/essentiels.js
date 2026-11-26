@@ -4,7 +4,7 @@
    Chargé par essentiels/v2/index.html AVANT v2-boot.js, qui le lit (V2.groupement,
    V2.enGroupement(), V2.conditionsCachees(), V2.accesGroupement()).
    Modèle : groupements/config/opso.js.
-   Rien de chiffré ni de nominatif ici : ce fichier est public.
+   Ce fichier est public : aucun prix, aucun volume, aucun total. Seules les mentions publiques du groupement (bloc `fiche`, déjà dans l'ancienne app) y sont écrites.
    ════════════════════════════════════════════════════════════════ */
 window.V2_GROUPEMENT = {
   id: 'essentiels',
@@ -38,6 +38,53 @@ window.V2_GROUPEMENT = {
     bordTuile: 'Le chiffre, le mois, ce qu\'elles achètent, la trajectoire',
     bordTuileLong: 'Le chiffre du groupement, le mois, ce que les adhérentes achètent et la trajectoire de l\'année.',
     bordPalette: 'Tableau de bord · chiffre, mois, trajectoire'
+  },
+  // Fiche « Le groupement » (étape 8, 26/11/2026 ; écran commun groupements/v2/groupement-fiche.js).
+  // Contenu recopié de la fiche publique de l'ancienne app (déjà dans ce dépôt), SANS leur centrale d'achat (choix de Will : elle n'apparaît pas dans l'app)
+  // et SANS cotisation. Le nombre d'officines n'est pas écrit ici : il est CALCULÉ sur le périmètre réel de l'app.
+  // Les trois chiffres du groupement sont donnés « tels qu'annoncés », avec leur mention de source.
+  fiche: {
+    titre: 'Le groupement',
+    tuile: 'La fiche d\'Essentiels Pharma : qui ils sont, leurs dirigeants, leurs activités et les officines que vous suivez, département par département.',
+    tuileCourte: 'Qui ils sont et leurs officines',
+    palette: 'Le groupement · fiche, dirigeants, officines',
+    ancien: 'ex-Le Gall Santé Services, fondé le 27/01/1997 par Christophe Le Gall',
+    baseline: 'Le réflexe santé',
+    site: 'essentiels-pharma.fr',
+    siege: 'Beaucouzé (49)',
+    dirigeants: [
+      { nom: 'François Tesson', fn: 'Président' },
+      { nom: 'Christophe Le Gall', fn: 'Fondateur / ex-Président' },
+      { nom: 'Oana Dantec', fn: 'Directrice générale' }
+    ],
+    contact: { tel: '06.24.82.33.48', email: 'c.boultareau@essentiels-pharma.fr' },
+    annonces: {
+      titre: 'Chiffres annoncés par le groupement',
+      mention: 'Selon Essentiels Pharma, relevé de juillet 2026',
+      lignes: [
+        { l: 'Pharmaciens', v: '47' },
+        { l: 'Salariés', v: '181' },
+        { l: 'Chiffre d\'affaires du réseau', v: '45 M€ par an' }
+      ]
+    },
+    activitesTitre: 'Les activités',
+    activites: [
+      { t: 'Enseignes fédérées', d: 'Prestige · Premium · Premium+ · Optimum' },
+      { t: 'Indépendants groupés', d: 'Formule Découverte, sans enseigne ni engagement' },
+      { t: 'Prestataire laboratoires', d: 'Services à valeur ajoutée' }
+    ],
+    departements: { '27': 'Eure', '44': 'Loire-Atlantique', '49': 'Maine-et-Loire', '53': 'Mayenne', '72': 'Sarthe', '75': 'Paris', '79': 'Deux-Sèvres', '92': 'Hauts-de-Seine' }
+  },
+  // Page « Reco produits » (étape 8 ; écran commun groupements/v2/groupement-reco.js). Les listes, les prix et les dates se LISENT dans le
+  // fichier privé `fichier` (même dossier du seau que les documents, même accès serveur) : rien de chiffré ici.
+  reco: {
+    titre: 'Reco produits',
+    sousTitre: 'Ce que les pharmacies Intégral Pharma commandent déjà, classé par nombre de pharmacies, à nos prix nets.',
+    fichier: 'reco-produits.json',
+    tuile: 'Les produits que les pharmacies Intégral Pharma commandent déjà, classés par nombre de pharmacies, à nos prix nets.',
+    tuileCourte: 'Classés par nombre de pharmacies',
+    palette: 'Reco produits · classés par nombre de pharmacies',
+    note: 'Prix nets hors taxes. « Pharmacies » : nombre d\'officines Intégral Pharma qui commandent déjà le produit. Génériques et non remboursés : prix net seul.'
   },
   // Page « Vos produits et nos prix nets » (étape 7, 26/11/2026 ; écran commun groupements/v2/groupement-produits.js).
   // Les lignes, les totaux et les dates se LISENT dans le fichier protégé `documents.dates` (produits-app.json) : rien de chiffré ici.

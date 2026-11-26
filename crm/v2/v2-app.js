@@ -2540,6 +2540,13 @@
         if (V2.groupementProduits && V2.pages[V2.groupementProduits.route]) {
           P.push({ k: V2.groupementProduits.route, cls: 'p3', accent: 'var(--pil-cat)', ico: 'euro', tag: '', t: V2.groupementProduits.titre, d: V2.groupementProduits.tuile, go: 'Voir les produits' });
         }
+        // 26/11/2026 — fiche « Le groupement » et page « Reco produits » (étape 8) : même règle, réglage du groupement (OPSO : aucun des deux).
+        if (V2.groupementFiche && V2.pages[V2.groupementFiche.route]) {
+          P.push({ k: V2.groupementFiche.route, cls: 'p2', accent: 'var(--pil-fiche)', ico: 'fiche', tag: '', t: V2.groupementFiche.titre, d: V2.groupementFiche.tuile, go: 'Voir la fiche' });
+        }
+        if (V2.groupementReco && V2.pages[V2.groupementReco.route]) {
+          P.push({ k: V2.groupementReco.route, cls: 'p3', accent: 'var(--pil-cat)', ico: 'cat', tag: '', t: V2.groupementReco.titre, d: V2.groupementReco.tuile, go: 'Voir la reco' });
+        }
       }
       // 11/09/2026 — espace ESCALE PHARMA. 24/09/2026 — Will : « features communes,
       // pas de distinctions » : même accueil, mêmes portes que le CRM ; seules les
@@ -2647,6 +2654,8 @@
     if (V2.enGroupement() && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
     if (V2.enGroupement() && V2.groupementDocs && V2.pages[V2.groupementDocs.route]) PAGES.push([V2.groupementDocs.route, V2.groupementDocs.palette, 'fiche']);
     if (V2.enGroupement() && V2.groupementProduits && V2.pages[V2.groupementProduits.route]) PAGES.push([V2.groupementProduits.route, V2.groupementProduits.palette, 'cat']);
+    if (V2.enGroupement() && V2.groupementFiche && V2.pages[V2.groupementFiche.route]) PAGES.push([V2.groupementFiche.route, V2.groupementFiche.palette, 'fiche']);
+    if (V2.enGroupement() && V2.groupementReco && V2.pages[V2.groupementReco.route]) PAGES.push([V2.groupementReco.route, V2.groupementReco.palette, 'cat']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprix) PAGES.push(['opsoprix', 'Offre Privilège OPSO Santé · PFHT, prix habituel, prix négocié', 'cat']);
     // 19/11/2026 — Prévision du contrat : absente de la palette pour tout compte hors V2.PLAN_OPSO_ACCES
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprevision && V2.opsoPrevisionOk && V2.opsoPrevisionOk()) PAGES.push(['opsoprevision', 'Prévision du contrat · curseurs, simulations et suivi réel', 'grid']);

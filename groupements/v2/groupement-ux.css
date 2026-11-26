@@ -1234,3 +1234,106 @@
   #v2-root .gprod-num { align-items: flex-start; text-align: left; }
   #v2-root .gprod-num::before { content: attr(data-l); font-size: 12px; font-weight: 600; color: var(--muted, var(--grp-vert-5d6577)); }
 }
+
+/* ═══ Fiche « Le groupement » (groupement-fiche.js, option B étape 8, 26/11/2026) ═══
+   Préfixe gfic- (libre dans tout le dépôt le 26/11). Chez OPSO, aucun élément ne porte ces classes (pas de bloc `fiche` dans son réglage). */
+#v2-root .gfic-hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin: 18px 0 16px; padding: 24px 26px; border-radius: 24px; border: 1px solid rgba(var(--grp-ombre-rgb),.07); background: linear-gradient(200deg, rgba(var(--grp-accent-rgb),.12) 0%, #ffffff 60%); box-shadow: 0 1px 0 #fff inset, 0 14px 30px -24px rgba(var(--grp-ombre-rgb),.35); }
+#v2-root .gfic-hero-t { min-width: 0; flex: 1 1 320px; }
+#v2-root .gfic-nom { margin: 0; font-family: var(--grp-police-titre, 'Varela Round'), system-ui, sans-serif; font-weight: var(--grp-poids-titre, 400); font-size: 26px; line-height: 1.15; color: var(--grp-ink); }
+#v2-root .gfic-ancien { margin: 6px 0 0; font-size: 14px; line-height: 1.45; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gfic-hero-l { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 14px; }
+#v2-root .gfic-baseline { padding: 6px 14px; border-radius: 999px; font-weight: 700; color: var(--grp-accent-d); background: rgba(var(--grp-accent-rgb),.10); }
+#v2-root .gfic-site { font-weight: 700; color: var(--grp-accent-d); text-decoration: underline; text-underline-offset: 3px; }
+#v2-root .gfic-siege { color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gfic-ks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+#v2-root .gfic-ks-a { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 10px 0 0; }
+#v2-root .gfic-k { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 16px 16px 14px; border-radius: 20px; border: 1px solid rgba(var(--grp-ombre-rgb),.07); background: linear-gradient(200deg, var(--grp-vert-f0f6f3) 0%, #ffffff 46%, var(--grp-vert-fbfbfb) 100%); box-shadow: 0 1px 0 #fff inset, 0 14px 30px -24px rgba(var(--grp-ombre-rgb),.35); }
+#v2-root .gfic-kv { font-family: var(--grp-police-titre, 'Varela Round'), system-ui, sans-serif; font-weight: var(--grp-poids-titre, 400); font-size: 24px; line-height: 1.15; color: var(--grp-ink); overflow-wrap: anywhere; }
+#v2-root .gfic-kl { font-size: 13px; line-height: 1.35; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gfic-k.is-fort { border-color: rgba(var(--grp-accent-rgb),.28); background: linear-gradient(200deg, rgba(var(--grp-accent-rgb),.12) 0%, #ffffff 58%); }
+#v2-root .gfic-k.is-fort .gfic-kv { color: var(--grp-accent-d); }
+#v2-root .gfic-carte { display: flex; flex-direction: column; gap: 8px; min-width: 0; margin: 0 0 16px; padding: 20px 22px; border-radius: 24px; border: 1px solid rgba(var(--grp-ombre-rgb),.07); background: #fff; box-shadow: 0 14px 30px -26px rgba(var(--grp-ombre-rgb),.35); }
+#v2-root .gfic-annonces { gap: 0; }
+#v2-root .gfic-t { margin: 0; font-family: var(--grp-police-titre, 'Varela Round'), system-ui, sans-serif; font-weight: var(--grp-poids-titre, 400); font-size: 18px; line-height: 1.25; color: var(--grp-ink); }
+#v2-root .gfic-t-sec { margin: 0 2px 10px; }
+#v2-root .gfic-mention { margin: 12px 0 0; font-size: 13px; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gfic-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+#v2-root .gfic-liste, #v2-root .gfic-offs { list-style: none; margin: 0; padding: 0; }
+#v2-root .gfic-dir { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid rgba(var(--grp-ombre-rgb),.08); }
+#v2-root .gfic-dir:first-child { border-top: 0; }
+#v2-root .gfic-ini { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--grp-accent-d); background: rgba(var(--grp-accent-rgb),.12); }
+#v2-root .gfic-dir-t { display: flex; flex-direction: column; min-width: 0; font-size: 14px; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gfic-dir-t b { color: var(--grp-ink); font-size: 15px; }
+#v2-root .gfic-ct { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; border-top: 1px solid rgba(var(--grp-ombre-rgb),.08); font-size: 15px; overflow-wrap: anywhere; }
+#v2-root .gfic-ct:first-of-type { border-top: 0; }
+#v2-root .gfic-ct-l { font-size: 13px; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gfic-ct a { color: var(--grp-accent-d); font-weight: 600; }
+#v2-root .gfic-vide { margin: 0; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gfic-bloc { margin: 8px 0 22px; }
+#v2-root .gfic-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+#v2-root .gfic-act { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 20px; border: 1px solid rgba(var(--grp-ombre-rgb),.07); background: var(--grp-pale); font-size: 14px; line-height: 1.4; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gfic-act b { font-size: 15px; color: var(--grp-ink); }
+#v2-root .gfic-dep { margin: 0 0 18px; }
+#v2-root .gfic-dep-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 2px 6px; }
+#v2-root .gfic-dep-t { margin: 0; font-size: 15px; font-weight: 700; color: var(--grp-accent-d); }
+#v2-root .gfic-dep-n { font-size: 14px; color: var(--muted, var(--grp-vert-5d6577)); font-variant-numeric: tabular-nums; }
+#v2-root .gfic-offs { border-radius: 20px; border: 1px solid rgba(var(--grp-ombre-rgb),.08); background: #fff; overflow: hidden; }
+#v2-root .gfic-off { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 11px 18px; border-top: 1px solid rgba(var(--grp-ombre-rgb),.08); }
+#v2-root .gfic-off:first-child { border-top: 0; }
+#v2-root .gfic-off-n { font-size: 15px; font-weight: 600; color: var(--grp-ink); overflow-wrap: anywhere; }
+#v2-root .gfic-off-v { margin-left: auto; font-size: 13px; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gfic-pastille { padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; color: var(--grp-accent-d); background: rgba(var(--grp-accent-rgb),.12); }
+@media (max-width: 999px) { #v2-root .gfic-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) {
+  #v2-root .gfic-hero { padding: 18px 16px; border-radius: 20px; }
+  #v2-root .gfic-nom { font-size: 22px; }
+  #v2-root .gfic-duo, #v2-root .gfic-acts { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  #v2-root .gfic-ks-a { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #v2-root .gfic-carte { padding: 18px 16px; border-radius: 20px; }
+  #v2-root .gfic-off { padding: 11px 14px; }
+  #v2-root .gfic-off-v { margin-left: 0; flex-basis: 100%; }
+}
+
+/* ═══ Page « Reco produits » (groupement-reco.js, option B étape 8, 26/11/2026) ═══
+   Préfixe greco- (libre dans tout le dépôt le 26/11). Chez OPSO, aucun élément ne porte ces classes (pas de bloc `reco` dans son réglage).
+   Ordi : tableau (5 colonnes, 6 avec l'abandon de marge) ; téléphone : une carte par produit, chaque chiffre avec son libellé (data-l). */
+#v2-root .greco-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
+#v2-root .greco-head-t { min-width: 0; flex: 1 1 320px; }
+#v2-root .greco-dates { margin-top: 6px; font-size: 14px; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .greco-dates .greco-d { color: var(--grp-ink); font-weight: 700; }
+#v2-root .greco-imprimer { flex: none; min-height: 46px; display: inline-flex; align-items: center; gap: 8px; padding: 0 22px; font-size: 15px; font-weight: 700; }
+#v2-root .greco-attente { margin: 24px 0; color: var(--muted, var(--grp-vert-5d6577)); font-size: 15px; }
+#v2-root .greco-tabs { margin-top: 14px; }
+#v2-root .greco-carte { margin: 6px 0 12px; }
+#v2-root .greco-t { margin: 0 2px 4px; font-family: var(--grp-police-titre, 'Varela Round'), system-ui, sans-serif; font-weight: var(--grp-poids-titre, 400); font-size: 18px; line-height: 1.25; color: var(--grp-ink); }
+#v2-root .greco-note-l { margin: 0 2px 10px; font-size: 14px; line-height: 1.45; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .greco-table { border-radius: 20px; border: 1px solid rgba(var(--grp-ombre-rgb),.08); background: #fff; box-shadow: 0 14px 30px -26px rgba(var(--grp-ombre-rgb),.35); overflow: hidden; }
+#v2-root .greco-li { display: grid; grid-template-columns: 44px minmax(0, 2.8fr) repeat(3, minmax(0, 1fr)); gap: 12px; align-items: center; padding: 12px 18px; border-top: 1px solid rgba(var(--grp-ombre-rgb),.08); }
+#v2-root .greco-li.has-aban { grid-template-columns: 44px minmax(0, 2.6fr) repeat(4, minmax(0, 1fr)); }
+#v2-root .greco-li:first-child { border-top: 0; }
+#v2-root .greco-li:not(.greco-th):hover { background: rgba(var(--grp-accent-rgb),.04); }
+#v2-root .greco-th { padding-top: 10px; padding-bottom: 10px; background: var(--grp-pale); font-size: 13px; font-weight: 700; color: var(--grp-ink-2); }
+#v2-root .greco-c { min-width: 0; }
+#v2-root .greco-rang { font-size: 14px; color: var(--muted, var(--grp-vert-5d6577)); font-variant-numeric: tabular-nums; text-align: right; }
+#v2-root .greco-nom { display: flex; flex-direction: column; gap: 2px; }
+#v2-root .greco-th .greco-nom { display: block; }
+#v2-root .greco-n { font-size: 15px; font-weight: 700; color: var(--grp-ink); overflow-wrap: anywhere; }
+#v2-root .greco-m { font-size: 13px; color: var(--muted, var(--grp-vert-5d6577)); overflow-wrap: anywhere; }
+#v2-root .greco-num { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; color: var(--grp-ink); }
+#v2-root .greco-num b { font-weight: 600; }
+#v2-root .greco-ph b { font-weight: 800; }
+#v2-root .greco-net b { font-weight: 800; color: var(--grp-accent-d); }
+#v2-root .greco-vide { color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .greco-rien { margin: 18px 2px; color: var(--muted, var(--grp-vert-5d6577)); font-size: 15px; }
+#v2-root .greco-note { margin: 4px 2px 24px; font-size: 13px; line-height: 1.5; color: var(--muted, var(--grp-vert-5d6577)); }
+@media (max-width: 720px) {
+  #v2-root .greco-head { align-items: stretch; }
+  #v2-root .greco-imprimer { width: 100%; justify-content: center; }
+  #v2-root .greco-th { display: none; }
+  #v2-root .greco-li, #v2-root .greco-li.has-aban { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; padding: 14px 16px; align-items: start; }
+  #v2-root .greco-li:nth-child(2) { border-top: 0; }
+  #v2-root .greco-rang { grid-column: 1 / -1; text-align: left; font-weight: 700; }
+  #v2-root .greco-nom { grid-column: 1 / -1; }
+  #v2-root .greco-num { text-align: left; }
+  #v2-root .greco-num::before { content: attr(data-l); display: block; font-size: 12px; font-weight: 600; color: var(--muted, var(--grp-vert-5d6577)); }
+}
