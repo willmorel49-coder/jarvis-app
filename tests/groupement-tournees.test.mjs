@@ -191,3 +191,14 @@ test('style : toutes les règles gtrn- sont bornées à #v2-root, sans effet int
   regles.forEach(l => assert.match(l.trim(), /^(@media[^{]*\{\s*)?#v2-root /, l));
   assert.doesNotMatch(bloc, /backdrop-filter|filter:\s*blur/);
 });
+
+test('passe WebKit du 26/11 : badge recouvert = petit point (numéro rendu à la sélection) ; établissements à recevoir comptés, pas énumérés', () => {
+  assert.match(MODULE, /classList\.toggle\('gtrn-petit', !!it\.dessous\)/);
+  const css = lire('groupements/v2/groupement-ux.css');
+  assert.match(css, /#v2-root \.gtrn-petit \.gtrn-mk \.gtrn-b \{[^}]*font-size: 0;/);
+  assert.match(css, /#v2-root \.gtrn-petit\.gtrn-on \.gtrn-mk \.gtrn-b \{[^}]*font-size: 12px;/);
+  const T2 = JSON.parse(JSON.stringify(T)); T2.etablissements.push({ s: 'CCC', nom: 'Autre en attente', ville: 'Là', tournees: false });
+  const D2 = C.calculer(T2, PF, ADH, WML), t = texte(C.prevision(D2.adh.filter(e => e.cip === '3000003')[0], D2));
+  assert.match(t, /tournées des 2 autres établissements du groupe pas encore reçues/);
+  assert.doesNotMatch(t, /Autre en attente/);
+});

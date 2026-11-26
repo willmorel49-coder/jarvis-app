@@ -151,8 +151,9 @@
     }
     if (e.statut === 'loin') {
       var r = 'À ' + km(e.dQui) + ' de la ' + esc(e.qui) + ', la plus proche de nos tournées';
-      var aR = (D.aRecevoir || []).map(function (s) { return esc(s.nom); });
-      if (aR.length) r += ' · tournées des autres établissements du groupe pas encore reçues (' + aR.join(', ') + ')';
+      var aR = D.aRecevoir || [];
+      if (aR.length === 1) r += ' · tournées de ' + esc(aR[0].nom) + ' pas encore reçues';
+      else if (aR.length) r += ' · tournées des ' + aR.length + ' autres établissements du groupe pas encore reçues';
       var v = e.voisines || [];
       if (v.length) r += ' · clientes Intégral Pharma les plus proches : ' + v.map(function (o) { return esc(o.nom) + ' (' + esc(o.ville) + ', ' + (o.approx || e.approx ? (o.km < 1 ? 'moins de 1' + NBSP + 'km' : '≈' + NBSP + km(o.km)) + ', position approximative' : km(o.km)) + (o.livreePar ? ', livrée par la ' + esc(o.livreePar) : '') + ')'; }).join(', ');
       else r += ' · aucune cliente Intégral Pharma connue à proximité';
@@ -288,6 +289,9 @@
           return (yo > yi || (yo === yi && o.e.no < it.e.no)) && surface(b, o.b) > aire;
         });
       });
+      // 26/11/2026 (passe WebKit : 138 badges en grappes chez OPSO) : un badge recouvert devient un petit point ; il reprend son numéro
+      // au survol, à la sélection, ou dès qu'un zoom lui laisse la place.
+      items.forEach(function (it) { var el = it.m.getElement(); if (el) el.classList.toggle('gtrn-petit', !!it.dessous); });
       items.forEach(function (it) {
         var el = it.m.getElement(); if (!el) return; var lab = el.querySelector('.gtrn-lb'); if (!lab) return;
         var lw = lab.offsetWidth, lh = lab.offsetHeight, p = it.p, g = 5, ox = p.x - el.offsetWidth / 2, oy = p.y - el.offsetHeight / 2;
@@ -362,7 +366,7 @@
         try {
           var b = L.latLngBounds([]);
           Object.keys(lignes).forEach(function (k) { b.extend(lignes[k].getBounds()); });
-          visibles().forEach(function (e) { if (e.statut !== 'loin') b.extend([e.lat, e.lng]); });
+          visibles().forEach(function (e) { b.extend([e.lat, e.lng]); });   // les lointaines comprises (390 px : E24/E25 étaient hors cadre)
           carte.invalidateSize(); carte.fitBounds(b, { paddingTopLeft: [24, 64], paddingBottomRight: [24, 60], animate: false });
         } catch (e) {}
       },
@@ -388,7 +392,7 @@
             .bindTooltip('<b>' + esc(t.code) + '</b> · ' + esc(t.nom) + '<br>' + t.arrets.length + ' arrêts' + (t.adh ? ' · ' + t.adh + ' adhérente' + (t.adh > 1 ? 's' : '') : ''), { sticky: true });
         });
         if (D.depot && isFinite(D.depot.lat)) {
-          depotM = L.marker([D.depot.lat, D.depot.lng], { icon: L.divIcon({ className: 'gtrn-ic', iconSize: [22, 22], iconAnchor: [11, 11], html: '<div class="gtrn-depot"></div>' }), zIndexOffset: 400, title: 'Dépôt · ' + (D.depot.nom || '') })
+          depotM = L.marker([D.depot.lat, D.depot.lng], { icon: L.divIcon({ className: 'gtrn-ic', iconSize: tactile() ? [44, 44] : [22, 22], iconAnchor: tactile() ? [22, 22] : [11, 11], html: '<div class="gtrn-depot"' + (tactile() ? ' style="margin:14px"' : '') + '></div>' }), zIndexOffset: 400, title: 'Dépôt · ' + (D.depot.nom || '') })
             .addTo(carte).bindTooltip('Dépôt · ' + esc(D.depot.nom || '') + (D.depot.ville ? ', ' + esc(D.depot.ville) : ''));
         }
         var btns = document.createElement('div'); btns.className = 'gtrn-btns';
