@@ -111,10 +111,10 @@ test('liste : « Sans groupement » sort du classement, une ligne à part en tê
   const ctx = {
     list: [mk('A'), mk('B'), mk('Sans groupement', true), mk('C')],
   };
-  const corps = new Function('groupementList', 'grSans', 'grNum', 'grrLigne', 'grrSans', 'grrRepli', 'grrSansCliente', 'V2', 'esc', 'grpListSearch', 'grpListSort', 'GRR_N',
+  const corps = new Function('groupementList', 'grSans', 'grNum', 'grrLigne', 'grrSans', 'grrRepli', 'grrSansCliente', 'V2', 'esc', 'grpListSearch', 'grpListSort', 'GRR_N', 'grrEntete', 'grpListSens', 'telEcran',
     code + '; return grpListBody;')(
     () => ctx.list, (g) => g.name.charAt(0) === '—', (n) => String(n), (g) => '<L ' + g.name + '>', () => '<SANS>', () => '<REPLI>', () => null,
-    { fmtNum: (n) => String(n) }, (s) => s, '', 'clientes', 30);
+    { fmtNum: (n) => String(n) }, (s) => s, '', 'clientes', 30, () => '<TH>', 1, () => false);   // 26/11/2026 : titres de colonnes et sens du tri (B14), remplacés par des repères
   const html = corps(ctx.list);
   const dansLeClassement = html.slice(html.indexOf('<div class="grr-body">'), html.indexOf('</div>', html.indexOf('<div class="grr-body">')));
   assert.ok(!/Sans groupement/.test(dansLeClassement), 'Sans groupement ne figure pas parmi les lignes classées');

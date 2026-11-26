@@ -5744,6 +5744,9 @@
   // Vue Groupements = vue d'équipe : TOUJOURS toutes les pharmacies des 4
   // commerciaux, sans tenir compte du filtre commercial.
   var grpListSort = 'clientes';   // 'clientes' (par défaut, nos clientes du groupement) | 'part' (part chez nous) | 'name' (alphabétique)
+  // 26/11/2026 (Will, planche ordinateur B14 v1) : le sens du tri, retourné par un second clic sur le titre de colonne déjà trié (1 = le sens d'origine : clientes et part du plus grand au plus petit, nom de A à Z).
+  // Au téléphone (≤ 640 px, pas de titres de colonnes) le sens est toujours celui d'origine.
+  var grpListSens = 1;
   // Recherche du sous-écran « Listes d'achats à proposer » (Karine, 17/09/2026, aee2d602).
   // Variable de module (pas seulement la valeur du <input>) : elle survit à l'ouverture
   // d'un groupement puis au retour, tant que l'onglet Groupements reste ouvert.
@@ -5769,13 +5772,20 @@
     if (grpListSort === 'name') list.sort(parNom);
     else if (grpListSort === 'part') list.sort(function (a, b) { return rangPart(b) - rangPart(a) || b.nb - a.nb || parNom(a, b); });
     else list.sort(function (a, b) { return b.nb - a.nb || parNom(a, b); });
+    if (grpListSens < 0 && !telEcran()) list.reverse();
     if (grpListSearch) {
       var q = grpSearchNorm(grpListSearch);
       list = list.filter(function (g) { return grpSearchNorm(g.name).indexOf(q) >= 0; });
     }
     return list;
   }
-  V2.grpListSortSet = function (mode) { grpListSort = mode === 'name' || mode === 'part' ? mode : 'clientes'; grMaj(); };
+  V2.grpListSortSet = function (mode) { grpListSort = mode === 'name' || mode === 'part' ? mode : 'clientes'; grpListSens = 1; grMaj(); };
+  // 26/11/2026 (Will, planche ordinateur B14 v1) : clic sur un titre de colonne : on trie sur cette colonne ; un second clic retourne le sens (comme Mes officines).
+  V2.grpListTrier = function (mode) {
+    mode = mode === 'name' || mode === 'part' ? mode : 'clientes';
+    if (grpListSort === mode) grpListSens = -grpListSens; else { grpListSort = mode; grpListSens = 1; }
+    grMaj();
+  };
   // ── 03/11/2026 — « plus clair » : l'écran Groupements dans la veine de l'accueil (maquette 1). Aucun calcul nouveau : on lit ce que la liste calcule déjà.
   var grListVu = false, grDetArr = false, grObs = null;
   window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'pharma') grListVu = false; });
@@ -5865,19 +5875,33 @@
         (ferme ? ' data-ouvre="' + esc(ouvre) + '" data-ferme="' + esc(ferme) + '"' : '') + ' onclick="V2.grrBascule(this)"><span>' + esc(ferme && o ? ferme : ouvre) + '</span>' + ICO('chev', 16) + '</button>' +
       '<div id="' + id + '"' + (o ? '' : ' hidden') + '>' + lignes + '</div>';
   }
+  // 26/11/2026 (Will, planche ordinateur B14 v1) : titres de colonnes cliquables (Groupement, Clientes, Part chez nous), au rendu de ceux de Mes officines (classes ofl-th) ;
+  // la colonne triée est en bleu avec sa flèche. « Non clientes » n'a pas de tri : titre simple. Sous 641 px la rangée est cachée (CSS) et « Trier par » reste.
+  function grrEntete() {
+    var th = function (mode, lib, cls) {
+      var cur = grpListSort === mode, asc = (mode === 'name') === (grpListSens > 0);
+      var fl = cur ? '<svg class="ofl-fl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + (asc ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6') + '"/></svg>' : '';
+      return '<span class="ofl-th ' + cls + '" role="columnheader"' + (cur ? ' aria-sort="' + (asc ? 'ascending' : 'descending') + '"' : '') + '>' +
+        '<button type="button" onclick="V2.grpListTrier(\'' + mode + '\')"><span class="ofl-th-l">' + lib + fl + '</span></button></span>';
+    };
+    return '<div class="grr-th" role="row"><span></span>' + th('name', 'Groupement', '') + th('clientes', 'Clientes', 'grr-th-r') + th('part', 'Part chez nous', '') +
+      '<span class="grr-th-r" role="columnheader">Non clientes</span><span></span></div>';
+  }
   // Le compteur, l'en-tête de colonnes, les lignes ; tout ce qui dépend de la recherche et du tri.
   function grpListBody(list) {
     list = list || groupementList();
     var sans = list.filter(grSans)[0] || null, gs = list.filter(function (g) { return !grSans(g); });
     var n = gs.length, tri = { clientes: 'clientes', part: 'part chez nous', name: 'nom' }[grpListSort] || 'clientes';
+    // 26/11/2026 (Will, planche ordinateur B15 v1) : la phrase « Part chez nous : … » explique toute la page : à l'ordinateur elle est sous le titre (renderGroupementsList, .gr-def) ;
+    // ici elle ne reste que pour le téléphone (.grr-def-tel, caché au-dessus de 640 px). Le sens du tri ne s'écrit que s'il est retourné (ordinateur).
     var tete = '<p class="grr-n">' + (grpListSearch ? '<b>' + grNum(n) + ' groupement' + (n > 1 ? 's' : '') + '</b> pour « ' + esc(grpListSearch) + ' » · ' : '') +
-      'Part chez nous : nos clientes sur les officines du groupement en France. Classés par ' + tri + '.</p>';
+      '<span class="grr-def-tel">Part chez nous : nos clientes sur les officines du groupement en France. </span>Classés par ' + tri + (grpListSens < 0 && !telEcran() ? ', ordre inversé' : '') + '.</p>';
     if (!gs.length && !sans) return tete + '<div class="v2-empty"><div class="v2-empty-d">' + (grpListSearch ? 'Aucun groupement ne correspond à « ' + esc(grpListSearch) + ' ».' : 'Aucun groupement.') + '</div></div>';
     var nPre = grpListSearch ? gs.length : GRR_N, tous = gs.map(grrLigne);
     var reste = tous.slice(nPre).join('');
     // 26/11/2026 — planche « 22 changements », sujet 19, version 1 (choix de Will) : « N clientes sans groupement » remonte en tête de la liste,
     // juste sous la recherche et les tris (elle n'était visible qu'après « Voir les N autres », tout en bas). Son sens ne change pas.
-    var h = (sans ? '<div class="grr-sg-haut">' + grrSans(sans) + '</div>' : '') + tete + (gs.length ? '<div class="grr-th" aria-hidden="true"><span></span><span>Groupement</span><span class="grr-th-r">Clientes</span><span>Part chez nous</span><span class="grr-th-r">Non clientes</span><span></span></div>' : '') +
+    var h = (sans ? '<div class="grr-sg-haut">' + grrSans(sans) + '</div>' : '') + tete + (gs.length ? grrEntete() : '') +
       '<div class="grr-body">' + tous.slice(0, nPre).join('') + '</div>' +
       (reste ? grrRepli('grr-reste', 'reste', 'Voir les ' + V2.fmtNum(tous.length - nPre) + ' autres', 'Réduire la liste', reste) : '');
     var sc = grrSansCliente();
@@ -6112,12 +6136,15 @@
           // 26/11/2026 — planche « 22 changements », sujet 18, version 2 (choix de Will) : on arrive ici par l'accueil, le Menu ou la recherche, jamais
           // par l'onglet Officines : la barre du bas allume « Menu » et dit vrai (correction du 20/11) ; c'est le surtitre qui promettait autre chose.
           '<div class="gr-hd-t"><p class="gr-eye">Vue d\'équipe</p><h1 class="gr-h1">Groupements</h1>' +
-            '<p class="gr-phrase" id="gr-phrase" aria-live="polite">' + grPhrase(list) + '</p></div>' +
+            '<p class="gr-phrase" id="gr-phrase" aria-live="polite">' + grPhrase(list) + '</p>' +
+            // 26/11/2026 (Will, planche ordinateur B15 v1) : la phrase qui explique la colonne « Part chez nous » remonte sous le titre de la page (ordinateur ; le téléphone la garde au-dessus de la liste).
+            '<p class="gr-def" id="gr-def">Part chez nous : nos clientes sur les officines du groupement en France.</p></div>' +
         '</header>' +
         '<label class="grr-rech">' + ICO('search', 20, 2) +
           '<input id="v2-grp-search" type="text" aria-label="Rechercher un groupement" placeholder="Rechercher un groupement…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" value="' + esc(grpListSearch) + '">' +
           '<button type="button" id="v2-grp-search-x" class="v2-grp-search-x" aria-label="Effacer la recherche" onclick="V2.grpListSearchClear()"' + (grpListSearch ? '' : ' style="display:none"') + '>' + ICO('close', 16, 2) + '</button>' +
         '</label>' +
+        // 26/11/2026 (Will, planche ordinateur B14 v1) : la rangée « Trier par » n'est montrée que sous 641 px, là où le tableau n'a pas de titres de colonnes (CSS).
         '<div class="grr-filtres"><span class="grr-tri-l" id="grr-tri-l">Trier par</span><div class="grr-segs" role="group" aria-labelledby="grr-tri-l">' + segs + '</div></div>' +
         '<div class="grr-tab" id="v2-grp-list-card">' + grpListBody(list) + '</div>' +
       '</div>';
