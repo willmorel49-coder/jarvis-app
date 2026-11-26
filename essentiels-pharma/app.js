@@ -1527,7 +1527,7 @@ function getPrevPeriod(year, month) {
 const DOCS_IP_PRIX = { dossier: 'essentiels/2026-11-26/', date: '26/11/2026', jusqua: '19/01/2027' };
 const DOCS_IP = {
   excel:     { fichier: 'prix-nets-integral.xlsx',     type: 'fichier', titre: 'Vos produits et nos prix nets (Excel)' },
-  resPdf:    { fichier: 'catalogue-reseau.pdf',        type: 'pdf',     titre: 'Catalogue réseau, pour François Tesson (PDF)' },
+  resPdf:    { fichier: 'catalogue-reseau.pdf',        type: 'pdf',     titre: 'Catalogue réseau (PDF)' },
   resHtml:   { fichier: 'catalogue-reseau.html',       type: 'html',    titre: 'Catalogue réseau, version interactive avec filtres' },
   adhPdf:    { fichier: 'catalogue-adherents.pdf',     type: 'pdf',     titre: 'Catalogue adhérents (PDF)' },
   adhHtml:   { fichier: 'catalogue-adherents.html',    type: 'html',    titre: 'Catalogue adhérents, version interactive avec filtres' }
