@@ -2161,12 +2161,13 @@
           ((V2.promoted && V2.promoted[String(pid)])
             ? '<span class="v2-btn v2-btn-ghost" style="cursor:default;color:var(--c-opp);border-color:var(--c-opp)">✓ Passé en client</span>'
             : '<button class="v2-btn v2-btn-primary" onclick="V2.promoteToClient(\'' + esc(String(pid)) + '\')">➕ Passer en client</button>') +
-          txProspectBtn(pid) + etudeFiche(pid, 'v2-btn v2-btn-ghost', nameOf(pid, p[6] || p[10])) +
+          txProspectBtn(pid) +
           '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Voir sur Google Maps</a>' +
         '</div></div>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap v2-prospect pha-wrap fdr-on">' + fdrProspect({
         eye: String(caSV ? 'Client' : seg).toUpperCase() + (uga ? ' · UGA ' + uga : ''), nom: nameOf(pid, p[6] || p[10]) || 'Pharmacie', tel: telA, mail: mailA,
+        outils: etudeFiche(pid, 'fdr-outil', nameOf(pid, p[6] || p[10])),
         sous: [titLisible(titA), V2.officineSous('', villeA, cpA), grpA],   // 26/11/2026 — titulaire, puis ville et code postal
         ch: [
           ['Ce que l’on sait de cette officine', 'Ce qu’on sait', saitP],
@@ -4310,11 +4311,13 @@
     if (V2.notes) r.push(fdrRond('button', 'type="button" onclick="V2.fdrOuvrir(\'notes\')" title="Ouvrir les notes"', 'pdf', 'Note'));
     var sous = o.sous.filter(function (x) { return x; }).map(esc).join('<span class="fdr-pt" aria-hidden="true"> · </span>');
     var ch = o.ch.filter(function (c) { return c[2]; });
+    // 28/11/2026 (Will, choix cliqué) : « Étude de zone » monte en tête de fiche, rangée d'outils comme sur la fiche cliente ; visible aussi au téléphone (v2-fiche-tel.css)
     return '<div class="fdr fdr-pro">' +
       '<header class="fdr-head" id="fdr-haut"><i class="fdr-astre" aria-hidden="true"></i>' +
         '<div class="fdr-id"><div class="fdr-id-t"><div class="fdr-eye mono">' + esc(o.eye) + '</div>' +
           '<h1 class="pha-name">' + esc(o.nom) + '</h1>' + (sous ? '<p class="fdr-sub">' + sous + '</p>' : '') +
-        '</div>' + (r.length ? '<div class="fdr-ronds">' + r.join('') + '</div>' : '') + '</div></header>' +
+        '</div>' + (r.length ? '<div class="fdr-ronds">' + r.join('') + '</div>' : '') +
+        (o.outils ? '<div class="fdr-outils fdr-pro-outils" role="group" aria-label="Outils">' + o.outils + '</div>' : '') + '</div></header>' +
       '<nav class="fdr-som" id="fdr-som" aria-label="Aller à un chapitre">' + ch.map(function (c, i) {
         return '<button type="button" class="fdr-pil" data-ch="' + (i + 1) + '" onclick="V2.fdrAller(' + (i + 1) + ')"><b>' + (i + 1) + '</b><span>' + esc(c[1]) + '</span></button>';
       }).join('') + '</nav>' +

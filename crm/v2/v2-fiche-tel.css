@@ -10,6 +10,7 @@
   .pha-wrap.fdr-on{padding:10px 12px calc(104px + env(safe-area-inset-bottom))}
   .pha-wrap.fdr-on .fdr-head .fdr-ronds,
   .pha-wrap.fdr-on .fdr-head .fdr-outils{display:none}      /* ronds → barre du bas ; boutons d'outils → sous les bandeaux */
+  .pha-wrap.fdr-on .fdr-pro .fdr-head .fdr-pro-outils:has(button){display:flex}   /* 28/11/2026 — prospect : ni bandeaux ni barre, « Étude de zone » reste en tête */
   .pha-wrap.fdr-on[data-vue="pharmacien"] .fdr-head .fdr-eye{display:none}
   .pha-wrap.fdr-on .fdr .fdo-a .pha-name,
   .pha-wrap.fdr-on .fdr .fdo-a .pha-name *{font-size:35px;line-height:1.04}

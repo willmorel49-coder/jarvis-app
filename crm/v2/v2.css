@@ -1949,6 +1949,8 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
 /* 20/11/2026 — fiches de prospect au même habillage (fdrProspect) : boutons d'action en rangée */
 .fdr-on .fdr-pro-acts{display:flex;flex-wrap:wrap;gap:10px}
 .fdr-on .fdr-pro .v2-prospect-hd{padding:16px 18px}
+/* 28/11/2026 — « Étude de zone » en tête de fiche prospect : la rangée n'apparaît qu'avec son bouton (place vide tant que l'index des études se lit, rien sans étude) */
+.fdr-on .fdr-pro-outils:not(:has(button)){display:none}
 /* ═══ fin fiche officine « Le rendez-vous » ═══ */
 
 /* ═══ 21/11/2026 — Fiche officine « Le dossier » (choisie par Will), couleurs « L'horizon » (l'aube de l'accueil). Préfixe : fdo-
