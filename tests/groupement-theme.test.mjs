@@ -155,8 +155,8 @@ test('menu du compte : Essentiels le coupe (menuGroupements:false), OPSO et JARV
 // 26/11/2026 — option B, étape 9 : le menu « Suivi des groupements » de JARVIS ouvre la NOUVELLE app Essentiels ; l'ancienne reste servie mais n'a plus de lien.
 test('bascule : le lien Essentiels du menu mène à essentiels/v2/, plus aucun lien vers essentiels-pharma/ dans le CRM', () => {
   const app = lire('crm/v2/v2-app.js');
-  assert.match(app, /\{ nom: 'Essentiels Pharma', url: '\.\.\/\.\.\/essentiels\/v2\/index\.html' \}/);
+  assert.match(app, /\{ nom: 'Essentiels Pharma', url: '\.\.\/\.\.\/essentiels\/v2\/index\.html', acces: 'essentiels' \}/);
   assert.doesNotMatch(app.replace(/\/\/[^\n]*/g, ''), /essentiels-pharma\//);
-  assert.match(app, /\{ nom: 'OPSO', url: '\.\.\/\.\.\/opso\/v2\/index\.html' \}/);
+  assert.match(app, /\{ nom: 'OPSO', url: '\.\.\/\.\.\/opso\/v2\/index\.html', acces: 'opso' \}/);
   assert.ok(readFileSync(racine + 'essentiels-pharma/index.html', 'utf8').length > 0, 'l’ancienne app reste servie');
 });

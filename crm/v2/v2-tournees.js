@@ -54,6 +54,34 @@
     if (!Array.isArray(d.etablissements)) return 'liste des établissements absente';
     return '';
   };
+  // 27/11/2026 — plusieurs établissements (fichier version 3) : une tournée sans `etab` est une tournée OPS (fichiers version 2).
+  C.etabDe = function (t) { return (t && t.etab) || 'OPS'; };
+  // Dépôt de l'établissement (fichier v3 : d.depots[etab]) ; à défaut, le dépôt unique du fichier (OPS, version 2).
+  C.depotDe = function (d, etab) { return (d && d.depots && d.depots[etab]) || (d && d.depot) || null; };
+  // Vue du fichier pour UN établissement : mêmes champs, mais seulement ses tournées et son dépôt. Tout l'écran (classement, bilan,
+  // comparaison, export Excel, tableau de bord, carte) lit cette vue, jamais le fichier entier.
+  C.vue = function (d, etab) {
+    var o = {}, tr = {};
+    Object.keys(d || {}).forEach(function (k) { o[k] = d[k]; });
+    Object.keys((d && d.tournees) || {}).forEach(function (k) { if (C.etabDe(d.tournees[k]) === etab) tr[k] = d.tournees[k]; });
+    o.tournees = tr; o.depot = C.depotDe(d, etab);
+    return o;
+  };
+  // Établissement de la tournée `code` (null si elle n'existe pas).
+  C.etabDeCode = function (d, code) { var t = d && d.tournees && d.tournees[code]; return t ? C.etabDe(t) : null; };
+  // Établissement affiché à l'ouverture : celui de la tournée demandée, sinon CPR pour l'équipe CPR (`cpr` vrai), sinon OPS.
+  C.etabParDefaut = function (d, param, cpr) {
+    var e = C.etabDeCode(d, param);
+    if (e) return e;
+    var ok = C.etablissements(d).filter(function (x) { return x.s === 'CPR' && x.actif; }).length > 0;
+    return (cpr && ok) ? 'CPR' : 'OPS';
+  };
+  // Phrase affichée quand l'ordre de passage n'est pas donné par le fichier (clientes livrées une fois par semaine) ; '' sinon.
+  C.texteOrdre = function (t) {
+    if (!t || (t.ordre !== 'partiel' && t.ordre !== 'estime')) return '';
+    var n = Number(t.nb_estimes) || ((t.arrets || []).filter(function (a) { return a.est; }).length);
+    return 'Ordre de passage estimé pour ' + n + (n > 1 ? ' arrêts' : ' arrêt') + ' : le fichier de l’établissement ne le donne pas pour les clientes livrées une fois par semaine.';
+  };
   // Établissements : « actif » = le fichier dit qu'il a des tournées ; sinon « à recevoir » (aucun chiffre).
   C.etablissements = function (d) {
     return ((d && d.etablissements) || []).map(function (e) { return { s: e.s, nom: e.nom, ville: e.ville, actif: e.tournees === true }; });
@@ -88,7 +116,7 @@
     };
     var grossir = [], nbPerte = 0;
     var arr = arrets.map(function (a) {
-      var o = { n: a.n, id: a.id, nom: a.nom, ville: a.ville, lat: a.lat, lng: a.lng, com: a.com, renta_mois: null, statut: 'none' };
+      var o = { n: a.n, id: a.id, nom: a.nom, ville: a.ville, lat: a.lat, lng: a.lng, com: a.com, est: a.est ? 1 : 0, renta_mois: null, statut: 'none' };
       if (a.r) {
         var rm = a.r.rm, mm = a.r.m / a.r.mo;
         o.renta_mois = rm;
@@ -103,7 +131,7 @@
     grossir.sort(function (a, b) { return b.gain - a.gain; });
     var pros = C.prospects(t && t.prospects);
     return {
-      code: t.code, nom: t.nom, jours: t.jours || [], jours_statut: t.jours_statut, transporteur: t.transporteur, nb_arrets: t.nb_arrets,
+      code: t.code, etab: C.etabDe(t), ordre: t.ordre || null, nb_estimes: t.nb_estimes || 0, nom: t.nom, jours: t.jours || [], jours_statut: t.jours_statut, transporteur: t.transporteur, nb_arrets: t.nb_arrets,
       km_total: r2((t.km_aller || 0) + (t.km_retour || 0)), marge_jour: t.marge_jour, jours_commande: t.jours_commande,
       rentabilite: t.rentabilite,
       rentabilite_mois: r2(R.reduce(function (s, a) { return s + a.r.rm; }, 0)),
@@ -160,6 +188,8 @@
       .replace(/\b(De|Du|Des|La|Le|Les|Et|Sur|En|Aux|Au|Sous|Pres)\b/g, function (m, w) { return w.toLowerCase(); }).replace(/^./, function (c) { return c.toUpperCase(); })
       .replace(/\b(L|D) (?=[A-ZÀ-Ý])/g, function (m, x) { return x.toLowerCase() + '’'; }).replace(/\bSt\b/g, 'Saint').replace(/\bSte\b/g, 'Sainte');
   };
+  // Numéro d'arrêt affiché : un arrêt dont la place est estimée porte « ≈ » devant son numéro.
+  C.num = function (a) { return (a && a.est ? '≈' : '') + (a ? a.n : ''); };
   C.esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
 
   // ── Tableau de bord d'UNE tournée (11/11/2026, maquette « Le tableau de bord de la tournée » choisie par Will) ──
@@ -191,7 +221,7 @@
     var cl = (t.arrets || []).map(function (a) {
       var m = Array.isArray(a.m) && a.m.length === NBm ? a.m : null;
       var tot = (a.r && m) ? C.totCliente(m, cout) : null;
-      return { n: a.n, id: String(a.id), fi: a.fi ? String(a.fi) : '', nom: a.nom, ville: a.ville, lat: a.lat, lng: a.lng, com: a.com,
+      return { n: a.n, id: String(a.id), fi: a.fi ? String(a.fi) : '', nom: a.nom, ville: a.ville, lat: a.lat, lng: a.lng, com: a.com, est: a.est ? 1 : 0,
         m: tot ? m : null, f: tot && Array.isArray(a.f) ? a.f : null, g: tot ? (+a.g || 0) : 0, tot: tot, tend: tot ? C.tendance(m, fen) : null };
     });
     var V = cl.filter(function (c) { return c.tot; });
@@ -408,6 +438,7 @@
       ['Coût des livraisons', 'Commandes × coût d’une livraison.'], ['Rentabilité', 'Notre marge − coût des livraisons.'],
       ['« Par mois »', 'Divisé par les mois où la cliente a été livrée ; pour la tournée, somme des clientes.'],
       ['Tendance', C.texteFenetre(mois, fen).replace(/ /g, ' ')]];
+    if (C.texteOrdre(a)) lire.push(['Ordre de passage', C.texteOrdre(a) + ' Un « ≈ » devant un numéro d’arrêt, à l’écran, marque une place estimée.']);
     if (T.gen > 0) lire.push(['Notre marge', 'Génériques comptés à zéro, comme sur la fiche officine.']);
     var mi = C.texteMoisIncomplets(mois, couv); if (mi) lire.push(['Mois incomplets', mi]);
     return [
@@ -438,7 +469,7 @@
   // colonnes de la liste des clientes : [clé de tot, titre, format]
   var LCOLS = [['ca', 'CA', eurF], ['marge', 'Notre marge', eurF], ['taux', 'Taux de marge', C.pct], ['cmd', 'Commandes', C.ent], ['cmd_mois', 'Commandes par mois', C.dec1],
     ['marge_cmd', 'Marge par commande', eurF], ['cout', 'Coût des livraisons', eurF], ['renta', 'Rentabilité', eurF], ['renta_mois', 'Rentabilité par mois', eurF]];
-  var S = { d: null, A: null, erreur: '', charge: false, etab: 'OPS', open: null, sortK: 'rentabilite_mois', sortDir: -1, map: null, cur: null, pf: null, root: null,
+  var S = { brut: null, vues: {}, d: null, A: null, erreur: '', charge: false, etab: 'OPS', open: null, sortK: 'rentabilite_mois', sortDir: -1, map: null, cur: null, pf: null, root: null,
     vue: 'classement', tb: null, tbCode: null, mes: 'ca', pid: null, lk: 'n', ld: 1, rz: false, larg: 0, marq: {} };
 
   function interdit() {
@@ -483,6 +514,7 @@
       '.trn-etabs::-webkit-scrollbar{display:none}',
       '.trn-pill{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:var(--tap-min);padding:0 14px;border-radius:var(--r-pill);background:var(--card);border:1px solid var(--line-strong);font-weight:600;font-size:13px;white-space:nowrap;color:var(--ip-ink);cursor:pointer;font-family:inherit}',
       '.trn-pill.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}',
+      '.trn-pill.on:not(.sel){background:var(--card);border-color:var(--ip-blue);color:var(--ip-blue);box-shadow:none}',   // 27/11/2026 : deux établissements actifs (OPS, CPR) : seul celui qu'on regarde est plein
       '.trn-pill.off{background:var(--surf-sunken);color:var(--muted);border-style:dashed}',
       '.trn-pill.sel:not(.on){border-style:solid;border-color:var(--ip-blue);color:var(--ip-blue)}',
       '.trn-pill .soft{font-weight:500;font-size:12px;color:var(--muted)}',
@@ -517,6 +549,7 @@
       '.trn-m{display:none}',
       '.trn-ic{background:none;border:0}',
       '.trn-pt{width:28px;height:28px;border-radius:50%;border:2px solid #fff;color:#fff;font:700 11px/24px var(--font);text-align:center;box-shadow:0 2px 6px rgba(16,19,28,.3);cursor:pointer}',
+      '.trn-pt.est{border-style:dashed}',   // place estimée (CPR) : bord en tirets
       '.trn-pt.sel{box-shadow:0 0 0 3px #10131C,0 2px 8px rgba(16,19,28,.4)}',
       '.trn-lo{width:24px;height:24px;margin:1px;background:#fff;border:2px solid var(--ip-blue);transform:rotate(45deg);border-radius:4px;box-shadow:0 2px 6px rgba(0,52,160,.35);display:flex;align-items:center;justify-content:center}',
       '.trn-lo span{transform:rotate(-45deg);font:700 11px/1 var(--font);color:var(--ip-blue)}',
@@ -701,11 +734,17 @@
         (e.actif ? '' : '<span class="soft">à recevoir</span>') + '</button>';
     }).join('');
   }
+  // 27/11/2026 — S.brut = le fichier entier ; S.d / S.A = la vue de l'établissement choisi (ses tournées, son dépôt), calculée une fois par établissement.
+  function setEtab(e) {
+    if (!S.vues[e]) { var v = C.vue(S.brut, e); S.vues[e] = { d: v, A: C.analyserTout(v) }; }
+    S.etab = e; S.d = S.vues[e].d; S.A = S.vues[e].A; S.cmpB = null; S.pid = null; S.tbCode = null;
+  }
   function etabCourant() { return C.etablissements(S.d).filter(function (e) { return e.s === S.etab; })[0]; }
 
   function noteJours() {
     var ts = Object.keys(S.A).map(function (k) { return S.A[k]; });
     var sans = ts.filter(function (t) { return !t.jours.length; }).length;
+    if (ts.length && sans === ts.length) return 'Jours de livraison à préciser pour toutes les tournées de cet établissement.';   // CPR : le fichier ne donne aucun jour
     return 'Jours de livraison provisoires (planning de février), à confirmer.' + (sans ? ' ' + sans + (sans > 1 ? ' tournées sans jour connu : jours à préciser.' : ' tournée sans jour connu : jours à préciser.') : '');
   }
 
@@ -800,6 +839,7 @@
       '<h1 data-chk="t.' + esc(code) + '.titre">' + esc(code) + ' · ' + esc(t.nom) + '</h1>' +
       '<p class="trn-meta"><b>' + t.nb_arrets + '</b> ' + (t.nb_arrets > 1 ? 'arrêts' : 'arrêt') + ' · <b>' + C.km(t.km_total, 0) + '</b> (aller ' + C.km(raw.km_aller, 0) + ', retour ' + C.km(raw.km_retour, 0) + ') · ' + j +
         (t.transporteur ? ' · transporteur ' + esc(t.transporteur) : '') + ' · <b>' + rang + '<sup>' + (rang === 1 ? 're' : 'e') + '</sup></b> sur ' + ord.length + ' au classement de la rentabilité par mois</p>' +
+      (C.texteOrdre(t) ? '<p class="trn-per" data-chk="t.' + esc(code) + '.ordre">' + esc(C.texteOrdre(t)) + ' « ≈ » devant un numéro d’arrêt : place estimée.</p>' : '') +
       '<p class="trn-per">' + esc(cap(S.d.periode || '')) + ' · 1 commande = 1 livraison, au plus 1 par jour · coût d’une livraison : ' + eurF(Number(S.d.cout_livraison)) + '</p></div></div>';
     if (!tb) {
       root.innerHTML = h + '<div class="trn-err"><b>Détail mois par mois non disponible</b><p>Le fichier des tournées reçu ne porte pas encore les mois de chaque cliente. Rien n’est affiché plutôt que des chiffres faux.</p></div></div>';
@@ -940,7 +980,7 @@
     cl.forEach(function (c, i) {
       var v = c.tot.renta_mois, y = i * rh, bw = Math.abs(v) * sc, bx = v < 0 ? x0 - bw : x0, bhh = rh > 30 ? 14 : 12;
       o += '<g class="trn-hit" data-p="' + esc(c.id) + '" tabindex="0" role="button" aria-label="' + esc(joli(c.nom)) + ' : rentabilité par mois ' + eurF(v) + '"><rect class="bg" x="0" y="' + y + '" width="' + W + '" height="' + rh + '" rx="6"/>' +
-        '<text class="trn-rl" x="4" y="' + (y + rh / 2 + 4) + '"><tspan class="trn-rn">' + c.n + ' · </tspan>' + esc(court(c.nom, mob ? 16 : 26)) + '</text>' +
+        '<text class="trn-rl" x="4" y="' + (y + rh / 2 + 4) + '"><tspan class="trn-rn">' + C.num(c) + ' · </tspan>' + esc(court(c.nom, mob ? 16 : 26)) + '</text>' +
         '<rect class="' + (v < 0 ? 'trn-negf' : 'trn-pos') + '" x="' + bx.toFixed(1) + '" y="' + (y + rh / 2 - bhh / 2) + '" width="' + Math.max(bw, 1.5).toFixed(1) + '" height="' + bhh + '" rx="3"/>' +
         '<text class="trn-rv' + (v < 0 ? ' n' : '') + '" x="' + (W - 2) + '" y="' + (y + rh / 2 + 4) + '" data-chk="c.' + esc(c.id) + '.renta_mois">' + eurF(v) + '</text></g>';
     });
@@ -1010,7 +1050,7 @@
     var c = S.pid && cliente(S.pid);
     if (!c) { el.innerHTML = '<p class="trn-ghost">Touchez un point, une barre, un arrêt de la carte ou une ligne de la liste : la cliente est surlignée partout, avec son détail mois par mois.</p>'; return; }
     var f = ficheDe(c);
-    el.innerHTML = '<h3>' + c.n + ' · ' + esc(joli(c.nom)) + '</h3><p class="trn-sub">' + esc(joli(c.ville)) + ' · arrêt n°' + NB + c.n + ' de la tournée' + (c.com ? ' · commercial ' + esc(c.com) : '') + '</p>' + moisCliente(c) +
+    el.innerHTML = '<h3>' + C.num(c) + ' · ' + esc(joli(c.nom)) + '</h3><p class="trn-sub">' + esc(joli(c.ville)) + ' · arrêt n°' + NB + C.num(c) + ' de la tournée' + (c.com ? ' · commercial ' + esc(c.com) : '') + '</p>' + moisCliente(c) +
       '<div class="trn-act"><button type="button" class="trn-btn" data-act="voir-ligne" data-id="' + esc(c.id) + '">Voir sa ligne dans la liste</button>' +
       (f ? '<button type="button" class="trn-btn b2" data-act="fiche" data-id="' + esc(f) + '">Ouvrir sa fiche</button>' : '') + '</div>';
   }
@@ -1030,7 +1070,7 @@
     var h = '<thead><tr>' + thb('n', 'Cliente (ordre de livraison)') + (tv ? thb('tend', 'Tendance') : '') + LCOLS.map(function (k) { return thb(k[0], k[1]); }).join('') + (tv ? '' : thb('tend', 'Tendance')) + '</tr></thead><tbody>';
     cl.forEach(function (c) {
       var sel = c.id === S.pid;
-      var nm = '<td title="' + esc(joli(c.nom)) + ' · ' + esc(joli(c.ville)) + '"><i>' + c.n + '</i>' + esc(court(c.nom, 60)) + '</td>';   // au téléphone : « Ph. » pour garder le nom lisible
+      var nm = '<td title="' + esc(joli(c.nom)) + ' · ' + esc(joli(c.ville)) + '"><i' + (c.est ? ' title="Place estimée dans la tournée"' : '') + '>' + C.num(c) + '</i>' + esc(court(c.nom, 60)) + '</td>';   // au téléphone : « Ph. » pour garder le nom lisible
       if (!c.tot) { h += '<tr data-p="' + esc(c.id) + '" tabindex="0" class="' + (sel ? 'sel' : '') + '" aria-selected="' + sel + '">' + nm + '<td class="none" colspan="' + (LCOLS.length + 1) + '">Aucune commande ' + esc(S.d.periode || '') + '</td></tr>'; }
       else {
         var td = tdTend(c.tend, 'c.' + esc(c.id) + '.tend');
@@ -1039,7 +1079,7 @@
       }
       if (sel) {
         var f = ficheDe(c);
-        h += '<tr class="trn-x"><td colspan="' + (LCOLS.length + 2) + '"><div class="trn-x-in"><h3>' + c.n + ' · ' + esc(joli(c.nom)) + '</h3><p class="trn-sub">' + esc(joli(c.ville)) + (c.com ? ' · commercial ' + esc(c.com) : '') + '</p>' +
+        h += '<tr class="trn-x"><td colspan="' + (LCOLS.length + 2) + '"><div class="trn-x-in"><h3>' + C.num(c) + ' · ' + esc(joli(c.nom)) + '</h3><p class="trn-sub">' + esc(joli(c.ville)) + (c.com ? ' · commercial ' + esc(c.com) : '') + '</p>' +
           moisCliente(c) + '<div class="trn-act">' + (f ? '<button type="button" class="trn-btn" data-act="fiche" data-id="' + esc(f) + '">Ouvrir sa fiche</button>' : '') +
           '<button type="button" class="trn-btn b2" data-act="fermer">Fermer</button></div></div></td></tr>';
       }
@@ -1085,9 +1125,9 @@
       t.arrets.forEach(function (a) {
         var pid = String(a.id);
         var z = tactile() ? 44 : 28;   // au téléphone, la zone touchable fait 44 px autour du rond de 28 px
-        var ic = L.divIcon({ className: 'trn-ic', iconSize: [z, z], iconAnchor: [z / 2, z / 2], html: '<div class="trn-pt' + (pid === S.pid ? ' sel' : '') + '" data-p="' + esc(pid) + '" style="background:' + COUL[a.statut] + (z > 28 ? ';margin:' + (z - 28) / 2 + 'px' : '') + '">' + a.n + '</div>' });
-        L.marker([a.lat, a.lng], { icon: ic, zIndexOffset: 100, keyboard: true, title: a.n + ' · ' + joli(a.nom) }).addTo(g)
-          .bindTooltip('<b>' + a.n + ' · ' + esc(joli(a.nom)) + '</b><br>' + esc(joli(a.ville)) + (a.renta_mois != null ? '<br>' + eurF(a.renta_mois) + ' par mois' : '<br>Sans commande'), { direction: 'top', offset: [0, -10] })
+        var ic = L.divIcon({ className: 'trn-ic', iconSize: [z, z], iconAnchor: [z / 2, z / 2], html: '<div class="trn-pt' + (pid === S.pid ? ' sel' : '') + (a.est ? ' est' : '') + '" data-p="' + esc(pid) + '" style="background:' + COUL[a.statut] + (z > 28 ? ';margin:' + (z - 28) / 2 + 'px' : '') + '">' + a.n + '</div>' });
+        L.marker([a.lat, a.lng], { icon: ic, zIndexOffset: 100, keyboard: true, title: C.num(a) + ' · ' + joli(a.nom) }).addTo(g)
+          .bindTooltip('<b>' + C.num(a) + ' · ' + esc(joli(a.nom)) + '</b><br>' + esc(joli(a.ville)) + (a.renta_mois != null ? '<br>' + eurF(a.renta_mois) + ' par mois' : '<br>Sans commande'), { direction: 'top', offset: [0, -10] })
           .on('click', function () { choisir(pid); });
       });
       pr.forEach(function (p, i) {
@@ -1221,7 +1261,7 @@
       if (!t.closest) return;
       if (t.closest('.leaflet-container')) return;   // la carte gère ses propres clics (arrêts)
       if ((b = t.closest('#trn-bascule button'))) { V2.go('tournees', b.getAttribute('data-vue') === 'carte' ? 'carte' : ''); return; }
-      if ((b = t.closest('.trn-pill'))) { S.etab = b.getAttribute('data-s'); S.open = null; dessiner(); return; }
+      if ((b = t.closest('.trn-pill'))) { setEtab(b.getAttribute('data-s')); S.open = null; dessiner(); return; }
       if ((b = t.closest('.trn-th button'))) {
         var k = b.getAttribute('data-k');
         if (S.sortK === k) S.sortDir = -S.sortDir; else { S.sortK = k; S.sortDir = -1; }
@@ -1253,7 +1293,7 @@
         liste(); return;
       }
       if ((b = t.closest('#trn-page [data-p]'))) { choisir(b.getAttribute('data-p')); return; }
-      if (t.closest('#trn-retry')) { S.erreur = ''; S.d = null; V2.render(); }
+      if (t.closest('#trn-retry')) { S.erreur = ''; S.brut = null; S.d = null; S.A = null; S.vues = {}; V2.render(); }
     };
     root.oninput = function (ev) {   // coût d'une livraison de la simulation : recalcul à chaque frappe, le champ n'est pas redessiné (le curseur reste)
       var t = ev.target; if (!t || t.id !== 'trn-sim-cout') return;
@@ -1275,7 +1315,8 @@
         root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) + '<div class="trn-page"><div class="trn-err"><b>Cet écran n’est pas ouvert à votre compte.</b><p>Les tournées de livraison ne sont pas disponibles dans cet espace.</p></div></div>';
         return;
       }
-      if (S.d && S.A) {
+      if (S.brut && S.A) {
+        var eP = C.etabDeCode(S.brut, param); if (eP && eP !== S.etab) setEtab(eP);   // #tournees/CPR-T01 ouvre l'établissement de la tournée
         S.open = (param && S.A[param]) ? param : null;
         S.vue = (param === 'carte') ? 'carte' : 'classement';
         dessiner(); return;
@@ -1287,9 +1328,10 @@
       S.charge = true;
       charger().then(function (d) {
         var m = C.valider(d); if (m) throw new Error(m);
-        S.d = d; S.A = C.analyserTout(d); S.pf = null; S.erreur = ''; S.charge = false;
         // l'adresse #tournees/Txx ouvre directement le tableau de bord de la tournée ; #tournees seul, le classement
         var p = V2.route && V2.route.name === 'tournees' ? V2.route.param : param;
+        S.brut = d; S.vues = {}; S.pf = null; S.erreur = ''; S.charge = false;
+        setEtab(C.etabParDefaut(d, p, !!(V2.tourneesCpr && V2.tourneesCpr())));   // CPR pour l'équipe CPR, sinon OPS ; une adresse de tournée l'emporte
         S.open = (p && S.A[p]) ? p : null;
         S.vue = (p === 'carte') ? 'carte' : 'classement';
         if (V2.route && V2.route.name === 'tournees') dessiner();

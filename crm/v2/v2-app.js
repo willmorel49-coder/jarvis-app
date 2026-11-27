@@ -531,20 +531,26 @@
   // Un groupement de plus = une ligne dans ce tableau. Chemins relatifs : même origine, donc même session. Escale et Phirst n'en sont pas.
   // 26/11/2026 — option B, étape 9 : Essentiels Pharma passe sur la nouvelle app (même code que JARVIS, essentiels/v2/). L'ancienne
   // (essentiels-pharma/) reste servie, sans plus aucun lien depuis JARVIS : revenir en arrière = remettre cette adresse.
+  // 27/11/2026 — chaque lien porte la liste d'accès de son app (clé de v2-comptes.js) et ne s'affiche que si l'adresse du compte y figure : Pauline G. ne voit que OPSO.
   var GROUPEMENTS_APPS = [
-    { nom: 'Essentiels Pharma', url: '../../essentiels/v2/index.html' },
-    { nom: 'OPSO', url: '../../opso/v2/index.html' }
+    { nom: 'Essentiels Pharma', url: '../../essentiels/v2/index.html', acces: 'essentiels' },
+    { nom: 'OPSO', url: '../../opso/v2/index.html', acces: 'opso' }
   ];
+  function groupementsVisibles(mail) {
+    var C = window.V2_COMPTES || {};
+    return GROUPEMENTS_APPS.filter(function (g) { return (C[g.acces] || []).indexOf(mail) >= 0; });
+  }
   function groupementsMenu(m) {
     var mail = String((V2.user && V2.user.email) || '').toLowerCase();
     // 26/11/2026 — chez Essentiels, aucun « OPSO » à l'écran (demande de Will) : le suivi des apps se fait depuis JARVIS, pas depuis une app de groupement.
     if (V2.groupement && V2.groupement.menuGroupements === false) return;
-    if (!m || !mail || (V2.CONTACTS_GROUPEMENT || []).indexOf(mail) < 0 || m.querySelector('.grp-um')) return;
+    var apps = groupementsVisibles(mail);
+    if (!m || !mail || (V2.CONTACTS_GROUPEMENT || []).indexOf(mail) < 0 || !apps.length || m.querySelector('.grp-um')) return;
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'v2-um-item grp-um'; b.setAttribute('role', 'menuitem'); b.setAttribute('aria-expanded', 'false');
     b.innerHTML = ICO('list', 16, 2) + 'Suivi des groupements';
     var l = document.createElement('div'); l.className = 'grp-um-liste'; l.hidden = true;
-    l.innerHTML = GROUPEMENTS_APPS.map(function (g) {
+    l.innerHTML = apps.map(function (g) {
       return '<a class="v2-um-item" role="menuitem" style="text-decoration:none;padding-left:42px" href="' + g.url + '" target="_blank" rel="noopener">' + esc(g.nom) +
         '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span></a>';
     }).join('');
@@ -1357,6 +1363,9 @@
   // 10/11/2026 (Will) — équipe OPS : liste dans v2-comptes.js depuis le 20/11/2026 (absente sous Phirst : liste vide). Écran ouvert à tout compte connecté hors rôle opso ; ceci ne décide QUE de l'endroit de l'entrée.
   var TOURN_EQUIPE = (window.V2_COMPTES && window.V2_COMPTES.tournees) || [];
   V2.tourneesEquipe = function () { return !!(V2.user && TOURN_EQUIPE.indexOf(String(V2.user.email || '').toLowerCase()) >= 0); };
+  // 27/11/2026 — équipe CPR : l'écran Tournées s'ouvre sur CPR (liste tourneesCpr de v2-comptes.js) ; les autres comptes sur OPS.
+  var TOURN_CPR = (window.V2_COMPTES && window.V2_COMPTES.tourneesCpr) || [];
+  V2.tourneesCpr = function () { return !!(V2.user && TOURN_CPR.indexOf(String(V2.user.email || '').toLowerCase()) >= 0); };
   function tournInterdit() { return !!(V2.enGroupement() || (V2.user && (V2.user.opsoOnly || V2.user.role === 'opso'))); }
   if (G4_PORTES.tournees) Object.defineProperty(G4_PORTES.tournees, 'fam', { enumerable: true, get: function () { return V2.tourneesEquipe() ? 'accueil' : 'dev'; } });
   var G4_CLE_ORDRE = 'jarvis_accueil_ordre2';

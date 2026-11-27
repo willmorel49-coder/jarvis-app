@@ -38,6 +38,10 @@
   function normCip(c) { return String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, ''); }
   function parCode(a, b) { return String(a).localeCompare(String(b), 'fr', { numeric: true }); }
   C.normCip = normCip;
+  function etabDe(t) { return (t && t.etab) || 'OPS'; }
+  // Dépôt d'une tournée : celui de son établissement (fichier v3), sinon le dépôt unique du fichier (v2).
+  function depotDe(T, t) { return (T && T.depots && T.depots[etabDe(t)]) || (T && T.depot) || null; }
+  C.depotDe = depotDe;
 
   // ── Calcul pur (testé : tests/groupement-tournees.test.mjs) ──
   // Distance à vol d'oiseau (km) : la même formule que le générateur du fichier des tournées (haversine, rayon 6 371,0088 km).
@@ -67,7 +71,11 @@
   //   'sanspos' : CIP absent de la base nationale (aucune position) : dans la liste, jamais sur la carte.
   C.calculer = function (T, PF, adh, wml) {
     if (!Ess || !T || !T.tournees || !Object.keys(T.tournees).length || !PF || !PF.p || !adh || !wml) return null;
-    var SEUIL = Ess.SEUIL_LOIN, codes = Object.keys(T.tournees).sort(parCode), pf = {}, arret = {}, pros = {}, cli = [];
+    // 27/11/2026 — fichier version 3 : TOUS les établissements (OPS puis les autres, dans l'ordre du fichier) ; une tournée sans `etab` est OPS.
+    // Les codes CPR portent leur préfixe (« CPR-T12 » ≠ « T12 ») : aucune confusion possible entre deux établissements.
+    var ordreE = (T.etablissements || []).map(function (x) { return x.s; });
+    var rangE = function (c) { var i = ordreE.indexOf(etabDe(T.tournees[c])); return i < 0 ? 99 : i; };
+    var SEUIL = Ess.SEUIL_LOIN, codes = Object.keys(T.tournees).sort(function (a, b) { return (rangE(a) - rangE(b)) || parCode(a, b); }), pf = {}, arret = {}, pros = {}, cli = [];
     // Une position partagée par plusieurs officines de la base nationale est un centre de commune ou de quartier (mesuré le 26/11/2026 :
     // 620 positions partagées, jusqu'à 21 officines au même point à Paris) : elle est dite « approximative », jamais une distance au mètre.
     var nPos = {}, pos = function (p) { return p[0] + ',' + p[1]; };
@@ -99,7 +107,7 @@
         var pr = pros[cip];
         e.statut = 'proche';
         if (pr) { e.code = pr.code; e.dRoute = Number(pr.r[3]) || 0; e.detour = Number(pr.r[6]) || 0; e.source = 'fichier'; if (pr.r[7] === 0 || pr.r[7] === false) e.approx = true; }
-        else { e.code = qui; e.dRoute = proche; e.detour = C.detourInsertion(e.lat, e.lng, T.tournees[qui], T.depot); e.source = 'calcul'; }
+        else { e.code = qui; e.dRoute = proche; e.detour = C.detourInsertion(e.lat, e.lng, T.tournees[qui], depotDe(T, T.tournees[qui])); e.source = 'calcul'; }
       } else {
         e.statut = 'loin'; e.code = ''; e.dRoute = proche;
         e.voisines = cli.filter(function (c) { return normCip(c.o.id) !== cip; }).map(function (c) { return { c: c, d: hav([e.lat, e.lng], [c.lat, c.lng]) }; })
@@ -111,10 +119,18 @@
       liste.push(e);
     });
     var etabs = (T.etablissements || []).map(function (s) { return { s: s.s, nom: s.nom, ville: s.ville, actif: s.tournees === true }; });
+    var vusE = {}, depots = [];
+    codes.forEach(function (c) {
+      var e = etabDe(T.tournees[c]); if (vusE[e]) return; vusE[e] = 1;
+      var dp = depotDe(T, T.tournees[c]), inf = etabs.filter(function (x) { return x.s === e; })[0] || {};
+      if (dp && isFinite(dp.lat) && isFinite(dp.lng)) depots.push({ s: e, nom: dp.nom || inf.nom || e, ville: dp.ville || inf.ville || '', lat: dp.lat, lng: dp.lng });
+    });
     var parT = {}; liste.forEach(function (e) { if (e.code) parT[e.code] = (parT[e.code] || 0) + 1; });
     return {
       periode: String(T.periode || ''), depot: T.depot || null,
-      tournees: codes.map(function (c) { var t = T.tournees[c]; return { code: c, nom: String(t.nom || ''), trace: t.trace || [], arrets: t.arrets || [], adh: parT[c] || 0 }; }),
+      // un dépôt par établissement qui a des tournées (v3) ; fichier v2 : le dépôt unique, au nom d'OPS
+      depots: depots,
+      tournees: codes.map(function (c) { var t = T.tournees[c]; return { code: c, etab: etabDe(t), nom: String(t.nom || ''), trace: t.trace || [], arrets: t.arrets || [], adh: parT[c] || 0 }; }),
       actifs: etabs.filter(function (s) { return s.actif; }), aRecevoir: etabs.filter(function (s) { return !s.actif; }),
       adh: liste,
       livrees: liste.filter(function (e) { return e.statut === 'livree'; }), proches: liste.filter(function (e) { return e.statut === 'proche'; }),
@@ -162,7 +178,7 @@
     return 'Position introuvable dans la base nationale : pas de prévision';
   };
   C.sousTitre = function (D, mode) {
-    var nT = D.tournees.length, act = D.actifs.map(function (s) { return s.nom; }).join(', ');
+    var nT = D.tournees.length, noms = D.actifs.map(function (s) { return s.nom; }), act = noms.length > 1 ? noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1] : noms.join('');
     var per = D.periode ? ' (' + esc(D.periode) + ')' : '';
     if (mode === 'auj') return 'Aujourd’hui : nos <b>' + nT + ' tournées</b>' + (act ? ' ' + esc(act) : '') + ' et les <b>' + D.livrees.length + ' adhérentes</b> qu’elles livrent déjà' + per + '. Touchez « En quotidien » pour voir où se placeraient les autres.';
     return 'En quotidien : <b>' + D.livrees.length + '</b> déjà livrées, <b>' + D.proches.length + '</b> à ' + Ess.SEUIL_LOIN + NBSP + 'km ou moins d’une tournée (la tournée qui les livrerait et le détour estimé), <b>' +
@@ -279,7 +295,7 @@
       var ex = function (st) { return P.tous.filter(function (e) { return e.statut === st; })[0]; };
       var l = ex('livree'), p = ex('proche'), f = ex('loin');
       document.getElementById('gtrn-leg').innerHTML = '<span><i class="gtrn-sw"></i>Une tournée (' + D.tournees.length + ')</span>' +
-        (D.depot ? '<span><i class="gtrn-sw gtrn-sw-d"></i>Dépôt · ' + esc(D.depot.ville || D.depot.nom || '') + '</span>' : '') +
+        D.depots.map(function (dp) { return '<span><i class="gtrn-sw gtrn-sw-d"></i>Dépôt · ' + esc(dp.ville || dp.nom || '') + (D.depots.length > 1 ? ' (' + esc(dp.s) + ')' : '') + '</span>'; }).join('') +
         (l ? '<span>' + badge(l) + 'Déjà livrée (' + D.livrees.length + ')</span>' : '') +
         (mode === 'quot' && p ? '<span>' + badge(p) + 'Sur une tournée, avec détour (' + D.proches.length + ')</span>' : '') +
         (mode === 'quot' && f ? '<span>' + badge(f) + 'À plus de ' + Ess.SEUIL_LOIN + NBSP + 'km de nos tournées (' + D.loin.length + ')</span>' : '');
@@ -438,10 +454,10 @@
           lignes[t.code] = L.polyline(t.trace, { color: GRIS, weight: 3, opacity: 0.7 }).addTo(carte)
             .bindTooltip('<b>' + esc(t.code) + '</b> · ' + esc(t.nom) + '<br>' + t.arrets.length + ' arrêts' + (t.adh ? ' · ' + t.adh + ' adhérente' + (t.adh > 1 ? 's' : '') : ''), { sticky: true });
         });
-        if (D.depot && isFinite(D.depot.lat)) {
-          depotM = L.marker([D.depot.lat, D.depot.lng], { icon: L.divIcon({ className: 'gtrn-ic', iconSize: tactile() ? [44, 44] : [22, 22], iconAnchor: tactile() ? [22, 22] : [11, 11], html: '<div class="gtrn-depot"' + (tactile() ? ' style="margin:14px"' : '') + '></div>' }), zIndexOffset: 400, title: 'Dépôt · ' + (D.depot.nom || '') })
-            .addTo(carte).bindTooltip('Dépôt · ' + esc(D.depot.nom || '') + (D.depot.ville ? ', ' + esc(D.depot.ville) : ''));
-        }
+        D.depots.forEach(function (dp) {   // un marqueur par établissement qui a des tournées
+          L.marker([dp.lat, dp.lng], { icon: L.divIcon({ className: 'gtrn-ic', iconSize: tactile() ? [44, 44] : [22, 22], iconAnchor: tactile() ? [22, 22] : [11, 11], html: '<div class="gtrn-depot"' + (tactile() ? ' style="margin:14px"' : '') + '></div>' }), zIndexOffset: 400, title: 'Dépôt · ' + (dp.nom || '') })
+            .addTo(carte).bindTooltip('Dépôt · ' + esc(dp.nom || '') + (dp.ville ? ', ' + esc(dp.ville) : ''));
+        });
         var btns = document.createElement('div'); btns.className = 'gtrn-btns';
         btns.innerHTML = '<button type="button" data-z="tout">Toutes les tournées</button><button type="button" data-z="adh">Les adhérentes</button>';
         el.appendChild(btns);

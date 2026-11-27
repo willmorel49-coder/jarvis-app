@@ -145,7 +145,29 @@ test('accesGroupement : Essentiels = 3 comptes + claude-test, Emmanuel absent ; 
   assert.equal(acces('opso', 'emmanuel.noblanc@normandiepharma.fr'), true);
   const ctx = {}; ctx.window = ctx; vm.createContext(ctx); vm.runInContext(lire('crm/v2/v2-comptes.js'), ctx);
   // Alexandre consulte seulement (correction de Will du 26/11) : accès à l'app, mais pas dans les contacts groupement.
-  assert.deepEqual(dehors(ctx, 'V2_COMPTES.contactsGroupement'), ['william.morel@me.com', 'pascale.prieto@integralpharma.fr']);
+  // 27/11/2026 : Pauline Guillaumin suit OPSO depuis JARVIS (même accès qu'Arthur et Guy) : dans les contacts et dans la liste OPSO, pas dans celle d'Essentiels.
+  assert.deepEqual(dehors(ctx, 'V2_COMPTES.contactsGroupement'), ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'pauline.guillaumin@integralpharma.fr']);
+});
+
+test('menu « Suivi des groupements » : chaque lien porte sa liste d’accès ; Pauline G. ne voit que OPSO, Will et Pascale les deux', () => {
+  const ctx = {}; ctx.window = ctx; vm.createContext(ctx); vm.runInContext(lire('crm/v2/v2-comptes.js'), ctx);
+  const C = dehors(ctx, 'V2_COMPTES'), app = lire('crm/v2/v2-app.js');
+  const apps = [['essentiels', 'Essentiels Pharma'], ['opso', 'OPSO']];
+  for (const [acces, nom] of apps) assert.match(app, new RegExp("nom: '" + nom + "', url: '[^']+', acces: '" + acces + "'"));
+  assert.match(app, /var apps = groupementsVisibles\(mail\);/); assert.match(app, /!apps\.length/);
+  const vus = m => apps.filter(([a]) => C[a].includes(m)).map(([, n]) => n);
+  assert.deepEqual(vus('pauline.guillaumin@integralpharma.fr'), ['OPSO']);
+  assert.deepEqual(vus('william.morel@me.com'), ['Essentiels Pharma', 'OPSO']); assert.deepEqual(vus('pascale.prieto@integralpharma.fr'), ['Essentiels Pharma', 'OPSO']);
+  assert.deepEqual(vus('manon.dussurgey@integralpharma.fr'), [], 'pas dans les contacts groupement : aucune entrée de menu');
+});
+
+test('équipe CPR : 5 comptes, tous dans « tournees » (case d’accueil) et « tourneesCpr » (établissement par défaut)', () => {
+  const ctx = {}; ctx.window = ctx; vm.createContext(ctx); vm.runInContext(lire('crm/v2/v2-comptes.js'), ctx);
+  const C = dehors(ctx, 'V2_COMPTES');
+  assert.equal(C.tourneesCpr.length, 5);
+  for (const m of C.tourneesCpr) assert.ok(C.tournees.includes(m), m);
+  assert.ok(!C.tourneesCpr.includes('william.morel@me.com'), 'Will reste sur OPS par défaut');
+  assert.ok(C.opso.includes('pauline.guillaumin@integralpharma.fr'));
 });
 
 test('réglage Essentiels : pas de ventes dédiées, conditions visibles, aucun drapeau OPSO', () => {

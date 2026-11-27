@@ -721,3 +721,70 @@ test('Essentiels E1… : badge, ligne, bandeau et nom court', () => {
   assert.equal(Ess.court('Grande Pharmacie'), 'Grande Pharmacie');      // rien d'inventé : le nom reste entier
   assert.equal(Ess.court('Pharmacie Exemple'), 'Exemple');
 });
+
+// ── 27/11/2026 : plusieurs établissements (fichier version 3) — données FICTIVES, 2e établissement « ZZZ » ──
+const tz = (code, etab, extra) => Object.assign({ code, nom: 'Tournée ' + code, nb_arrets: 2, km_aller: 10, km_retour: 5, marge_jour: 10, jours_commande: 5, rentabilite: 100,
+  arrets: [cl(1, 10, 100, 5, 20, 2), cl(2, 20, 200, 5, 30, 2)].map(a => Object.assign(a, { m: [[1000, 50, 2], [1000, 50, 2], [1000, 50, 2], [1000, 50, 2]], f: [0, 0, 0, 0, 0, 0, 0], g: 0 })), trace: [[45.7, 4.8], [45.8, 4.9]], prospects: [] }, etab ? { etab } : {}, extra || {});
+const V3 = {
+  version: 3, periode: 'p', cout_livraison: 20, mois: ['2026-01', '2026-02', '2026-03', '2026-04'], depot: { nom: 'Dépôt OPS fictif', lat: 47, lng: -1 },
+  depots: { OPS: { nom: 'Dépôt OPS fictif', lat: 47, lng: -1 }, ZZZ: { nom: 'Dépôt ZZZ fictif', ville: 'Lyonnais', lat: 45.75, lng: 4.85 } },
+  etablissements: [{ s: 'OPS', nom: 'Ouest fictif', ville: 'A', tournees: true }, { s: 'ZZZ', nom: 'Zone Z fictive', ville: 'B', tournees: true }, { s: 'HP', nom: 'Autre', ville: 'C', tournees: false }],
+  tournees: { T12: tz('T12'), T15: tz('T15', 'OPS'), 'ZZZ-T12': tz('ZZZ-T12', 'ZZZ', { code_fichier: 'T12', jours: null, transporteur: null, ordre: 'partiel', nb_estimes: 1 }), 'ZZZ-T01': tz('ZZZ-T01', 'ZZZ', { jours: null, ordre: 'fichier' }) }
+};
+V3.tournees['ZZZ-T12'].arrets[1].est = 1;
+
+test('multi-établissement : une tournée sans `etab` est OPS ; la vue ne garde que l’établissement choisi', () => {
+  assert.equal(C.etabDe(V3.tournees.T12), 'OPS'); assert.equal(C.etabDe(V3.tournees['ZZZ-T01']), 'ZZZ');
+  assert.deepEqual(Object.keys(C.vue(V3, 'OPS').tournees).sort(), ['T12', 'T15']);
+  assert.deepEqual(Object.keys(C.vue(V3, 'ZZZ').tournees).sort(), ['ZZZ-T01', 'ZZZ-T12']);
+  assert.deepEqual(Object.keys(C.vue(V3, 'HP').tournees), []);
+  assert.equal(Object.keys(V3.tournees).length, 4, 'le fichier d’origine n’est pas modifié');
+});
+
+test('multi-établissement : classement, bilan et comparaison ne comptent que l’établissement choisi', () => {
+  const o = C.analyserTout(C.vue(V3, 'OPS')), z = C.analyserTout(C.vue(V3, 'ZZZ'));
+  assert.equal(C.bilan(o).n, 2); assert.equal(C.bilan(z).n, 2);
+  assert.deepEqual(Object.keys(z).sort(), ['ZZZ-T01', 'ZZZ-T12']);
+  const dz = C.vue(V3, 'ZZZ'), cmp = C.comparer(z, dz, 'ZZZ-T01', 'ZZZ-T12');
+  assert.ok(cmp && cmp.lignes.some(l => l.k === 'rang' && l.a >= 1 && l.a <= 2 && l.b >= 1 && l.b <= 2), 'rang sur 2 tournées seulement');
+});
+
+test('multi-établissement : dépôt de l’établissement (depots[etab]), sinon le dépôt unique du fichier v2', () => {
+  assert.equal(C.depotDe(V3, 'ZZZ').ville, 'Lyonnais'); assert.equal(C.vue(V3, 'ZZZ').depot.nom, 'Dépôt ZZZ fictif');
+  assert.equal(C.vue(V3, 'OPS').depot.nom, 'Dépôt OPS fictif');
+  const v2 = { depot: { nom: 'Seul' }, tournees: { T1: tz('T1') } };
+  assert.equal(C.vue(v2, 'OPS').depot.nom, 'Seul');
+});
+
+test('multi-établissement : l’adresse d’une tournée choisit son établissement ; défaut CPR pour l’équipe CPR, sinon OPS', () => {
+  assert.equal(C.etabDeCode(V3, 'ZZZ-T12'), 'ZZZ'); assert.equal(C.etabDeCode(V3, 'T12'), 'OPS'); assert.equal(C.etabDeCode(V3, 'nexistepas'), null);
+  assert.equal(C.etabParDefaut(V3, 'ZZZ-T01', false), 'ZZZ');
+  assert.equal(C.etabParDefaut(V3, '', false), 'OPS');
+  assert.equal(C.etabParDefaut(V3, 'carte', false), 'OPS');
+  const avecCpr = JSON.parse(JSON.stringify(V3)); avecCpr.etablissements[1].s = 'CPR'; avecCpr.tournees['ZZZ-T01'].etab = 'CPR';
+  assert.equal(C.etabParDefaut(avecCpr, '', true), 'CPR'); assert.equal(C.etabParDefaut(avecCpr, '', false), 'OPS');
+  assert.equal(C.etabParDefaut(V3, '', true), 'OPS', 'équipe CPR mais pas d’établissement CPR actif : OPS');
+});
+
+test('multi-établissement : jours et transporteur nuls = rien d’inventé ; ordre estimé = phrase claire et repère ≈', () => {
+  const a = C.analyser(V3.tournees['ZZZ-T12']);
+  assert.deepEqual(a.jours, []); assert.equal(C.jours(a), ''); assert.equal(a.transporteur, null); assert.equal(a.etab, 'ZZZ');
+  assert.equal(C.texteOrdre(a), 'Ordre de passage estimé pour 1 arrêt : le fichier de l’établissement ne le donne pas pour les clientes livrées une fois par semaine.');
+  assert.equal(C.texteOrdre(C.analyser(V3.tournees['ZZZ-T01'])), '');
+  assert.equal(C.texteOrdre(C.analyser(V3.tournees.T12)), '');
+  assert.deepEqual(a.arrets.map(x => C.num(x)), ['1', '≈2']);
+  const t = Object.assign({}, V3.tournees['ZZZ-T12'], { nb_estimes: 3 });
+  assert.match(C.texteOrdre(t), /^Ordre de passage estimé pour 3 arrêts/);
+});
+
+test('multi-établissement : OPS identique avec ou sans les tournées d’un autre établissement', () => {
+  const seul = { version: 2, periode: 'p', cout_livraison: 20, mois: ['2026-01', '2026-02', '2026-03', '2026-04'], depot: V3.depot, etablissements: V3.etablissements, tournees: { T12: V3.tournees.T12, T15: V3.tournees.T15 } };
+  assert.deepEqual(C.analyserTout(C.vue(V3, 'OPS')), C.analyserTout(C.vue(seul, 'OPS')));
+});
+
+test('multi-établissement : l’export Excel dit l’ordre estimé', () => {
+  const d = C.vue(V3, 'ZZZ'), A = C.analyserTout(d), a = A['ZZZ-T12'];
+  const tb = { code: 'ZZZ-T12', nom: 'n', mois: [], cout: 20, fen: null, clientes: [], serie: [], tot: { ca: 0, marge: 0, cmd: 0, cout: 0, renta: 0, renta_mois: 0, ca_mois: 0, marge_mois: 0, cmd_mois: 0, marge_cmd: null, taux: null, nb_ventes: 0, nb_sans: 0, nb_perte: 0, fam: {}, gen: 0 } };
+  const F = C.feuillesExcel(tb, a, d, null, 'ZZZ · Zone', 'x');
+  assert.ok(F.find(f => f.nom === 'À lire').lignes.some(l => l[0] === 'Ordre de passage' && /estimé pour 1 arrêt/.test(l[1])));
+});

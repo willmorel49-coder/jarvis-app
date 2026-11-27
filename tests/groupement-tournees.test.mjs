@@ -262,3 +262,50 @@ test('390 px, 26/11 : le bandeau ne cache jamais l’officine choisie (marge bas
   assert.match(MODULE, /C\.decalage\(carte\.latLngToContainerPoint\(\[e\.lat, e\.lng\]\)\.y, carte\.getSize\(\)\.y, hBandeau\(\)\)/);
   assert.match(MODULE, /function hBandeau\(\) \{ var b = document\.getElementById\('gtrn-band'\); return b && b\.classList\.contains\('on'\) \? b\.offsetHeight : 0; \}/);
 });
+
+// ── 27/11/2026 : TOUS les établissements (fichier version 3) — 2e établissement FICTIF « ZZZ », mêmes numéros de tournée que l'autre ──
+const T3 = {
+  periode: 'période fictive', depot: T.depot,
+  depots: { AAA: T.depot, ZZZ: { nom: 'Dépôt ZZZ fictif', ville: 'Ville-Z', lat: 45.0, lng: 4.0 } },
+  etablissements: [{ s: 'AAA', nom: 'Établissement actif', ville: 'Ici', tournees: true }, { s: 'ZZZ', nom: 'Établissement Z', ville: 'Là', tournees: true }, { s: 'BBB', nom: 'Établissement en attente', ville: 'Ailleurs', tournees: false }],
+  tournees: Object.assign({}, T.tournees, {
+    'ZZZ-T1': { code: 'ZZZ-T1', etab: 'ZZZ', nom: 'Zone Z fictive', trace: [[45.0, 4.0], [45.0, 4.5]], arrets: [{ n: 1, id: '6000001', nom: 'ARRET Z', ville: 'Z', lat: 45.0, lng: 4.2 }], prospects: [] }
+  })
+};
+const T3b = JSON.parse(JSON.stringify(T3)); for (const k of ['T1', 'T2']) T3b.tournees[k].etab = 'AAA';
+const PF3 = { p: PF.p.concat([pf('6000001', 45.0, 4.2, 'PHARMACIE Z', 'Z', '69000'), pf('6000002', 45.01, 4.3, 'PHARMACIE Z PROCHE', 'Z', '69100')]) };
+const D3 = C.calculer(T3b, PF3, ADH.concat([{ code: '6000001', name: 'x', inDb: false }, { code: '6000002', name: 'x', inDb: false }]), WML);
+
+test('v3 : toutes les tournées de tous les établissements, OPS d’abord, chacune avec son établissement', () => {
+  assert.deepEqual(D3.tournees.map(t => t.code), ['T1', 'T2', 'ZZZ-T1']);
+  assert.deepEqual(D3.tournees.map(t => t.etab), ['AAA', 'AAA', 'ZZZ']);
+  assert.equal(D3.actifs.length, 2); assert.deepEqual(D3.aRecevoir.map(s => s.s), ['BBB'], 'l’établissement dont les tournées sont reçues n’est plus « à recevoir »');
+});
+
+test('v3 : un dépôt par établissement qui a des tournées ; le détour se calcule avec le dépôt de LA tournée', () => {
+  assert.deepEqual(D3.depots.map(d => d.s), ['AAA', 'ZZZ']);
+  assert.equal(D3.depots[1].ville, 'Ville-Z');
+  assert.equal(C.depotDe(T3b, T3b.tournees['ZZZ-T1']).ville, 'Ville-Z'); assert.equal(C.depotDe(T3b, T3b.tournees.T1).ville, 'Ville-Dépôt');
+  const z = D3.adh.filter(e => e.cip === '6000002')[0];
+  assert.equal(z.statut, 'proche'); assert.equal(z.code, 'ZZZ-T1');
+  assert.equal(z.detour, C.detourInsertion(45.01, 4.3, T3b.tournees['ZZZ-T1'], T3b.depots.ZZZ), 'détour avec le dépôt de l’établissement');
+  assert.notEqual(z.detour, C.detourInsertion(45.01, 4.3, T3b.tournees['ZZZ-T1'], T3b.depot), 'et pas avec celui d’un autre établissement');
+});
+
+test('v3 : sans `etab` = OPS ; fichier v2 (un seul dépôt) inchangé', () => {
+  const v2 = C.calculer(T, PF, ADH, WML);
+  assert.deepEqual(v2.tournees.map(t => t.etab), ['OPS', 'OPS']);
+  assert.equal(v2.depots.length, 1); assert.equal(v2.depots[0].ville, 'Ville-Dépôt');
+  assert.deepEqual(v2.adh.map(e => [e.cip, e.statut, e.code, e.detour]), D.adh.map(e => [e.cip, e.statut, e.code, e.detour]));
+});
+
+test('v3 : « ZZZ-T1 » et « T1 » ne se confondent jamais (codes, textes, numéros)', () => {
+  const P3 = C.numeroter(D3);
+  assert.equal(P3.par['6000001'].code, 'ZZZ-T1'); assert.equal(P3.par['1000002'].code, 'T1');
+  assert.match(C.prevision(D3.adh.filter(e => e.cip === '6000001')[0], D3), /ZZZ-T1/);
+  assert.match(C.sousTitre(D3, 'auj'), /3 tournées/); assert.match(C.sousTitre(D3, 'auj'), /Établissement actif et Établissement Z/);
+});
+
+test('v3 : l’écran dessine un marqueur de dépôt par établissement et la légende les nomme', () => {
+  assert.match(MODULE, /D\.depots\.forEach/); assert.match(MODULE, /D\.depots\.map/);
+});

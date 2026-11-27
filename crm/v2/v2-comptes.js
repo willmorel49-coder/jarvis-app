@@ -22,7 +22,8 @@ window.V2_COMPTES = {
   // 13/10/2026 — Will : Arthur Le Houerou y entre avec son compte du CRM (même e-mail, même mot de passe).
   // 15/10/2026 — Will : Guy Bourdon y entre aussi, avec son compte du CRM.
   // 03/11/2026 — Will : Alexandre Morel a le même accès que lui, partout.
-  opso: ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'alexandre.morel@me.com', 'pascale.prieto@integralpharma.fr', 'arthur.lehouerou@integralpharma.fr', 'guy.bourdon@integralpharma.fr', 'claude-test@integralpharma.fr'],
+  // 27/11/2026 — Will : Pauline Guillaumin y entre aussi, « pour suivi » : même accès qu'Arthur et Guy (aussi dans contactsGroupement, plus bas).
+  opso: ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'alexandre.morel@me.com', 'pascale.prieto@integralpharma.fr', 'arthur.lehouerou@integralpharma.fr', 'guy.bourdon@integralpharma.fr', 'pauline.guillaumin@integralpharma.fr', 'claude-test@integralpharma.fr'],
   // 17/11/2026 — Will : « qu'on le voie moi et Pascale sur l'appli OPSO ». Plan du contrat OPSO 2027 (PDF interne) :
   // Will, Pascale, Alexandre (même accès que Will), claude-test (preuves). Ni Emmanuel (OPSO, le client), ni Arthur, ni Guy.
   // Le verrou réel est côté serveur (jarvis_acces_plan_opso, crm/v2/_sql/plan-opso-2027.sql) : cette liste ne fait qu'afficher la tuile.
@@ -31,12 +32,18 @@ window.V2_COMPTES = {
   // Entrée « Groupements » du menu du compte (liens vers Essentiels Pharma et OPSO). Comme planOpso : cette liste ne fait qu'AFFICHER l'entrée ; le vrai verrou
   // est celui de chaque app côté serveur (jarvis_acces_essentiels, jarvis_acces_opso).
   // 26/11/2026 — Will : Alexandre Morel consulte seulement (hors société) : dans la liste d'accès de l'app, pas dans les contacts groupement.
-  contactsGroupement: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr'],
+  // 27/11/2026 — Will : Pauline Guillaumin suit OPSO depuis son JARVIS (même accès qu'Arthur et Guy). Le menu « Suivi des groupements » ne lui montre que
+  // les apps dont la liste d'accès contient son adresse : OPSO oui, Essentiels Pharma non.
+  contactsGroupement: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'pauline.guillaumin@integralpharma.fr'],
   // 26/11/2026 — choix 5 de Will : seuls comptes admis dans l'espace Essentiels Pharma (essentiels/v2) :
   // Will, Pascale, Alexandre (consultation de l'app), claude-test (preuves). Ni Emmanuel (OPSO, le client) ni les commerciaux.
   // Même liste côté serveur : jarvis_acces_essentiels() (étape 3, 26/11/2026). Cette liste décide de l'écran et du renvoi.
   essentiels: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'alexandre.morel@me.com', 'claude-test@integralpharma.fr'],
   // 10/11/2026 (Will) — équipe OPS : Will, Alexandre Morel (même accès que Will), Arthur Lehouerou, Valérie Morlaix, Karine (KV).
   // Lu par v2-app.js (V2.tourneesEquipe).
-  tournees: ['william.morel@me.com', 'alexandre.morel@me.com', 'arthur.lehouerou@integralpharma.fr', 'valerie.morlaix@integralpharma.fr', 'karine.vezzaro@integralpharma.fr']
+  // 27/11/2026 (Will, choix cliqué) — case « Tournées » aussi sur l'accueil de l'équipe CPR : Pauline G., Manon, Ingrid L., Morgane, Aurélie (compte pharmacien@cpharma.fr).
+  tournees: ['william.morel@me.com', 'alexandre.morel@me.com', 'arthur.lehouerou@integralpharma.fr', 'valerie.morlaix@integralpharma.fr', 'karine.vezzaro@integralpharma.fr',
+    'pauline.guillaumin@integralpharma.fr', 'manon.dussurgey@integralpharma.fr', 'ingrid.lefebure@integralpharma.fr', 'morgane.durigan-cueille@integralpharma.fr', 'pharmacien@cpharma.fr'],
+  // 27/11/2026 — équipe CPR (Comptoir Pharmaceutique du Rhône) : l'écran Tournées s'ouvre sur CPR au lieu d'OPS (lu par v2-tournees.js, V2.tourneesCpr).
+  tourneesCpr: ['pauline.guillaumin@integralpharma.fr', 'manon.dussurgey@integralpharma.fr', 'ingrid.lefebure@integralpharma.fr', 'morgane.durigan-cueille@integralpharma.fr', 'pharmacien@cpharma.fr']
 };
