@@ -1018,7 +1018,7 @@
   background: radial-gradient(circle at 50% 30%, var(--grp-vert-458a63), var(--grp-vert-26523a)); box-shadow: 0 10px 20px -8px rgba(var(--grp-vert-001908-rgb),.7);
 }
 #v2-root .opx-stage .opx-pod.p1.has-img .opx-pod-ring { right: calc(50% - 112px); width: 84px; height: 84px; }
-#v2-root .opx-stage .opx-pod.has-img .opx-ring-c b { font-size: 20px; }
+#v2-root .opx-stage .opx-pod.has-img .opx-ring-c b, #v2-root .opx-stage .opx-pod.p1.has-img .opx-ring-c b { font-size: 20px; }
 #v2-root .opx-stage .opx-pod.has-img .opx-ring-c b small { font-size: 13px; }
 #v2-root .opx-stage .opx-pod.has-img .opx-ring-c > span { display: none; }
 #v2-root .opx-stage .opx-pod.has-img .opx-pod-ring::before { display: none; }
@@ -1144,7 +1144,8 @@
   #v2-root .opx-cl .opx-spark { position: absolute; right: 8px; bottom: 5px; width: 46%; height: 38px; opacity: .4; pointer-events: none; }
   #v2-root .opx-cl > :not(.opx-spark):not(.opx-cl-sh) { position: relative; }
   #v2-root .opx-stage .opx-pod.has-img .opx-pod-ring, #v2-root .opx-stage .opx-pod.p1.has-img .opx-pod-ring { right: auto; left: 50%; width: 48px; height: 48px; margin-left: -24px; bottom: -40px; }
-  #v2-root .opx-stage .opx-pod.has-img .opx-ring-c b { font-size: 15px; }
+  #v2-root .opx-stage .opx-pod.has-img .opx-ring-c b, #v2-root .opx-stage .opx-pod.p1.has-img .opx-ring-c b { font-size: 12px; }
+  #v2-root .opx-stage .opx-pod.has-img .opx-ring-c b small { font-size: 10px; }
   #v2-root .opx-stage .opx-pod.has-img .opx-pod-name { margin-top: 40px; }
 }
 #v2-root .opx-lit .opx-seg { background: linear-gradient(180deg, rgba(var(--grp-vert-f9fcfa-rgb), calc(.22 + var(--l) * .74)) 0%, rgba(var(--grp-vert-e8f3ed-rgb), calc(.14 + var(--l) * .64)) 100%); }
