@@ -61,3 +61,12 @@ test('les non-officines écartées ne sont plus sur la carte, les médecins prop
   assert.equal(P.filter(p => /^(CERP |ALLIANCE HEALTHCARE|PHOENIX OCP|MEGAPARA)/.test(p[6])).length, 0);
   assert.ok(P.filter(p => String(p[13]).startsWith('265') && p[6] === 'CABINET MEDICAL').length >= 40);
 });
+
+// 27/11/2026, 4e passe (choix de Will) : l'annuaire des entreprises comme 2e source — nom + titulaire (dirigeant actuel) sur la même
+// fiche FINESS libre, société active ; le nom doit concorder par un autre mot que le nom du pharmacien (« Pharmacie Dupont » = titulaire seul).
+test('annuaire : Pharmacie du Parc des Princes et Pharmacie Bichat (Paris) à leur adresse, « Pharmacie Vanbremeersch » (titulaire seul) pas déplacée', () => {
+  assert.deepEqual(parId['2053801'].slice(0, 2), [48.84021, 2.25607]);   // enseigne « Pharmacie du Parc des Princes » de la SELARL Pharmacie Levy Teboul
+  assert.deepEqual(parId['2054407'].slice(0, 2), [48.89794, 2.33489]);   // enseigne « Pharmacie Bichat » de la Pharmacie Maarek
+  assert.equal(table['2001079'], undefined);
+  assert.ok(Object.keys(table).length >= 18275, String(Object.keys(table).length));
+});

@@ -20,6 +20,15 @@ désignent la même fiche, sans que le téléphone en désigne une autre ; une f
 pas. Mesuré sur 5 886 liens sûrs : 1 cas douteux. Le titulaire SEUL est écarté (faux 108 fois sur 7 642 : titulaires périmés).
 La même double preuve, quand le téléphone la confirme, corrige un lien sûr qui désigne la mauvaise fiche (Pharmacies Necker
 inversées à Paris, Pharmacie des Andelys : 3 cas le 27/11).
+Annuaire des entreprises (passe 4, choix de Will, 27/11/2026 2 h 25), en dernier recours, même double preuve avec une 2e source :
+parmi les fiches FINESS libres du code postal ou de la commune (et la fiche du lien pas sûr), la fiche unique dont le TITULAIRE
+(nom + prénom) est dirigeant actuel de la société à l'annuaire, ou inscrit sur la fiche au RPPS, ET dont un NOM concorde (FINESS,
+dénomination, enseigne ou nom commercial à l'annuaire) par un autre mot que le nom du pharmacien, ET dont la société et
+l'établissement sont ACTIFS ; le téléphone ne désigne
+pas une autre fiche ; un lien pas sûr n'est confirmé que si c'est sa propre fiche ; une fiche réclamée deux fois ne se donne pas.
+Mesuré sur 2 293 liens sûrs qui avaient une concurrente libre dans leur commune : 2 292 justes, 1 seul écart (Pharmacie des Andelys,
+dont l'ancien lien était faux : l'annuaire désigne la fiche corrigée le 27/11). Source : ~/JARVIS/ETUDES-ZONE/brut/annuaire-fiches.json
+(recherche-entreprises.api.gouv.fr par n° FINESS, lu le 27/11/2026 ; outils dans ~/jarvis-preuves/carte-positions-passe4-2026-11-27/annuaire).
 Position : celle de la fiche FINESS quand elle est placée au numéro ou à la rue (précision 1 à 3) ; quand
 FINESS n'a que la commune (précision 4), le point BPE 2025 (INSEE) du même SIRET ; sans BPE, le point ne bouge pas.
 Mesuré le 27/11/2026 à l'Adresse nationale (Géoplateforme IGN) là où les deux sources divergent de plus de 300 m :
@@ -49,6 +58,8 @@ FINESS = os.path.join(EZ, 'finess620.json')
 BPE = os.path.join(EZ, 'bpe_secteur.csv')
 CORR = os.path.expanduser('~/fiches-officines/correspondance-id-finess.json')
 RPPS = os.path.join(EZ, 'rpps_noms.csv')      # ETUDES-ZONE/outils/filtre_rpps_noms.py (annuaire RPPS, data.gouv)
+ANNUAIRE = os.path.join(EZ, 'annuaire-fiches.json')   # annuaire des entreprises par n° FINESS (passe 4, 27/11/2026)
+LIENS_PROUVES = {}    # rempli par calculer() : id officine -> fiche FINESS retenue (lue par l'étude de zone pour rester alignée)
 PHARMA_FR = os.path.join(ROOT, 'crm', 'v2', 'pharma-fr-data.js')
 OUT = os.path.join(ROOT, 'positions_reelles.json')
 PREFIXE = 'window.PHARMA_FR='
@@ -122,6 +133,11 @@ def par_titulaire(p, rp, fin):
     return trouves.pop() if len(trouves) == 1 else None
 
 
+def dirigeant_concorde(noms, pre, nom, prenoms):
+    dn, dp = set(jetons_nom(nom)), jetons_nom(prenoms)
+    return bool(dn) and (noms <= dn or dn <= noms) and bool(dp) and dp[0] == pre
+
+
 def nom_concorde(p, q):
     a = {w for w in jetons_nom(p[6]) if w not in MOTS_VIDES and len(w) > 2}
     b = {w for w in jetons_nom(q['nom']) + jetons_nom(q.get('rs_longue')) if w not in MOTS_VIDES and len(w) > 2}
@@ -151,7 +167,7 @@ def positions_corrigees():
 
 
 def calculer():
-    for f in (LIENS, FINESS, BPE, CORR, PHARMA_FR, RPPS):
+    for f in (LIENS, FINESS, BPE, CORR, PHARMA_FR, RPPS, ANNUAIRE):
         if not os.path.exists(f):
             sys.exit('ARRÊT : source absente ' + f)
     _, data, _ = lire_pharma_fr(PHARMA_FR)
@@ -166,6 +182,11 @@ def calculer():
         if r[2] == 'D307' and r[3] and r[3] not in ('_Z', ''):
             bpe.setdefault(r[3], (float(r[0]), float(r[1])))     # même règle qu'e08_lier.py : premier point du SIRET
     rp = lire_rpps()
+    ann = json.load(open(ANNUAIRE, encoding='utf-8'))['fiches']
+    zone = {}
+    for q in fin.values():
+        zone.setdefault(q['ligne'][:5], set()).add(q['finess'])
+        zone.setdefault('co:' + commune(q['ligne'][6:]), set()).add(q['finess'])
     par_tel = {}
     for q in fin.values():
         if tel9(q['tel']):
@@ -191,9 +212,59 @@ def calculer():
         t = tel9(p[9])
         return None if t and par_tel.get(t) and g not in par_tel[t] else g
 
+    def par_annuaire(oid, p, f):   # nom + titulaire (annuaire des entreprises ou RPPS) sur une fiche libre, active, unique
+        ts = titulaires(p[10])
+        if not ts:
+            return None
+        cands = {g for g in zone.get(str(p[8]), set()) | zone.get('co:' + commune(p[7]), set()) if not (prises.get(g, set()) - {oid})}
+        if f:
+            cands.add(f)
+        rpf = set()
+        for noms, pre in ts:
+            for t in noms:
+                for nom, pr, g, cp, com in rp.get(t, ()):
+                    if (noms <= nom or nom <= noms) and pr == pre and (cp == str(p[8]) or com == commune(p[7])):
+                        rpf.add(g)
+        ok = []
+        for g in cands:
+            a = ann.get(g)
+            if not a or a['etat'] != 'A':
+                continue
+            tit = g in rpf or any(dirigeant_concorde(noms, pre, n, pr) for n, pr in a['dirigeants'] for noms, pre in ts)
+            # le nom doit concorder par autre chose que le nom du pharmacien (« Pharmacie Dupont » = le titulaire, pas une 2e preuve)
+            perso = {t for noms, _ in ts for t in noms} | {t for n, _ in a['dirigeants'] for t in jetons_nom(n)}
+            mots = lambda x: {w for w in jetons_nom(x) if w not in MOTS_VIDES and len(w) > 2} - perso
+            if tit and mots(p[6]) & mots(' '.join([fin[g]['nom'], fin[g].get('rs_longue') or '', a['noms']])):
+                ok.append(g)
+        g = ok[0] if len(ok) == 1 else None
+        t = tel9(p[9])
+        if g and t and par_tel.get(t) and g not in par_tel[t]:
+            return None
+        return None if (g and f and g != f) else g
+
     pos, cpt = {}, {'officines': len(pts), 'sans_lien': 0, 'lien_non_sur': 0, 'autre_commune': 0,
                     'sans_position': 0, 'gardees': 0, 'par_bpe': 0, 'par_finess': 0,
-                    'double_preuve_telephone': 0, 'double_preuve_titulaire': 0, 'fiche_deja_prise': 0, 'lien_sur_corrige': 0}
+                    'double_preuve_telephone': 0, 'double_preuve_titulaire': 0, 'double_preuve_annuaire': 0,
+                    'fiche_deja_prise': 0, 'fiche_reclamee_deux_fois': 0, 'lien_sur_corrige': 0}
+    # 1er tour : les preuves par l'annuaire, pour écarter une fiche réclamée par deux officines (ou par une autre preuve du même calcul)
+    reclames = {}
+    for oid, p in pts.items():
+        f, m = lien.get(oid, (None, ''))
+        if f and methode_sure(m):
+            continue
+        g = tel_commune(p)
+        if g:
+            reclames.setdefault(g, set()).add(oid)
+            continue
+        g = nom_titulaire(p)
+        if g and not (f and g != f):
+            reclames.setdefault(g, set()).add(oid)
+            continue
+        if not (f and g):
+            g = par_annuaire(oid, p, f)
+            if g:
+                reclames.setdefault(g, set()).add(oid)
+    LIENS_PROUVES.clear()
     for oid, p in pts.items():
         f, m = lien.get(oid, (None, ''))
         if f and methode_sure(m):
@@ -207,6 +278,11 @@ def calculer():
                 g = nom_titulaire(p); how = 'double_preuve_titulaire'
                 if g and f and g != f:   # lien pas sûr : le titulaire doit confirmer la fiche déjà trouvée par le nom
                     g = None
+                elif not g:
+                    g = par_annuaire(oid, p, f); how = 'double_preuve_annuaire'
+                    if g and len(reclames.get(g, ())) > 1:
+                        cpt['fiche_reclamee_deux_fois'] += 1
+                        continue
             if not g:
                 cpt['lien_non_sur' if f else 'sans_lien'] += 1
                 continue
@@ -224,6 +300,7 @@ def calculer():
         if not (meme_tel or meme_cp or meme_commune):
             cpt['autre_commune'] += 1
             continue
+        LIENS_PROUVES[oid] = f
         b = bpe.get(q['siret'])
         if q['lat'] is not None and str(q['precision']) in ('1', '2', '3'):
             lng, lat = q['lon'], q['lat']; cpt['par_finess'] += 1
