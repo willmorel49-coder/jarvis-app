@@ -97,7 +97,7 @@ describe('garde-fous de la vue téléprospectrice, dans le code', () => {
     assert.match(js, /!tel && ventes\[0\]\.prix/)
   })
   test('aucun caractère invisible dans les deux fichiers (piège déjà payé le 27/11)', () => {
-    assert.ok(!/[​-‍⁠﻿­]/.test(js + css))
+    assert.ok(!/[\u200b-\u200d\u2060\ufeff\u00ad]/.test(js + css))
   })
 })
 

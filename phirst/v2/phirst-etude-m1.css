@@ -382,7 +382,7 @@ html[data-impression=resume] .em1 .em1-pied{break-before:auto;margin-top:6mm}}
 @media (max-width:640px){.em1 .em1-ex td{font-size:15px}.em1 .em1-ex th,.em1 .em1-ex td{padding-left:8px;white-space:nowrap}}
 @media print{.em1 .em1-defile-x{overflow:visible}}
 /* Valeur longue (« 3,8 lits pour 100 habitants ») : à l'impression la colonne principale est étroite (115 mm) ; même règle qu'au téléphone,
-   sinon le libellé tombait à un mot par ligne sur deux pages entières (vu sur le PDF WebKit du Long Cours, 28/11) */
+   sinon le libellé tombait à un mot par ligne sur deux pages entières (vu sur un PDF WebKit, 28/11) */
 @media print{.em1 .em1-val.em1-long{grid-template-columns:minmax(0,1fr)}.em1 .em1-val.em1-long .em1-vv{text-align:left;white-space:normal}}
 /* Valeur en texte (nom de la société…) : 19em dépassait la colonne imprimée et la fin était coupée (« …SELABL », PDF WebKit, 28/11) */
 @media print{.em1 .em1-val .em1-vv.em1-txt{max-width:62mm}}
