@@ -7458,7 +7458,7 @@
 
     var body = document.getElementById('tx-body');
     var keepY = body ? body.scrollTop : 0;
-    document.getElementById('tx-tt').innerHTML = ICO('fiche', 17, 2) + (tx.modele ? ' Documents à joindre au mail' : ' Transmettre à ' + esc(nom));
+    document.getElementById('tx-tt').innerHTML = ICO('fiche', 17, 2) + (tx.modele || tx.choixSeul ? ' Documents à joindre au mail' : ' Transmettre à ' + esc(nom));   // 27/11/2026 (TOD-R2) : « Choisir dans la banque de fichiers » ne transmet rien
     body.innerHTML =
       (tx.modele ? '<div class="tx-to">Mail : <b>' + esc(tx.texte.objet) + '</b><br>L\'adresse du pharmacien s\'ajoute ensuite dans votre messagerie.</div>'
         : mail ? '<div class="tx-to">Destinataire : <b>' + esc(mail) + '</b></div>'

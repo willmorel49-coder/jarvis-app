@@ -130,7 +130,10 @@ body.tb-glisse .tb-liste{box-shadow:0 0 0 2px #9DB8EE inset;background-color:#E3
 .td-m1 .tb-l1{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;padding-right:34px;font-size:15px;line-height:1.35}
 .td-m1 .tb-k{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:var(--td-nuit)}
 .td-m1 .tb-k svg{color:var(--td-bleu)}
-.td-m1 .v2-todo-off{font-size:15px;font-weight:700;color:var(--td-bleu);overflow-wrap:anywhere}
+.td-m1 .v2-todo-off{font-size:15px;font-weight:700;overflow-wrap:anywhere}
+/* 27/11/2026 (TOD-R1) : bleu pour le lien vers la fiche seulement ; le titre d'une tâche sans officine (span) reste du texte */
+.td-m1 a.v2-todo-off{color:var(--td-bleu)}
+.td-m1 span.v2-todo-off{color:var(--ip-ink,#1A2233);cursor:default}
 /* zone touchable de 44 px sans bouger la ligne */
 .td-m1 a.v2-todo-off{display:inline-block;line-height:20px;padding:12px 0;margin:-12px 0}
 .td-m1 .v2-todo-sm{min-height:44px}

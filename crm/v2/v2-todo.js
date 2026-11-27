@@ -1234,7 +1234,9 @@
       '.v2-todo-l1{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px}',
       '.v2-todo-k{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:var(--ip-ink);letter-spacing:-.01em}',
       '.v2-todo-k svg{color:var(--ip-blue)}',
-      '.v2-todo-off{font-weight:600;color:var(--ip-blue);cursor:pointer;text-decoration:none}',
+      // 27/11/2026 (TOD-R1) : seul le nom lié à une officine est un lien ; une tâche sans officine garde un titre en texte
+      'a.v2-todo-off{font-weight:600;color:var(--ip-blue);cursor:pointer;text-decoration:none}',
+      'span.v2-todo-off{font-weight:600;color:var(--ip-ink)}',
       '.v2-todo-b{font-size:13px;font-weight:700;margin-left:auto}',
       '.v2-todo-n{font-size:13.5px;color:var(--muted)}',
       '.v2-todo-n-libre{font-size:14px;color:var(--ip-ink);line-height:1.45;overflow-wrap:anywhere}',

@@ -555,36 +555,26 @@
         esc([sousOff(k, '', p.ville, p.cp), x.vu ? ilYa(x.vu) : 'aucune visite notée'].filter(Boolean).join(' · ')) + '</small></button>' + agir(k) + '</div>';
     }
     function leJour(d) { return num(d) + ' ' + MOIS[+d.slice(5, 7) - 1]; }
-    // ── « Suivi depuis le 1er janvier » (26/11/2026) : qui a eu un rendez-vous cette année, et qui n'en a eu aucun ──
-    var sansS = [], avecS = [], stopS = 0;
+    // ── « Suivi depuis le 1er janvier » (26/11/2026) : qui a eu un rendez-vous cette année, et combien n'en ont eu aucun ──
+    // 27/11/2026 — choix cliqué de Will « Garder le compte seul » : la liste « Aucun rendez-vous depuis janvier » et ses boutons
+    // sont partis (les mêmes clients, avec le même bouton, que « Sans rendez-vous à venir » juste au-dessus) ; leur nombre reste.
+    var nSans = 0, nAp = 0, avecS = [], stopS = 0;
     liste.forEach(function (p) {
       var k = String(p.id), s = suivi[k], j = s ? Object.keys(s).sort() : [];
       if (OPPOSES && OPPOSES[k]) { stopS++; return; }   // celle qui a dit stop n'est dans aucune liste (règle du 24/11), comptée seulement
       if (j.length) { avecS.push({ p: p, n: j.length, der: j[j.length - 1], conf: j.every(function (d) { return s[d] === 'conf'; }), pro: prochain[k] || null }); return; }
-      var v = V2.rdvVuLe ? V2.rdvVuLe(k) : null;
-      if (vu[k] && (!v || vu[k] > v)) v = vu[k];
-      sansS.push({ p: p, ap: appel[k] || null, pro: prochain[k] || null, vu: v || '' });
+      nSans++; if (appel[k]) nAp++;
     });
-    // sans rendez-vous prévu d'abord, puis jamais vue, puis la plus ancienne visite
-    sansS.sort(function (x, y) { return (!!x.pro - !!y.pro) || (x.vu === y.vu ? String(x.p.name || '').localeCompare(String(y.p.name || '')) : (x.vu < y.vu ? -1 : 1)); });
     // la plus longtemps sans visite d'abord : c'est elle qu'il faut revoir
     avecS.sort(function (x, y) { return x.der === y.der ? String(x.p.name || '').localeCompare(String(y.p.name || '')) : (x.der < y.der ? -1 : 1); });
-    function ligneA(x) {
-      var p = x.p, k = String(p.id), droite;
-      droite = x.pro ? '<span class="tm-cq">RDV le ' + esc(leJour(x.pro.date)) + '</span>' : agir(k);
-      return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.go(\'pharma\',\'' + esc(k) + '\')"><b>' + esc(court(p.name)) + '</b><small>' +
-        esc([sousOff(k, '', p.ville, p.cp), x.ap ? (x.ap.type === 'appel' ? 'appelée le ' : 'tâche notée le ') + leJour(x.ap.date) : '',
-             x.vu ? ilYa(x.vu) : 'aucune visite notée'].filter(Boolean).join(' · ')) + '</small></button>' + droite + '</div>';
-    }
     function ligneV(x) {
       var p = x.p, k = String(p.id);
       return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.go(\'pharma\',\'' + esc(k) + '\')" aria-label="' + esc(joli(p.name) + ', ' + x.n + ' rendez-vous depuis janvier, le dernier le ' + leJour(x.der)) + '"><b>' + esc(court(p.name)) + '</b><small>' +
         esc([sousOff(k, '', p.ville, p.cp), x.n + ' rendez-vous', x.conf ? 'à confirmer' : '', x.pro ? 'prochain le ' + leJour(x.pro.date) : ''].filter(Boolean).join(' · ')) +
         '</small></button><span class="tm-cq">vue le ' + esc(leJour(x.der)) + '</span></div>';
     }
-    var nAp = sansS.filter(function (x) { return x.ap; }).length;
     var suiviHtml = '<section class="tm-carte tm-clients tm-suivi" aria-label="Suivi depuis le 1er janvier"><h2 class="tm-cht">Suivi depuis le 1<sup>er</sup> janvier ' + debA.slice(0, 4) + '</h2>' +
-      '<p class="tm-chp"><b>' + avecS.length + '</b> sur ' + tot + ' ont eu un rendez-vous depuis janvier · <b>' + sansS.length + '</b> aucun' +
+      '<p class="tm-chp"><b>' + avecS.length + '</b> sur ' + tot + ' ont eu un rendez-vous depuis janvier · <b>' + nSans + '</b> aucun' +
       (nAp ? ' (' + nAp + ' avec seulement un appel ou un mail)' : '') +
       (stopS ? ' · <b>' + stopS + '</b> ne ' + (stopS > 1 ? 'veulent' : 'veut') + ' plus être sollicitée' + (stopS > 1 ? 's' : '') : '') + '</p>' +
       '<div class="tm-jauge" aria-hidden="true"><i style="width:' + Math.round(avecS.length * 100 / tot) + '%"></i></div>' +
@@ -604,9 +594,9 @@
       col('l', 'Sans rendez-vous à venir', libres, ligneL, 'Toutes ont un rendez-vous à venir.') +
       col('p', 'Rendez-vous posé', poses, ligneP, 'Aucun rendez-vous à venir pour l’instant.') + '</div>' +
       (hors ? '<p class="tm-cnote">Vous avez aussi ' + hors + ' rendez-vous à venir chez ' + (horsO > 1 ? horsO + ' officines qui ne sont pas' : 'une officine qui n’est pas') + ' dans vos clients (prospect ou client d’un collègue) : ' + (hors > 1 ? 'ils ne sont pas' : 'il n’est pas') + ' dans ces listes.</p>' : '') +
-      '</section>' + suiviHtml + '<div class="tm-ccols">' +
-      col('a', 'Aucun rendez-vous depuis janvier', sansS, ligneA, 'Toutes ont eu un rendez-vous depuis janvier.') +
-      col('v', 'Vues depuis janvier', avecS, ligneV, 'Aucun rendez-vous depuis janvier.') + '</div></section>';
+      '</section>' + suiviHtml +
+      // une seule liste, sur toute la largeur ; à 0, pas de colonne vide : une phrase dit ce qui viendra ici
+      (avecS.length ? col('v', 'Vues depuis janvier', avecS, ligneV, '') : '<p class="tm-rien">Chaque officine vue cette année s’affichera ici, avec la date de sa dernière visite.</p>') + '</section>';
   }
   // 26/11/2026 — téléphone, To do seulement (choix de Will, planche « 11 choix », sujet 2, version 3) : les tâches en retard
   // remontent juste sous les onglets et l'agenda à brancher tient en une ligne ; tout le reste garde son ordre.

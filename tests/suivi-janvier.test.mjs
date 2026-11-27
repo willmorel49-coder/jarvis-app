@@ -78,22 +78,39 @@ function ecran() {
   return ctx.V2;
 }
 
-test('« Suivi depuis le 1er janvier » : vue cette année d’un côté, aucun rendez-vous de l’autre ; l’appel est signalé, pas compté', async () => {
+// 27/11/2026 — choix cliqué de Will « Garder le compte seul » : la liste « Aucun rendez-vous depuis janvier » et ses boutons
+// sont partis (mêmes clients, même bouton que « Sans rendez-vous à venir ») ; le compte et « Vues depuis janvier » restent.
+test('« Suivi depuis le 1er janvier » : le compte et « Vues depuis janvier » ; plus de liste « Aucun rendez-vous » ; l’appel est signalé, pas compté', async () => {
   const V2 = ecran();
   V2.todoMois.html(); await attendre();
   const h = V2.todoMois.html();
   const an = aujourdhui.slice(0, 4);
   assert.match(h, new RegExp('<h2 class="tm-cht">Suivi depuis le 1<sup>er</sup> janvier ' + an + '</h2>'), 'marqueur : la section est là');
   assert.match(h, /<b>2<\/b> sur 4 ont eu un rendez-vous depuis janvier · <b>2<\/b> aucun \(1 avec seulement un appel ou un mail\)/);
-  const sans = h.split('Aucun rendez-vous depuis janvier <b>')[1].split('Vues depuis janvier <b>')[0];
-  const vues = h.split('Vues depuis janvier <b>')[1];
-  assert.match(sans, /<b>Banc<\/b>/, 'seulement appelée : sans rendez-vous');
-  assert.match(sans, /appelée le /, 'l’appel est montré');
-  assert.match(sans, /<b>Sonde<\/b>/, 'vue l’an dernier seulement : sans rendez-vous cette année');
+  assert.doesNotMatch(h, /Aucun rendez-vous depuis janvier/, 'la liste est partie');
+  const suivi = h.split('aria-label="Suivi depuis le 1er janvier"')[1];
+  assert.equal((h.match(/V2\.todoMois\.voirTout\('a'\)/g) || []).length, 0, 'plus de second « Voir les N autres »');
+  assert.doesNotMatch(suivi, /V2\.rdv\.proposer/, 'plus de bouton « Proposer un rendez-vous » dans le suivi');
+  const vues = suivi.split('Vues depuis janvier <b>')[1];
+  assert.ok(vues, 'la liste « Vues depuis janvier » est là');
   assert.match(vues, /<b>Essais<\/b>/, 'visite de l’agenda');
   assert.match(vues, /<b>Temoin<\/b>/, '« vu le … » coché');
   assert.match(vues, /1 rendez-vous/);
-  assert.doesNotMatch(vues, /Banc|Sonde/);
+  assert.doesNotMatch(suivi, /Banc|Sonde/, 'ni l’appelée ni la vue l’an dernier ne sont listées dans le suivi');
+  assert.match(h.split('aria-label="Suivi depuis le 1er janvier"')[0], /<b>Banc<\/b>/, 'l’appelée reste dans « Vos clients »');
+});
+
+test('« Vues depuis janvier » à 0 : une phrase, pas une colonne vide', async () => {
+  const V2 = ecran();
+  V2.planningAppelerAgenda = () => Promise.resolve({ ok: true, evenements: [] });
+  V2.visite = { all: () => ({}) };
+  V2.todoMois.html(); await attendre();
+  const h = V2.todoMois.html();
+  const suivi = h.split('aria-label="Suivi depuis le 1er janvier"')[1];
+  assert.ok(suivi, 'marqueur : la section est là');
+  assert.match(suivi, /<b>0<\/b> sur 4 ont eu un rendez-vous depuis janvier · <b>4<\/b> aucun/, 'le compte reste');
+  assert.doesNotMatch(suivi, /Vues depuis janvier <b>0<\/b>/, 'pas de colonne vide');
+  assert.match(suivi, /Chaque officine vue cette année s’affichera ici, avec la date de sa dernière visite\./);
 });
 
 test('un appel à venir n’est pas un « rendez-vous posé »', async () => {
