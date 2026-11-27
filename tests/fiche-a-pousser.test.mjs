@@ -2,7 +2,7 @@
 // puis « un popup bleu de produits à pousser, genre 20 produits hyper pertinents parmi les meilleures ventes ».
 // Ce test garde : la tuile sous les deux listings (avant l'Excel, donc avant les chiffres), dans les deux vues ; sa feuille bleue ;
 // et le choix des produits (vrai code d'aPousser, entouré de fausses données) : déjà commandés et génériques écartés, sans prix écarté, 20 au plus,
-// classés par la moyenne groupement + réseau.
+// classés par la moyenne groupement + réseau, puis montrés du plus grand pourcentage du groupement au plus petit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -77,4 +77,19 @@ test('à pousser : sans groupement, le réseau seul ; 20 produits au plus', () =
   assert.equal(r.grp, '');
   for (let i = 1; i < r.rows.length; i++) assert.ok(r.rows[i - 1].score >= r.rows[i].score, 'mal classé');
   assert.equal(r.rows[0].score, 1);
+});
+
+// 27/11/2026 — Will, choix cliqué « Remettre dans l'ordre » : mêmes produits choisis (moyenne groupement + réseau),
+// mais montrés du plus grand pourcentage affiché (part de son groupement) au plus petit.
+test('à pousser : mêmes produits retenus, montrés du plus grand pourcentage du groupement au plus petit', () => {
+  const r = lancer({
+    net: [['3000001', 9], ['3000002', 4], ['3000003', 1], ['3000004', 10]],
+    grp: [['3000001', 2], ['3000002', 3], ['3000003', 3]],
+    bench: [B('3000001', 'mi'), B('3000002', 'pp'), B('3000003', 'nr'), B('3000004', 'mi')],
+    achats: [], n: 3
+  });
+  // moyennes : 3000001 = (2/3 + 0,9)/2 ≈ 0,78 ; 3000002 = (1 + 0,4)/2 = 0,7 ; 3000003 = (1 + 0,1)/2 = 0,55 ; 3000004 = (0 + 1)/2 = 0,5 → écarté (4e)
+  // affichage : 3000002 (100 %) et 3000003 (100 %, départagés par la moyenne), puis 3000001 (67 %)
+  assert.deepEqual(r.rows.map((x) => x.cip), ['3000002', '3000003', '3000001']);
+  for (let i = 1; i < r.rows.length; i++) assert.ok(r.rows[i - 1].pg >= r.rows[i].pg, 'pourcentages pas dans l’ordre');
 });

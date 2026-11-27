@@ -860,7 +860,10 @@
       rows.push({ cip: cip, designation: b.designation || '', cat: cat, pn: pn, pg: pg, score: grp ? (pg + pn) / 2 : pn, qte: e.qte });
     });
     rows.sort(function (a, b) { return b.score - a.score || b.qte - a.qte; });
-    return { rows: rows.slice(0, n || 20), grp: grp ? g.name : '', nGrp: grp ? grp.total : 0, nNet: net.total };
+    // 27/11/2026 — choix de Will (« remettre dans l'ordre ») : les mêmes produits, montrés du plus grand pourcentage affiché (part de son groupement) au plus petit
+    var top = rows.slice(0, n || 20);
+    if (grp) top.sort(function (a, b) { return b.pg - a.pg || b.score - a.score || b.qte - a.qte; });
+    return { rows: top, grp: grp ? g.name : '', nGrp: grp ? grp.total : 0, nNet: net.total };
   }
 
   // Sélecteur de référence réutilisé (réseau IP / son groupement)
