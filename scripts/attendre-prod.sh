@@ -11,7 +11,9 @@ echo "⏳ Attente de la version $TOKEN en prod (max ~8 min)…"
 for i in $(seq 1 48); do            # 48 × 10s ≈ 8 min
   # ?nc= neuf à chaque tour : sans lui, le cache de GitHub Pages resservait l'ancienne
   # page (09/11/2026 : « pas vu après 8 min » alors que la version était en ligne).
-  if curl -fsS "$URL?nc=$(date +%s)" 2>/dev/null | grep -q "$TOKEN"; then
+  # « ?v=$TOKEN » et pas le jeton nu : le 27/11/2026, V2_DATAV valait déjà « 20261127b » (version des données)
+  # et le jeton nu a été « vu » 4 min avant la vraie publication.
+  if curl -fsS "$URL?nc=$(date +%s)" 2>/dev/null | grep -qF "?v=$TOKEN"; then
     echo "✅ Version $TOKEN servie en prod."
     echo "🔗 $URL"
     exit 0
