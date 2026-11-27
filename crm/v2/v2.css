@@ -2092,6 +2092,26 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
   .pha-wrap.fdr-on .flg-fl{display:none}
   .pha-wrap.fdr-on .fdr .flg-x{margin:0;border-radius:999px}
 }
+/* 27/11/2026 — tuile « À pousser » (Will : « un popup bleu de produits à pousser », juste derrière les deux listings) : au téléphone, la tuile bleue des listings ;
+   à l'ordinateur, le même bouton que les listings mais en bleu plein. Sa feuille (fbFeuillePousser, classe fbs-bleu) : le haut dans le bleu des tuiles, le corps blanc.
+   Fonds en propriétés séparées (Safari), aucun flou, aucune opacité sur du texte. */
+.pha-wrap.fdr-on .flg-ap{margin-top:12px}
+@media (min-width:641px){
+  .pha-wrap.fdr-on .fdr .flg-ap .flg-b{border-color:#0040B8;background-color:#0050E6;background-image:radial-gradient(160px 60px at 100% 0,#3D7EF6 0,#1A63F0 50%,#0050E6 100%);color:#FFFFFF}
+  .pha-wrap.fdr-on .fdr .flg-ap .flg-b:hover{border-color:#0034A0;background-color:#0047CC;background-image:none}
+  .pha-wrap.fdr-on .fdr .flg-ap .flg-b:active{background-color:#0040B8;background-image:none}
+  .pha-wrap.fdr-on .fdr .flg-ap .flg-ic,.pha-wrap.fdr-on .fdr .flg-ap .flg-t b{color:#FFFFFF}
+  .pha-wrap.fdr-on .fdr .flg-ap .flg-n{color:#E6EEFF}
+}
+.fbs.fbs-bleu .fbs-p{overflow:hidden;background-color:#0050E6;background-image:radial-gradient(420px 220px at 100% 0,#3D7EF6 0,#1A63F0 45%,#0050E6 100%)}
+.fbs.fbs-bleu .fbs-grab{background-color:#9DBBF7}
+.fbs.fbs-bleu .fbs-h{padding-bottom:14px}
+.fbs.fbs-bleu .fbs-h h2{color:#FFFFFF}
+.fbs.fbs-bleu .fbs-h p{color:#E6EEFF}
+.fbs.fbs-bleu .fbs-h .fbk-ic{background-color:#FFFFFF;background-image:none;color:#0050E6;box-shadow:0 2px 6px rgba(0,30,90,.25)}
+.fbs.fbs-bleu .fbs-x{background-color:#FFFFFF;color:#0034A0}
+.fbs.fbs-bleu .fbs-x:focus-visible{outline:3px solid #FFFFFF;outline-offset:2px}
+.fbs.fbs-bleu .fbs-b{background-color:#FFFFFF}
 .fdr-dlg{border:0;padding:0;margin:auto;border-radius:var(--r-card,20px);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 48px);background:#FFFFFF;color:var(--ink,#1A2030);box-shadow:0 24px 64px rgba(11,27,63,.22);overflow:auto}
 .fdr-dlg::backdrop{background:rgba(11,27,63,.38)}
 .fdr-dlg-h{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;background:linear-gradient(180deg,#F1F6FF,#FFFFFF);border-bottom:1px solid var(--line,#E3E8F2)}

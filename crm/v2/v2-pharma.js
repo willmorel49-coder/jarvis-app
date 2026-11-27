@@ -840,6 +840,28 @@
   }
   V2.pharmaGrpFilter = function (f) { grpListFilter = f; V2.render(); };
   V2.pharmaRotExpand = function () { grpRotExpanded = true; V2.render(); };
+  // 27/11/2026 — Will : « un popup bleu de produits à pousser, genre 20 produits hyper pertinents parmi les meilleures ventes ».
+  // Les meilleures ventes qu'elle ne commande pas : au catalogue Intégral avec un prix net, hors génériques (aucun abandon de marge dessus),
+  // classées par la part des officines qui les commandent — moyenne de son groupement et du réseau quand elle en a un (un produit fort des deux côtés passe
+  // devant un produit fort d'un seul), le réseau seul sinon. Ventes vues par ce commercial, comme les listings.
+  function aPousser(pid, n) {
+    cipStats();
+    var g = groupementPids(pid), net = computeStats('__net__', null);
+    var grp = (g.set && g.set.size >= 2) ? computeStats('grp:' + g.name, g.set) : null;
+    var bIdx = benchIndex(), owned = new Set(), rows = [];
+    pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
+    net.map.forEach(function (e, cip) {
+      if (owned.has(cip)) return;
+      var b = bIdx.get(cip); if (!b) return;
+      var cat = classify(b, cip); if (!cat || cat === 'gen' || cat === 'genp') return;
+      if (!(V2.bestPrice(b, pid).ip > 0)) return;
+      var pn = net.total ? e.ph.size / net.total : 0, eg = grp ? grp.map.get(cip) : null;
+      var pg = grp && grp.total ? (eg ? eg.ph.size : 0) / grp.total : 0;
+      rows.push({ cip: cip, designation: b.designation || '', cat: cat, pn: pn, pg: pg, score: grp ? (pg + pn) / 2 : pn, qte: e.qte });
+    });
+    rows.sort(function (a, b) { return b.score - a.score || b.qte - a.qte; });
+    return { rows: rows.slice(0, n || 20), grp: grp ? g.name : '', nGrp: grp ? grp.total : 0, nNet: net.total };
+  }
 
   // Sélecteur de référence réutilisé (réseau IP / son groupement)
   function recoScopeToggle(pid) {
@@ -2645,6 +2667,7 @@
     grille: '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
     d2p: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
     // 26/11/2026 — bouton et feuille « Filtres » de Mes officines au téléphone (curseurs de réglage, Feather, licence MIT)
+    pousser: '<path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/>',   // 27/11/2026 — tuile « À pousser » (Lucide trending-up, licence ISC)
     filtres: '<path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/>'
   };
   function fbIc(n, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + FB_IC[n] + '</svg>'; }
@@ -2719,6 +2742,19 @@
       '<button type="button" class="fbs-send" onclick="V2.fbEnvoyer(\'' + k + '\')">' + fbIc('envoi', 20) + 'Préparer l’envoi au pharmacien</button>';
     return { t: g ? 'Listing groupe d’achat' : 'Listing réseau Intégral', s: (g ? esc(c.grp) + ' · ' : '') + fbNb(n) + ' · ce qu’elle n’a pas encore', ic: g ? 'groupe' : 'reseau', h: h };
   }
+  // 27/11/2026 — feuille de la tuile « À pousser » (fdrListings) : les 20 produits d'aPousser, la part des officines qui les commandent
+  function fbFeuillePousser() {
+    var c = fbC, ap = c.ap || { rows: [] }, g = !!ap.grp;
+    var h = '<p class="fbs-k">' + (g ? 'Part des ' + V2.fmtNum(ap.nGrp) + ' officines de ' + esc(ap.grp) + ' et des ' + V2.fmtNum(ap.nNet) + ' du réseau Intégral qui le commandent'
+      : 'Part des ' + V2.fmtNum(ap.nNet) + ' officines du réseau Intégral qui le commandent') + ' · hors génériques</p><ul class="fbs-pl fbs-ap">';
+    ap.rows.forEach(function (r) {
+      var p = Math.min(100, Math.round((g ? r.pg : r.pn) * 100)), pn = Math.min(100, Math.round(r.pn * 100));
+      h += '<li class="fbs-pr" data-cip="' + esc(r.cip) + '"><span class="fbs-pn">' + l1NomProduit(r) + '<small>' + esc(l1CatLabel(r.cat)) + (g ? ' · réseau ' + l1Pct(pn) : '') + '</small></span>' +
+        '<span class="fbs-pb" aria-hidden="true"><i style="width:' + p + '%"></i></span><b>' + l1Pct(p) + '</b></li>';
+    });
+    h += '</ul>';
+    return { t: 'À pousser', s: fbNb(ap.rows.length) + ' · les meilleures ventes ' + (g ? 'de son groupement et du réseau' : 'du réseau') + ' qu’elle ne prend pas', ic: 'pousser', h: h, cls: 'fbs-bleu' };
+  }
   function fbFeuilleLogiciel() {
     var c = fbC;
     var h = '<label class="fbs-sel"><span>Son logiciel</span><select aria-label="Logiciel de l’officine" onchange="V2.fbLgo(this.value)"><option value="">Choisir le logiciel…</option>' +
@@ -2744,7 +2780,7 @@
       return;
     }
     var f;
-    if (k === 'logiciel') { c.sel = c.lgo; f = fbFeuilleLogiciel(); } else f = fbFeuilleListe(k);
+    if (k === 'logiciel') { c.sel = c.lgo; f = fbFeuilleLogiciel(); } else if (k === 'pousser') f = fbFeuillePousser(); else f = fbFeuilleListe(k);
     fbPose(f, el);
   };
   // Pose une feuille du bas (f = { t, s, ic, h }) : partagée par les listings, le catalogue logiciel et les feuilles de la barre du pouce
@@ -2752,7 +2788,7 @@
     fbFerme(true);
     fbOp = el || document.activeElement;
     var o = document.createElement('div');
-    o.id = 'fbs'; o.className = 'fbs';
+    o.id = 'fbs'; o.className = 'fbs' + (f.cls ? ' ' + f.cls : '');
     o.innerHTML = '<div class="fbs-ov" onclick="V2.fbFerme()"></div><div class="fbs-p" role="dialog" aria-modal="true" aria-labelledby="fbs-t" tabindex="-1"><span class="fbs-grab" aria-hidden="true"></span>' +
       '<div class="fbs-h"><span class="fbk-ic">' + fbIc(f.ic, 22) + '</span><div class="fbs-ht"><h2 id="fbs-t">' + f.t + '</h2><p>' + f.s + '</p></div>' +
       '<button type="button" class="fbs-x" aria-label="Fermer" onclick="V2.fbFerme()">' + fbIc('x', 20) + '</button></div><div class="fbs-b">' + f.h + '</div></div>';
@@ -4554,10 +4590,14 @@
     };
     if (d.nR > 0) t += tuile('reseau', 'reseau', 'Listing produits ' + (isEscale() ? 'Escale' : 'Intégral'), 'Les plus commandés', d.nR);
     if (d.hasGrp && d.nG > 0) t += tuile('groupement', 'groupe', 'Listing groupement', esc(f.grp), d.nG);
+    // 27/11/2026 — Will : « l'appeler à pousser et juste derrière les 2 propo pdf avant les chiffres », puis « un popup bleu de produits à pousser,
+    // genre 20 produits hyper pertinents parmi les meilleures ventes » : une tuile bleue sous les deux listings, qui ouvre sa feuille (fbFeuillePousser).
+    f.ap = aPousser(c.pid, 20);
+    var ap = f.ap.rows.length ? '<div class="flg-row flg-1 flg-ap">' + tuile('pousser', 'pousser', 'À pousser', 'Les meilleures ventes qu’elle ne prend pas', f.ap.rows.length) + '</div>' : '';
     // 24/11/2026 — Will : « il faudra aussi que le commercial puisse extraire toutes les ventes de la pharma si il le souhaite »
     var x = '<button type="button" class="flg-x" onclick="V2.pharmaVentesXlsx(\'' + esc(String(c.pid)) + '\')" title="Toutes ses ventes de la période, par produit et ligne par ligne">' + fbIc('excel', 18) + '<span>Extraire toutes ses ventes · Excel</span></button>';
-    if (!t) return '<section class="flg" aria-label="Ses ventes">' + x + '</section>';
-    return '<section class="flg" aria-labelledby="flg-h"><h2 class="flg-h" id="flg-h">Listings à proposer</h2><div class="flg-row' + (deux ? '' : ' flg-1') + '">' + t + '</div>' + x + '</section>';
+    if (!t && !ap) return '<section class="flg" aria-label="Ses ventes">' + x + '</section>';
+    return '<section class="flg" aria-labelledby="flg-h"><h2 class="flg-h" id="flg-h">Listings à proposer</h2>' + (t ? '<div class="flg-row' + (deux ? '' : ' flg-1') + '">' + t + '</div>' : '') + ap + x + '</section>';
   }
   function fdrPage(c) {
     var vues ='<div class="fdr-sw vv-sel vv-ui" role="group" aria-label="Vue de la fiche">' + viBouton('pharmacien', 'Vue pharmacien') + viBouton('integral', 'Vue Intégral') + '</div>';
