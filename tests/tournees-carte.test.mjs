@@ -61,3 +61,12 @@ test('arretsOrdre : dans l\'ordre de livraison ; ficheDe : code d\'abord, fiche 
 test('cleCip : ne garde que les caractères sûrs (valeur placée dans un onclick)', () => {
   assert.equal(K.cleCip('12\'"<>3 4'), '1234'); assert.equal(K.cleCip(null), '');
 });
+
+// 27/11/2026 — adhérentes des groupements suivis (OPSO Santé, Essentiels Pharma) mises en avant sur la carte des tournées.
+test('indexGroupements : seuls les groupements suivis, par code (et par CIP d’origine d’une cliente), table de départ comprise', () => {
+  const p = (cip, g, ann) => { const x = new Array(14).fill(''); x[3] = g; x[13] = cip; if (ann) x._ann = ann; return x; };
+  const PF = { grp: ['—', 'Groupement suivi A', 'Autre groupement'], p: [p('1000001', 1), p('1000002', 2), p('CLI42', 1, '1000003')] };
+  const idx = K.indexGroupements(PF, ['Groupement suivi A', 'Groupement suivi B'], { '1000004': 'Groupement suivi B', '1000005': 'Pas suivi' });
+  assert.deepEqual(idx, { '1000001': 'Groupement suivi A', 'CLI42': 'Groupement suivi A', '1000003': 'Groupement suivi A', '1000004': 'Groupement suivi B' });
+  assert.deepEqual(K.indexGroupements(null, ['X'], null), {});
+});

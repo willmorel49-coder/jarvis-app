@@ -309,3 +309,58 @@ test('v3 : « ZZZ-T1 » et « T1 » ne se confondent jamais (codes, textes, num�
 test('v3 : l’écran dessine un marqueur de dépôt par établissement et la légende les nomme', () => {
   assert.match(MODULE, /D\.depots\.forEach/); assert.match(MODULE, /D\.depots\.map/);
 });
+
+// ── 27/11/2026 — couleur et interactivité (maquette M2 « Par tournée », choix de Will) + établissements sans tournées reçues (SOP) ──
+const Part = require('../crm/v2/v2-tournees-partage.js');
+
+test('couleurs : une par tournée CONCERNÉE (dans l’ordre d’affichage), aucune pour une tournée sans adhérente ; chaque adhérente porte celle de sa tournée', () => {
+  assert.deepEqual(D.couleurs, { T1: Part.PALETTE[0], T2: Part.PALETTE[1] });
+  assert.equal(par('1000002').couleur, Part.PALETTE[0]);
+  assert.equal(par('3000002').couleur, Part.PALETTE[1]);
+  assert.equal(par('3000003').couleur, '', 'loin et livrable par personne : pas de couleur de tournée');
+  const T3 = JSON.parse(JSON.stringify(T)); T3.tournees.T3 = { code: 'T3', nom: 'Est fictif', trace: [[45.0, 3.0], [45.1, 3.1]], arrets: [], prospects: [] };
+  const D3 = C.calculer(T3, PF, ADH, WML);
+  assert.equal(D3.couleurs.T3, undefined, 'une tournée qui ne touche aucune adhérente reste grise');
+  assert.equal(Object.keys(D3.couleurs).length, 2);
+});
+
+test('sections M2 : une par tournée concernée (adhérentes dans l’ordre des numéros), puis loin, puis sans position ; aucun établissement sans tournées si aucun livrable dans le périmètre', () => {
+  const P = C.numeroter(D), S = C.sections(D, P, 'quot');
+  assert.deepEqual(S.map(s => s.type + ':' + s.code), ['tournee:T1', 'tournee:T2', 'loin:LOIN', 'sanspos:SANSPOS']);
+  assert.equal(S[0].couleur, Part.PALETTE[0]);
+  S.filter(s => s.type === 'tournee').forEach(s => { const n = s.adh.map(e => e.no); assert.deepEqual(n, n.slice().sort((a, b) => a - b)); });
+  assert.equal(S.reduce((t, s) => t + s.adh.length, 0), D.adh.length, 'chaque adhérente dans une seule section');
+  assert.deepEqual(D.sansTournees, [], 'les CIP livrables par Sud Ouest Pharma ne sont pas dans ce périmètre : rien ne s’affiche');
+  const A = C.sections(D, P, 'auj');
+  assert.ok(A.every(s => s.type === 'tournee' && s.adh.every(e => e.statut === 'livree')), 'Aujourd’hui : seulement les déjà livrées, par tournée');
+});
+
+test('établissement sans tournées : SEULS les CIP décidés sont livrables (jamais « le dépôt le plus proche »), section avant « Loin », trait à vol d’oiseau', () => {
+  Part.DEPOTS_SANS_TOURNEES.ZZZ = { s: 'ZZZ', nom: 'Dépôt sans tournées fictif', ville: 'Ville-Z', lat: 47.9, lng: -0.7 };
+  Part.LIVRABLES.ZZZ = ['3000003'];
+  try {
+    const D4 = C.calculer(T, PF, ADH, WML), p4 = cip => D4.adh.filter(e => e.cip === cip)[0];
+    assert.equal(D4.sansTournees.length, 1);
+    assert.deepEqual(D4.sansTournees[0].adh.map(e => e.cip), ['3000003']);
+    assert.equal(p4('3000003').livrable, 'ZZZ'); assert.equal(p4('3000003').couleur, Part.SANS);
+    assert.equal(p4('3000003').dDepot, C.hav([47.9, -0.7], [48.0, -0.7]));
+    assert.equal(p4('5000001').statut, 'loin'); assert.equal(p4('5000001').livrable, undefined, 'posée SUR le dépôt mais non décidée : pas livrable');
+    const S = C.sections(D4, C.numeroter(D4), 'quot');
+    assert.deepEqual(S.map(s => s.type + ':' + s.code), ['tournee:T1', 'tournee:T2', 'sans:ZZZ', 'loin:LOIN', 'sanspos:SANSPOS']);
+    assert.ok(!S.filter(s => s.type === 'loin')[0].adh.some(e => e.cip === '3000003'), 'pas listée deux fois');
+    const pv = texte(C.prevision(p4('3000003'), D4));
+    assert.match(pv, /Livrable par Dépôt sans tournées fictif \(Ville-Z\)/); assert.match(pv, /à vol d’oiseau/); assert.match(pv, /pas encore reçues/);
+    assert.match(texte(C.sousTitre(D4, 'quot')), /1 livrable par Dépôt sans tournées fictif \(tournées à recevoir\)/);
+    // ses tournées arrivent dans le fichier : il ne passe plus par « sans tournées »
+    const T5 = JSON.parse(JSON.stringify(T)); T5.tournees.Z1 = { code: 'Z1', etab: 'ZZZ', nom: 'Z fictif', trace: [[48.0, -0.8], [48.0, -0.6]], arrets: [], prospects: [] };
+    assert.deepEqual(C.calculer(T5, PF, ADH, WML).sansTournees, []);
+  } finally { delete Part.DEPOTS_SANS_TOURNEES.ZZZ; delete Part.LIVRABLES.ZZZ; }
+});
+
+test('les deux apps chargent le module commun AVANT la carte ; le module ne code aucune règle « dépôt le plus proche »', () => {
+  for (const f of ['essentiels/v2/index.html', 'opso/v2/index.html']) {
+    const h = lire(f), a = h.indexOf('crm/v2/v2-tournees-partage.js'), b = h.indexOf('groupements/v2/groupement-tournees.js');
+    assert.ok(a > 0 && a < b, f);
+  }
+  assert.ok(!/plus proche d[eé]p[oô]t|depotLePlusProche/i.test(MODULE));
+});

@@ -24,11 +24,21 @@
    - Fond de carte : V2.fondCarte (jamais CARTO). Leaflet par (V2_DATA_BASE || '../') + 'v2/vendor/leaflet/' : depuis essentiels/v2
      et opso/v2 = ../../crm/v2/vendor/leaflet/ (un chemin « vendor/leaflet/ » relatif au document n'y existe pas).
    - Noms libres le 26/11/2026 (git grep) : route `tourneesgroupement`, préfixe CSS `gtrn-`, objet V2.groupementTournees.
+   - 27/11/2026 — COULEUR ET INTERACTIVITÉ (Will, mot pour mot : « met de la couleur et de l'interactivité par rapport au tournées de livraisons
+     concerné par les pharma groupement ! », puis « adapte sur opso santé […] et sop aussi »). Maquette choisie par clic : M2 « Par tournée »
+     (~/jarvis-preuves/tournees-couleurs-2026-11-27/m2.html). Chaque tournée CONCERNÉE (elle livre ou livrerait une adhérente) a sa couleur
+     (V2.tourneesPartage, crm/v2/v2-tournees-partage.js), les autres restent grises ; la liste est rangée par tournée, un bandeau à sa couleur
+     qu'on ouvre ; ouvrir un bandeau ou toucher un trait = ce trait allumé, ses adhérentes surlignées sur la carte et dans la liste.
+     Badge : carré = déjà livrée, arrondi = la tournée qui la livrerait ; fond blanc = déjà cliente (comme avant).
+   - SUD OUEST PHARMA (27/11/2026, choix cliqué de Will « Ces 2, fichier SOP à venir ») : un établissement dont les tournées ne sont pas reçues
+     (V2.tourneesPartage.DEPOTS_SANS_TOURNEES) montre son dépôt et ses LIVRABLES (décision de Will, jamais calculée) quand ils sont dans le
+     périmètre de l'app et loin de nos tournées : trait pointillé « à vol d'oiseau », aucune route inventée. App OPSO : aucun livrable, rien ne s'affiche.
    ════════════════════════════════════════════════════════════════ */
 (function (glob) {
   'use strict';
   var V2 = glob.V2 = glob.V2 || {};
   var Ess = V2.tourneesEssentiels || (typeof module !== 'undefined' && typeof require === 'function' ? require('../../crm/v2/v2-tournees-essentiels.js') : null);
+  var Part = V2.tourneesPartage || (typeof module !== 'undefined' && typeof require === 'function' ? require('../../crm/v2/v2-tournees-partage.js') : null);
   var C = {};
   var NBSP = ' ';
 
@@ -126,7 +136,22 @@
       if (dp && isFinite(dp.lat) && isFinite(dp.lng)) depots.push({ s: e, nom: dp.nom || inf.nom || e, ville: dp.ville || inf.ville || '', lat: dp.lat, lng: dp.lng });
     });
     var parT = {}; liste.forEach(function (e) { if (e.code) parT[e.code] = (parT[e.code] || 0) + 1; });
+    // 27/11/2026 — une couleur par tournée CONCERNÉE (elle livre ou livrerait une adhérente), dans l'ordre d'affichage ; les autres : grises.
+    var couleurs = Part ? Part.couleurs(codes.filter(function (c) { return parT[c] > 0; })) : {};
+    // Établissements sans tournées reçues (SOP) : leurs livrables du périmètre, seulement s'ils sont loin de nos tournées (sinon la tournée les montre).
+    // Dès que le fichier porte des tournées de cet établissement (vusE), il ne passe plus par ici.
+    var sansT = [];
+    if (Part) Object.keys(Part.DEPOTS_SANS_TOURNEES || {}).forEach(function (s) {
+      if (vusE[s]) return;
+      var dp = Part.DEPOTS_SANS_TOURNEES[s], cips = ((Part.LIVRABLES || {})[s] || []).map(normCip);
+      var l = liste.filter(function (e) { return e.statut === 'loin' && cips.indexOf(e.cip) >= 0; });
+      if (!l.length) return;
+      l.forEach(function (e) { e.livrable = s; e.dDepot = hav([dp.lat, dp.lng], [e.lat, e.lng]); });
+      sansT.push({ s: s, nom: dp.nom, ville: dp.ville, lat: dp.lat, lng: dp.lng, adh: l });
+    });
+    liste.forEach(function (e) { e.couleur = e.livrable ? (Part ? Part.SANS : '') : (e.code && couleurs[e.code]) || ''; });
     return {
+      couleurs: couleurs, sansTournees: sansT,
       periode: String(T.periode || ''), depot: T.depot || null,
       // un dépôt par établissement qui a des tournées (v3) ; fichier v2 : le dépôt unique, au nom d'OPS
       depots: depots,
@@ -157,6 +182,27 @@
     return { tous: tous, par: par };
   };
 
+  // 27/11/2026 — M2 « Par tournée » : les groupes de la liste, dans l'ordre. Une section par tournée concernée (ses adhérentes, dans l'ordre des
+  // numéros), puis une par établissement sans tournées reçues (SOP), puis « Loin de nos tournées » (hors livrables), puis « Sans position ».
+  // Mode « auj » : seulement les adhérentes déjà livrées, rangées par tournée. P = C.numeroter(D) (numéros), facultatif.
+  C.sections = function (D, P, mode) {
+    if (!D || !D.adh) return [];
+    var par = (P && P.par) || {}, num = function (e) { return par[e.cip] || e; }, parNo = function (a, b) { return (a.no || 1e9) - (b.no || 1e9); };
+    var out = [], cl = D.couleurs || {};
+    D.tournees.forEach(function (t) {
+      if (!cl[t.code]) return;
+      var l = D.adh.filter(function (e) { return e.code === t.code && (mode !== 'auj' || e.statut === 'livree'); }).map(num).sort(parNo);
+      if (l.length) out.push({ type: 'tournee', code: t.code, nom: t.nom, etab: t.etab, couleur: cl[t.code], adh: l });
+    });
+    if (mode === 'auj') return out;
+    (D.sansTournees || []).forEach(function (x) { out.push({ type: 'sans', code: x.s, nom: x.nom, ville: x.ville, lat: x.lat, lng: x.lng, couleur: Part ? Part.SANS : '', adh: x.adh.map(num).sort(parNo) }); });
+    var loin = D.loin.filter(function (e) { return !e.livrable; }).map(num).sort(parNo);
+    if (loin.length) out.push({ type: 'loin', code: 'LOIN', nom: 'Loin de nos tournées', couleur: '', adh: loin });
+    if (D.sanspos.length) out.push({ type: 'sanspos', code: 'SANSPOS', nom: 'Sans position', couleur: '', adh: D.sanspos.slice() });
+    return out;
+  };
+  function sansDe(D, s) { return (D.sansTournees || []).filter(function (x) { return x.s === s; })[0] || null; }
+
   function nomTournee(D, code) { var t = D.tournees.filter(function (x) { return x.code === code; })[0]; return t && t.nom ? code + ' · ' + t.nom : code; }
   // Ce qu'on dit de chaque adhérente (liste et bandeau) : la tournée, le détour, ou la piste quand elle est loin. Aucun chiffre de vente.
   C.prevision = function (e, D) { var r0 = C.prevision1(e, D); return e.approx && e.statut !== 'sanspos' ? r0 + ' · position approximative' : r0; };
@@ -164,6 +210,11 @@
     if (e.statut === 'livree') return 'Déjà livrée par la ' + esc(nomTournee(D, e.code)) + (e.n ? ', arrêt ' + e.n : '');
     if (e.statut === 'proche') {
       return 'Serait livrée par la ' + esc(nomTournee(D, e.code)) + ' · ' + (e.detour != null && e.detour > 0 ? 'détour estimé ' + nf(e.detour, 1) + NBSP + 'km' : 'sur la route, sans détour');
+    }
+    if (e.statut === 'loin' && e.livrable && sansDe(D, e.livrable)) {
+      var x = sansDe(D, e.livrable);
+      return 'Livrable par ' + esc(x.nom) + (x.ville ? ' (' + esc(x.ville) + ')' : '') + ' · à ' + km(e.dDepot) + ' de son dépôt à vol d’oiseau · ses tournées ne sont pas encore reçues · à ' +
+        km(e.dQui) + ' de la ' + esc(e.qui) + ', la plus proche de nos tournées';
     }
     if (e.statut === 'loin') {
       var r = 'À ' + km(e.dQui) + ' de la ' + esc(e.qui) + ', la plus proche de nos tournées';
@@ -181,8 +232,11 @@
     var nT = D.tournees.length, noms = D.actifs.map(function (s) { return s.nom; }), act = noms.length > 1 ? noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1] : noms.join('');
     var per = D.periode ? ' (' + esc(D.periode) + ')' : '';
     if (mode === 'auj') return 'Aujourd’hui : nos <b>' + nT + ' tournées</b>' + (act ? ' ' + esc(act) : '') + ' et les <b>' + D.livrees.length + ' adhérentes</b> qu’elles livrent déjà' + per + '. Touchez « En quotidien » pour voir où se placeraient les autres.';
-    return 'En quotidien : <b>' + D.livrees.length + '</b> déjà livrées, <b>' + D.proches.length + '</b> à ' + Ess.SEUIL_LOIN + NBSP + 'km ou moins d’une tournée (la tournée qui les livrerait et le détour estimé), <b>' +
-      D.loin.length + '</b> plus loin' + (D.sanspos.length ? ', <b>' + D.sanspos.length + '</b> sans position' : '') + '.';
+    var sans = (D.sansTournees || []).map(function (x) { return '<b>' + x.adh.length + '</b> livrable' + (x.adh.length > 1 ? 's' : '') + ' par ' + esc(x.nom) + ' (tournées à recevoir)'; });
+    var nLoin = D.loin.filter(function (e) { return !e.livrable; }).length;
+    return 'En quotidien : <b>' + D.livrees.length + '</b> déjà livrées, <b>' + D.proches.length + '</b> à ' + Ess.SEUIL_LOIN + NBSP + 'km ou moins d’une tournée (la tournée qui les livrerait et le détour estimé), ' +
+      (sans.length ? sans.join(', ') + ', ' : '') + '<b>' + nLoin + '</b> plus loin' + (D.sanspos.length ? ', <b>' + D.sanspos.length + '</b> sans position' : '') +
+      '. Touchez une tournée : son trait s’allume, ses adhérentes sont surlignées sur la carte et dans la liste.';
   };
 
   // Badges recouverts (calcul pur) : bx = boîtes {x, y, w, h, no, vw, vh} en pixels de la carte (w × h = boîte de placement, au moins 36 × 26
@@ -251,7 +305,9 @@
     return Promise.all([t, pf, w]).then(function () { return C.calculer(glob.TOURNEES_ECRAN, glob.PHARMA_FR, V2.pharmacies || [], wmlListe()); });
   }
 
-  function badge(e) { return '<i class="gtrn-b gtrn-' + e.statut + (e.cliente ? ' cl' : '') + '">' + esc(LETTRE) + e.no + '</i>'; }
+  function badge(e) {
+    return '<i class="gtrn-b gtrn-' + e.statut + (e.cliente ? ' cl' : '') + (e.couleur ? ' gtrn-c' : '') + '"' + (e.couleur ? ' style="--gtrn-c:' + esc(e.couleur) + '"' : '') + '>' + esc(LETTRE) + e.no + '</i>';
+  }
   function ligne(e, D) {
     var etiq = e.statut === 'livree' ? 'déjà livrée' : e.statut === 'proche' ? (e.detour > 0 ? 'détour ' + nf(e.detour, 1) + NBSP + 'km' : 'sans détour') : e.statut === 'loin' ? 'à ' + km(e.dQui) : 'sans position';
     var tag = e.statut === 'loin' ? e.qui : e.code || '';
@@ -277,6 +333,7 @@
 
   function dessiner(root, D) {
     var mode = etat.mode, P = C.numeroter(D), carte = null, L = null, lignes = {}, marqs = {}, items = [], sel = null, voisins = null, depotM = null;
+    var selT = null, neutre = {}, sansL = {};   // 27/11/2026 : tournée (ou établissement sans tournées) ouverte · sections neutres ouvertes · traits pointillés SOP
     var ACC = couleur('--grp-accent', '#2F7D1A'), GRIS = couleur('--grp-vert-8a91a3', '#8A91A3');
     root.innerHTML = '<section class="gtrn" aria-label="' + esc(CFG.titre || 'Nos tournées et les adhérentes') + '">' +
       '<div class="gtrn-hd"><div><div class="gtrn-k">' + esc(CFG.surtitre || 'Nos tournées de livraison') + '</div><h2>' + esc(CFG.sousTitre || 'Où se placeraient les adhérentes sur nos tournées') + '</h2></div>' +
@@ -294,23 +351,56 @@
     function legende() {
       var ex = function (st) { return P.tous.filter(function (e) { return e.statut === st; })[0]; };
       var l = ex('livree'), p = ex('proche'), f = ex('loin');
-      document.getElementById('gtrn-leg').innerHTML = '<span><i class="gtrn-sw"></i>Une tournée (' + D.tournees.length + ')</span>' +
+      var nC = Object.keys(D.couleurs || {}).length, c0 = (D.couleurs || {})[Object.keys(D.couleurs || {})[0]];
+      document.getElementById('gtrn-leg').innerHTML = (nC ? '<span><i class="gtrn-sw gtrn-sw-c" style="--gtrn-c:' + esc(c0) + '"></i>Une couleur par tournée qui livre ou livrerait nos adhérentes (' + nC + ')</span>' : '') +
+        '<span><i class="gtrn-sw"></i>' + (nC ? 'Autre tournée' : 'Une tournée') + ' (' + (D.tournees.length - nC) + ')</span>' +
+        (D.sansTournees || []).map(function (x) { return '<span><i class="gtrn-sw gtrn-sw-d gtrn-sw-sans" style="--gtrn-c:' + esc((Part && Part.SANS) || '') + '"></i>Dépôt · ' + esc(x.ville || x.nom) + ', tournées à recevoir</span>'; }).join('') +
         D.depots.map(function (dp) { return '<span><i class="gtrn-sw gtrn-sw-d"></i>Dépôt · ' + esc(dp.ville || dp.nom || '') + (D.depots.length > 1 ? ' (' + esc(dp.s) + ')' : '') + '</span>'; }).join('') +
-        (l ? '<span>' + badge(l) + 'Déjà livrée (' + D.livrees.length + ')</span>' : '') +
-        (mode === 'quot' && p ? '<span>' + badge(p) + 'Sur une tournée, avec détour (' + D.proches.length + ')</span>' : '') +
-        (mode === 'quot' && f ? '<span>' + badge(f) + 'À plus de ' + Ess.SEUIL_LOIN + NBSP + 'km de nos tournées (' + D.loin.length + ')</span>' : '');
+        (l ? '<span>' + badge(l) + 'Carré : déjà livrée (' + D.livrees.length + ')</span>' : '') +
+        (mode === 'quot' && p ? '<span>' + badge(p) + 'Arrondi : la tournée qui la livrerait, avec détour (' + D.proches.length + ')</span>' : '') +
+        (mode === 'quot' && f ? '<span>' + badge(f) + 'À plus de ' + Ess.SEUIL_LOIN + NBSP + 'km de nos tournées (' + D.loin.length + ')</span>' : '') +
+        '<span>Fond blanc : déjà cliente Intégral Pharma</span>';
     }
+    // 27/11/2026 — M2 « Par tournée » : un bandeau par tournée concernée, à sa couleur, qu'on ouvre ; dedans, ses adhérentes.
     function side() {
-      var h = '', grp = function (titre, l) { if (l.length) h += '<h3>' + titre + ' · ' + l.length + '</h3>' + l.map(function (e) { return ligne(e, D); }).join(''); };
-      var v = visibles();
-      grp('Déjà livrées par nos tournées', v.filter(function (e) { return e.statut === 'livree'; }));
-      if (mode === 'quot') {
-        grp('La tournée qui les livrerait', v.filter(function (e) { return e.statut === 'proche'; }));
-        grp('Loin de nos tournées', v.filter(function (e) { return e.statut === 'loin'; }));
-        grp('Sans position', D.sanspos);
-      }
+      var h = '';
+      C.sections(D, P, mode).forEach(function (sc) {
+        var focal = sc.type === 'tournee' || sc.type === 'sans', ouvert = focal ? selT === sc.code : !!neutre[sc.code];
+        var titre = sc.type === 'sans' ? sc.nom + ' · tournées à recevoir' : sc.nom;
+        h += '<section class="gtrn-sec gtrn-sec-' + sc.type + (ouvert ? ' open' : '') + (focal && selT && !ouvert ? ' gtrn-dim' : '') + '" data-t="' + esc(sc.code) + '"' +
+          (sc.couleur ? ' style="--gtrn-c:' + esc(sc.couleur) + '"' : '') + '>' +
+          '<button type="button" class="gtrn-sec-hd" aria-expanded="' + (ouvert ? 'true' : 'false') + '">' +
+          (focal ? '<span class="gtrn-cd">' + esc(sc.code) + '</span>' : '') + '<span class="gtrn-nm">' + esc(titre) + '</span>' +
+          '<span class="gtrn-n" aria-label="' + sc.adh.length + ' adhérente' + (sc.adh.length > 1 ? 's' : '') + '">' + sc.adh.length + '</span><i class="gtrn-ch" aria-hidden="true"></i></button>' +
+          '<div class="gtrn-sec-bd">' + sc.adh.map(function (e) { return ligne(e, D); }).join('') + '</div></section>';
+      });
       if (!h) h = '<p class="gtrn-msg">Aucune adhérente n’est livrée aujourd’hui par nos tournées. Touchez « En quotidien ».</p>';
       side0.innerHTML = h;
+      var o = side0.querySelector('.gtrn-sec.open.gtrn-sec-tournee, .gtrn-sec.open.gtrn-sec-sans');
+      if (o && side0.scrollHeight > side0.clientHeight + 4) side0.scrollTop = Math.max(0, side0.scrollTop + o.getBoundingClientRect().top - side0.getBoundingClientRect().top - 4);
+    }
+    function codeDe(e) { return e ? (e.livrable || e.code || '') : ''; }
+    // Ouvrir une tournée (ou un établissement sans tournées) : son trait allumé, ses adhérentes surlignées, le reste effacé ; null = toutes.
+    function ouvrirT(code, cadrer) {
+      selT = code || null;
+      side(); styleLignes(sel ? codeDe(P.par[sel]) : ''); marquer();
+      if (sel) allumer(sel, true);
+      if (!carte || !selT || !cadrer) return;
+      try {
+        var sx = sansDe(D, selT), b = sx ? L.latLngBounds([[sx.lat, sx.lng]]) : lignes[selT] ? lignes[selT].getBounds() : null;
+        if (!b) return;
+        visibles().forEach(function (e) { if (codeDe(e) === selT) b.extend([e.lat, e.lng]); });
+        carte.fitBounds(b, { paddingTopLeft: [30, 70], paddingBottomRight: [30, C.margeBas(hBandeau(), carte.getSize().y, 70)], maxZoom: 12, animate: false });
+        placer();
+        if (tactile()) document.getElementById('gtrn-map').scrollIntoView({ block: 'nearest' });
+      } catch (x) {}
+    }
+    function marquer() {
+      Object.keys(marqs).forEach(function (k) {
+        var el = marqs[k].getElement(), e = P.par[k]; if (!el) return;
+        el.classList.toggle('gtrn-dim', !!selT && codeDe(e) !== selT);
+      });
+      Object.keys(sansL).forEach(function (s) { sansL[s].forEach(function (x) { x.setStyle({ opacity: selT && selT !== s ? 0.25 : 0.9, weight: selT === s ? 3 : 2 }); }); });
     }
     function band(e) {
       var b = document.getElementById('gtrn-band'); if (!b) return;
@@ -368,9 +458,13 @@
         lab.classList.toggle('vu', !ok.cache);
       });
     }
+    // 27/11/2026 : chaque tournée concernée à SA couleur, les autres grises ; la tournée allumée (celle de l'adhérente choisie, sinon la tournée ouverte)
+    // passe devant, plus épaisse, les autres s'effacent.
     function styleLignes(code) {
+      var on0 = code || selT || '', cl = D.couleurs || {};
       Object.keys(lignes).forEach(function (k) {
-        var on = k === code; lignes[k].setStyle(on ? { color: ACC, weight: 5, opacity: 1 } : { color: GRIS, weight: 3, opacity: code ? 0.35 : 0.7 });
+        var c = cl[k], on = k === on0;
+        lignes[k].setStyle(on ? { color: c || ACC, weight: 6, opacity: 1 } : c ? { color: c, weight: 4, opacity: on0 ? 0.25 : 0.9 } : { color: GRIS, weight: 3, opacity: on0 ? 0.2 : 0.55 });
         if (on) lignes[k].bringToFront();
       });
     }
@@ -389,6 +483,11 @@
       sel = cip;
       var e = cip ? (P.par[cip] || D.adh.filter(function (x) { return x.cip === cip; })[0]) : null;
       if (!e) { band(null); styleLignes(''); placer(); return; }
+      if (!depuisListe) {   // touchée sur la carte : sa section s'ouvre dans la liste
+        var k = codeDe(e);
+        if (k && k !== selT) { selT = k; side(); marquer(); }
+        else if (!k) { var nk = e.statut === 'sanspos' ? 'SANSPOS' : 'LOIN'; if (!neutre[nk]) { neutre[nk] = 1; side(); } }
+      }
       allumer(cip, depuisListe); band(e); styleLignes(e.code || e.qui || '');
       if (carte && e.statut === 'loin' && e.voisines && e.voisines.length) {
         // les clientes Intégral les plus proches : un point bleu chacune, le temps de la sélection
@@ -422,7 +521,7 @@
         m.on('click', function () { choisir(e.cip, false); });
       });
       items = v.map(function (e) { return { e: e, m: marqs[e.cip] }; });
-      placer();
+      placer(); marquer();
     }
     var vue = {
       tout: function () {
@@ -430,6 +529,7 @@
           var b = L.latLngBounds([]);
           Object.keys(lignes).forEach(function (k) { b.extend(lignes[k].getBounds()); });
           visibles().forEach(function (e) { b.extend([e.lat, e.lng]); });   // les lointaines comprises (390 px : E24/E25 étaient hors cadre)
+          if (mode === 'quot') (D.sansTournees || []).forEach(function (x) { b.extend([x.lat, x.lng]); });
           carte.invalidateSize(); carte.fitBounds(b, { paddingTopLeft: [24, 64], paddingBottomRight: [24, 60], animate: false });
         } catch (e) {}
       },
@@ -441,7 +541,7 @@
         } catch (e) {}
       }
     };
-    function rendre() { legende(); side(); choisir(null); couches(); }
+    function rendre() { if (selT && !C.sections(D, P, mode).some(function (x) { return x.code === selT; })) selT = null; legende(); side(); choisir(null); couches(); styleLignes(''); }
     function cartePose() {
       leaflet(function (err) {
         var el = document.getElementById('gtrn-map'); if (err || !glob.L || !el) { if (el) el.innerHTML = '<p class="gtrn-msg">Carte indisponible.</p>'; return; }
@@ -452,8 +552,20 @@
         D.tournees.forEach(function (t) {
           if (!t.trace || t.trace.length < 2) return;
           lignes[t.code] = L.polyline(t.trace, { color: GRIS, weight: 3, opacity: 0.7 }).addTo(carte)
-            .bindTooltip('<b>' + esc(t.code) + '</b> · ' + esc(t.nom) + '<br>' + t.arrets.length + ' arrêts' + (t.adh ? ' · ' + t.adh + ' adhérente' + (t.adh > 1 ? 's' : '') : ''), { sticky: true });
+            .bindTooltip('<b>' + esc(t.code) + '</b> · ' + esc(t.nom) + '<br>' + t.arrets.length + ' arrêts' + (t.adh ? ' · ' + t.adh + ' adhérente' + (t.adh > 1 ? 's' : '') + ' · touchez pour l’ouvrir' : ''), { sticky: true });
+          if ((D.couleurs || {})[t.code]) lignes[t.code].on('click', function (ev) { L.DomEvent.stopPropagation(ev); if (sel) choisir(null); ouvrirT(selT === t.code ? null : t.code, selT !== t.code); });
         });
+        // 27/11/2026 — établissements sans tournées reçues (SOP) : leur dépôt et un trait pointillé « à vol d'oiseau » vers chaque livrable.
+        (D.sansTournees || []).forEach(function (x) {
+          L.marker([x.lat, x.lng], { icon: L.divIcon({ className: 'gtrn-ic', iconSize: tactile() ? [44, 44] : [22, 22], iconAnchor: tactile() ? [22, 22] : [11, 11], html: '<div class="gtrn-depot gtrn-depot-sans" style="--gtrn-c:' + esc((Part && Part.SANS) || '') + (tactile() ? ';margin:14px' : '') + '"></div>' }), zIndexOffset: 400, title: 'Dépôt · ' + x.nom })
+            .addTo(carte).bindTooltip('Dépôt · ' + esc(x.nom) + (x.ville ? ', ' + esc(x.ville) : '') + ' · tournées pas encore reçues')
+            .on('click', function (ev) { L.DomEvent.stopPropagation(ev); if (sel) choisir(null); ouvrirT(selT === x.s ? null : x.s, selT !== x.s); });
+          sansL[x.s] = x.adh.map(function (e) {
+            return L.polyline([[x.lat, x.lng], [e.lat, e.lng]], { color: (Part && Part.SANS) || '#1F2937', weight: 2, opacity: 0.9, dashArray: '6 8', interactive: true }).addTo(carte)
+              .bindTooltip(esc(e.nom) + ' · à ' + km(e.dDepot) + ' du dépôt ' + esc(x.nom) + ', à vol d’oiseau', { sticky: true });
+          });
+        });
+        styleLignes('');
         D.depots.forEach(function (dp) {   // un marqueur par établissement qui a des tournées
           L.marker([dp.lat, dp.lng], { icon: L.divIcon({ className: 'gtrn-ic', iconSize: tactile() ? [44, 44] : [22, 22], iconAnchor: tactile() ? [22, 22] : [11, 11], html: '<div class="gtrn-depot"' + (tactile() ? ' style="margin:14px"' : '') + '></div>' }), zIndexOffset: 400, title: 'Dépôt · ' + (dp.nom || '') })
             .addTo(carte).bindTooltip('Dépôt · ' + esc(dp.nom || '') + (dp.ville ? ', ' + esc(dp.ville) : ''));
@@ -462,7 +574,7 @@
         btns.innerHTML = '<button type="button" data-z="tout">Toutes les tournées</button><button type="button" data-z="adh">Les adhérentes</button>';
         el.appendChild(btns);
         L.DomEvent.disableClickPropagation(btns); L.DomEvent.disableClickPropagation(document.getElementById('gtrn-band'));
-        btns.onclick = function (ev) { var b = ev.target.closest('button'); if (!b) return; if (b.getAttribute('data-z') === 'tout') vue.tout(); else vue.adh(); placer(); };
+        btns.onclick = function (ev) { var b = ev.target.closest('button'); if (!b) return; if (b.getAttribute('data-z') === 'tout') { if (selT) ouvrirT(null); vue.tout(); } else vue.adh(); placer(); };
         carte.on('click', function () { if (sel) choisir(null); });
         vue.tout(); couches();
         setTimeout(function () { vue.tout(); placer(); }, 0); setTimeout(function () { vue.tout(); placer(); }, 500);
@@ -477,7 +589,14 @@
     };
     side0.addEventListener('mouseover', function (ev) { var r = ev.target.closest('[data-cip]'); if (r) allumer(r.getAttribute('data-cip'), true); });
     side0.addEventListener('mouseout', function (ev) { var r = ev.target.closest('[data-cip]'); if (r && r.getAttribute('data-cip') !== sel && !r.contains(ev.relatedTarget)) eteindre(r.getAttribute('data-cip')); });
-    side0.addEventListener('click', function (ev) { var r = ev.target.closest('[data-cip]'); if (r) choisir(r.getAttribute('data-cip'), true); });
+    side0.addEventListener('click', function (ev) {
+      var r = ev.target.closest('[data-cip]'); if (r) { choisir(r.getAttribute('data-cip'), true); return; }
+      var h = ev.target.closest('.gtrn-sec-hd'); if (!h) return;
+      var sc = h.parentNode, code = sc.getAttribute('data-t');
+      if (sc.classList.contains('gtrn-sec-loin') || sc.classList.contains('gtrn-sec-sanspos')) { neutre[code] = !neutre[code]; side(); return; }
+      if (sel) choisir(null);
+      ouvrirT(selT === code ? null : code, selT !== code);
+    });
     bascule(); legende(); side(); cartePose();
   }
 

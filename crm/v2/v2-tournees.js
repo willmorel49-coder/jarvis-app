@@ -168,6 +168,20 @@
     if (!a && b == null) return 'sur la route';
     return 'entre l’arrêt n°' + NB + a + ' et n°' + NB + b;
   };
+  // 27/11/2026 — établissement dont les tournées ne sont pas reçues (Sud Ouest Pharma) : les officines qu'il pourrait livrer, DÉCIDÉES par Will
+  // (V2.tourneesPartage.LIVRABLES, choix cliqué du 27/11 « Ces 2, fichier SOP à venir »), avec leur distance au dépôt à vol d'oiseau.
+  // Jamais calculées par « dépôt le plus proche ». Rend null si l'établissement n'a pas de livrables ; une officine absente de la base reste listée par son code.
+  C.livrablesSans = function (s, pf, Pt, depart) {
+    var dp = Pt && Pt.DEPOTS_SANS_TOURNEES && Pt.DEPOTS_SANS_TOURNEES[s], cips = Pt && Pt.LIVRABLES && Pt.LIVRABLES[s];
+    if (!dp || !cips || !cips.length) return null;
+    var idx = {}; ((pf && pf.p) || []).forEach(function (p) { var c = String(p[13] == null ? '' : p[13]).replace(/\D/g, ''); if (c && !idx[c]) idx[c] = p; if (p._ann) idx[String(p._ann).replace(/\D/g, '')] = p; });
+    var r = Math.PI / 180, hav = function (a, b) { var dl = (b[1] - a[1]) * r, dq = (b[0] - a[0]) * r, h = Math.sin(dq / 2) * Math.sin(dq / 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dl / 2) * Math.sin(dl / 2); return 6371.0088 * 2 * Math.asin(Math.min(1, Math.sqrt(h))); };
+    return { depot: dp, liste: cips.map(function (c) {
+      var p = idx[c], g = (depart && depart[c]) || (p && pf.grp ? pf.grp[p[3]] : '') || '';
+      return { cip: c, nom: p ? p[6] : '', ville: p ? p[7] : '', cp: p ? String(p[8] || '') : '', groupement: g && g !== '—' ? g : '',
+        km: p && isFinite(p[0]) && isFinite(p[1]) ? Math.round(hav([dp.lat, dp.lng], [p[0], p[1]]) * 10) / 10 : null };
+    }) };
+  };
   // Index PHARMA_FR : cip -> { nom, ville } (colonnes 13 = CIP, 6 = nom, 7 = ville).
   C.indexPF = function (pf) {
     var o = {};
@@ -524,6 +538,12 @@
       '.trn-attente{max-width:560px;margin:56px auto;padding:32px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2)}',
       '.trn-attente-t{font-size:22px;font-weight:700;margin-bottom:8px}',
       '.trn-attente p{color:var(--muted);margin:12px 0 0}',
+      '.trn-livr{margin-top:22px;text-align:left;border-top:1px solid var(--line);padding-top:16px}',
+      '.trn-livr-t{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}',
+      '.trn-livr-r{display:flex;align-items:center;gap:12px;min-height:44px;padding:10px 0;border-bottom:1px solid var(--line)}',
+      '.trn-livr-r i{flex:none;width:14px;height:14px;border-radius:50%;background:#1F2937;box-shadow:0 0 0 3px #fff,0 0 0 5px #10131C}',
+      '.trn-livr-r span{flex:1;min-width:0;line-height:1.4}.trn-livr-r small{display:block;color:var(--muted);font-size:12.5px}',
+      '.trn-livr-r em{font-style:normal;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}',
       '.trn-tbl{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden;margin-top:12px}',
       '.trn-row{display:grid;grid-template-columns:44px minmax(220px,2.2fr) 1.5fr 1fr .8fr .9fr 1fr 20px;align-items:center;gap:12px;padding:0 20px;width:100%;text-align:left;border:0;background:none;font:inherit;color:inherit;cursor:pointer}',
       '.trn-th{min-height:40px;font-size:12px;font-weight:700;color:var(--muted);background:var(--card-2);border-bottom:1px solid var(--line);text-transform:uppercase;letter-spacing:.04em;cursor:default}',
@@ -782,8 +802,16 @@
     dessinerEtabs();
     var corps = document.getElementById('trn-corps');
     if (!actif) {
+      var lv = e ? C.livrablesSans(e.s, glob.PHARMA_FR, V2.tourneesPartage, glob.GRP_DEPART) : null;
+      if (lv && !glob.PHARMA_FR && V2.ensurePharmaFr) V2.ensurePharmaFr(function () { if (V2.route && V2.route.name === 'tournees' && S.etab === e.s) V2.render(); });
       corps.innerHTML = e ? '<div class="trn-attente"><div class="trn-attente-t">Tournées à recevoir</div><div><b>' + esc(e.nom) + '</b> · ' + esc(e.ville) +
-        '</div><p>Les tournées de cet établissement n’ont pas encore été transmises. Aucun chiffre n’est affiché tant que le fichier n’est pas reçu.</p></div>' : '';
+        '</div><p>Les tournées de cet établissement n’ont pas encore été transmises. Aucun chiffre n’est affiché tant que le fichier n’est pas reçu.</p>' +
+        (lv ? '<div class="trn-livr"><div class="trn-livr-t">Pharmacies qu’il pourrait livrer · ' + lv.liste.length + '</div>' + lv.liste.map(function (o) {
+          return '<div class="trn-livr-r"><i aria-hidden="true"></i><span><b>' + esc(o.nom ? joli(o.nom) : 'Pharmacie (code ' + o.cip + ')') + '</b><small>' +
+            esc(o.ville ? joli(o.ville) + (o.cp ? ' (' + o.cp + ')' : '') : 'position en cours de chargement') + (o.groupement ? ' · adhérente ' + esc(o.groupement) : '') + '</small></span>' +
+            '<em>' + (o.km != null ? esc(String(o.km).replace('.', ',')) + NB + 'km' : '') + '</em></div>';
+        }).join('') + '<p>Distances à vol d’oiseau depuis le dépôt de ' + esc(lv.depot.ville) + '. Elles sont loin de nos tournées actuelles : elles prendront place sur une tournée dès que le fichier sera reçu.</p></div>' : '') +
+        '</div>' : '';
       return;
     }
     corps.innerHTML = '<div class="trn-tbl"><div class="trn-row trn-th" id="trn-th"></div><div id="trn-rows"></div></div>';

@@ -794,3 +794,19 @@ test('multi-établissement : l’export Excel dit l’ordre estimé', () => {
   const F = C.feuillesExcel(tb, a, d, null, 'ZZZ · Zone', 'x');
   assert.ok(F.find(f => f.nom === 'À lire').lignes.some(l => l[0] === 'Ordre de passage' && /estimé pour 1 arrêt/.test(l[1])));
 });
+
+// 27/11/2026 — Sud Ouest Pharma : établissement sans tournées reçues, ses livrables DÉCIDÉS par Will (V2.tourneesPartage), distance à vol d'oiseau.
+test('livrablesSans : seulement les codes décidés, nom et distance depuis la base nationale, rien pour un établissement sans livrables', () => {
+  const Pt = { DEPOTS_SANS_TOURNEES: { ZZZ: { s: 'ZZZ', nom: 'Dépôt fictif', ville: 'Ville-Z', lat: 45.0, lng: 1.0 } }, LIVRABLES: { ZZZ: ['9000001', '9000002'] } };
+  const p = (cip, lat, lng, nom, ville, cp, g) => { const x = new Array(14).fill(''); x[0] = lat; x[1] = lng; x[3] = g; x[6] = nom; x[7] = ville; x[8] = cp; x[13] = cip; return x; };
+  const PF = { grp: ['—', 'Groupement fictif'], p: [p('9000001', 45.0, 2.0, 'PHARMACIE UNE', 'VILLE UNE', '19000', 1), p('9000003', 45.0, 1.0, 'PHARMACIE SUR LE DÉPÔT', 'Z', '47000', 1)] };
+  const r = C.livrablesSans('ZZZ', PF, Pt, {});
+  assert.equal(r.depot.ville, 'Ville-Z');
+  assert.deepEqual(r.liste.map(o => o.cip), ['9000001', '9000002'], 'l’officine posée sur le dépôt mais non décidée n’y est pas');
+  assert.equal(r.liste[0].nom, 'PHARMACIE UNE'); assert.equal(r.liste[0].groupement, 'Groupement fictif');
+  assert.ok(Math.abs(r.liste[0].km - 78.7) < 0.2, String(r.liste[0].km));
+  assert.equal(r.liste[1].nom, ''); assert.equal(r.liste[1].km, null, 'absente de la base : listée par son code, sans distance inventée');
+  assert.equal(C.livrablesSans('AAA', PF, Pt, {}), null);
+  const Vrai = require('../crm/v2/v2-tournees-partage.js');
+  assert.deepEqual(C.livrablesSans('SOP', { p: [] }, Vrai, {}).liste.map(o => o.cip), ['2080814', '2016822']);
+});

@@ -76,6 +76,16 @@
   };
 
   V2.tourneesCarte = K;
+  // 27/11/2026 — index code → groupement suivi (calcul pur, testé : tests/tournees-carte.test.mjs) ; lu par grpSuivi() plus bas.
+  K.indexGroupements = function (PF, suivis, depart) {
+    var idx = {}, ok = {}; (suivis || []).forEach(function (g) { ok[g] = 1; });
+    if (PF && PF.p && PF.grp) PF.p.forEach(function (p) {
+      var g = PF.grp[p[3]]; if (!ok[g]) return;
+      idx[cleCip(p[13])] = g; if (p._ann) idx[cleCip(p._ann)] = g;
+    });
+    Object.keys(depart || {}).forEach(function (c) { if (ok[depart[c]]) idx[cleCip(c)] = depart[c]; });
+    return idx;
+  };
   if (typeof module !== 'undefined' && module.exports) module.exports = K;
   if (!glob.document) return;   // fenêtre des tests : pas d'écran
 
@@ -97,6 +107,22 @@
   function CP() { return V2.carteProspection || null; }
   function suiviOk() { return S.ok === true && !!CP(); }
   function couleur(code) { var k = MOD.codes.indexOf(code); return K.couleurTournee(k < 0 ? 0 : k); }
+  // 27/11/2026 — adhérentes des groupements suivis (V2.tourneesPartage.GROUPEMENTS_SUIVIS : OPSO Santé, Essentiels Pharma), mises en avant par
+  // un anneau noir. Demande de Will : « met de la couleur et de l'interactivité par rapport au tournées de livraisons concerné par les pharma
+  // groupement » puis « pareil sur cpr et sur les tournées aussi ops sur jarvis ». Le groupement est celui de la base nationale telle que
+  // JARVIS l'a corrigée au chargement (nom canonique, corrections de fiche), plus la table de départ GRP_DEPART ; lu par code (CIP ou code client).
+  var _gIdx = null, _gCle = '';
+  function grpSuivi(id) {
+    var Pt = V2.tourneesPartage, PF = glob.PHARMA_FR; if (!Pt) return '';
+    var cle = (PF && PF.p ? PF.p.length : 0) + '|' + (PF && PF.grp ? PF.grp.length : 0);
+    if (!_gIdx || _gCle !== cle) { _gIdx = K.indexGroupements(PF, Pt.GROUPEMENTS_SUIVIS, glob.GRP_DEPART); _gCle = cle; }
+    return _gIdx[cleCip(id)] || '';
+  }
+  // Nombre d'adhérentes des groupements suivis parmi les arrêts d'une tournée, par groupement (« 2 adhérentes Essentiels Pharma »).
+  function grpArrets(code) {
+    var n = {}; K.arretsOrdre(X.A[code]).forEach(function (a) { var g = grpSuivi(a.id); if (g) n[g] = (n[g] || 0) + 1; });
+    return Object.keys(n).map(function (g) { return n[g] + ' adhérente' + (n[g] > 1 ? 's' : '') + ' ' + g; }).join(' · ');
+  }
   function nomDe(cip) { return X && X.nom ? X.nom(cip) : { nom: 'Pharmacie (code ' + cip + ')', ville: '' }; }
   function brutT(code) { return (MOD && MOD.d.tournees[code]) || null; }
   function tLbl(code) {
@@ -194,8 +220,9 @@
       }
       K.arretsOrdre(X.A[code]).forEach(function (a) {
         if (!kmOk(a.lat) || !kmOk(a.lng)) return;
-        var mk = L.marker([a.lat, a.lng], { icon: L.divIcon({ className: 'tcm-num-w', html: '<div class="tcm-num" style="background:' + col + '">' + a.n + '</div>', iconSize: [24, 24], iconAnchor: [12, 12] }), keyboard: false, riseOnHover: true });
-        mk.bindTooltip('<b>' + esc(joli(a.nom)) + '</b><span>N° ' + a.n + ' · ' + esc(joli(a.ville)) + '</span><em>' + esc(tLbl(code)) + (a.renta_mois != null ? ' · rentabilité ' + esc(TR().eur(a.renta_mois)) + ' par mois' : '') + '</em>', { direction: 'top', offset: [0, -10], className: 'cn-tip' });
+        var gA = grpSuivi(a.id);
+        var mk = L.marker([a.lat, a.lng], { icon: L.divIcon({ className: 'tcm-num-w', html: '<div class="tcm-num' + (gA ? ' tcm-grp' : '') + '" style="background:' + col + '">' + a.n + '</div>', iconSize: [24, 24], iconAnchor: [12, 12] }), keyboard: false, riseOnHover: true, zIndexOffset: gA ? 500 : 0 });
+        mk.bindTooltip('<b>' + esc(joli(a.nom)) + '</b><span>N° ' + a.n + ' · ' + esc(joli(a.ville)) + '</span>' + (gA ? '<span>Adhérente ' + esc(gA) + '</span>' : '') + '<em>' + esc(tLbl(code)) + (a.renta_mois != null ? ' · rentabilité ' + esc(TR().eur(a.renta_mois)) + ' par mois' : '') + '</em>', { direction: 'top', offset: [0, -10], className: 'cn-tip' });
         mk.on('click', function () { K.tournee(code); K.arret(a.id, true); });
         (M.pas[code] = M.pas[code] || []).push(mk);
         M.g.clientes.addLayer(mk);
@@ -209,7 +236,7 @@
     }
     MOD.prospects.forEach(function (p) {
       var mk = L.circleMarker([p.lat, p.lng], styleProspect(p));
-      mk.bindTooltip(function () { var n = nomDe(p.cip); return '<b>' + esc(n.nom) + '</b><span>' + esc(n.ville) + '</span><em>' + K.kmFr(p.km) + ' km de la route · ' + esc(tLbl(p.tournee)) + ' · ' + esc(K.insertion(p)) + '</em>'; }, { direction: 'top', offset: [0, -6], className: 'cn-tip' });
+      mk.bindTooltip(function () { var n = nomDe(p.cip), g = grpSuivi(p.cip); return '<b>' + esc(n.nom) + '</b><span>' + esc(n.ville) + '</span>' + (g ? '<span>Adhérente ' + esc(g) + '</span>' : '') + '<em>' + K.kmFr(p.km) + ' km de la route · ' + esc(tLbl(p.tournee)) + ' · ' + esc(K.insertion(p)) + '</em>'; }, { direction: 'top', offset: [0, -6], className: 'cn-tip' });
       mk.on('click', function () { K.choisir(p.cip, true); });
       M.mar[p.cip] = mk;
     });
@@ -255,6 +282,11 @@
         if (!ring) ring = M.ann[p.cip] = glob.L.circleMarker([p.lat, p.lng], { renderer: M.canvas, radius: 11, color: '#F59E0B', weight: 3, fill: false, interactive: false });
         if (!M.g.anneaux.hasLayer(ring)) M.g.anneaux.addLayer(ring);
       } else if (ring && M.g.anneaux.hasLayer(ring)) M.g.anneaux.removeLayer(ring);
+      var gk = 'g' + p.cip, gr = M.ann[gk];
+      if (on && grpSuivi(p.cip)) {
+        if (!gr) gr = M.ann[gk] = glob.L.circleMarker([p.lat, p.lng], { renderer: M.canvas, radius: pr.relance ? 15 : 11, color: '#10131C', weight: 3, fill: false, interactive: false });
+        if (!M.g.anneaux.hasLayer(gr)) M.g.anneaux.addLayer(gr);
+      } else if (gr && M.g.anneaux.hasLayer(gr)) M.g.anneaux.removeLayer(gr);
     });
   }
   function restyler(cip) { var p = pChercher(cip), mk = M && M.mar[cip]; if (p && mk) mk.setStyle(styleProspect(p)); appliquerRayon(); }
@@ -308,8 +340,10 @@
   function tourneesHtml() {
     var h = '<div class="tcm-tris"><span>Trier par</span><button type="button" class="tcm-tri' + (S.tri === 'code' ? ' on' : '') + '" onclick="V2.tourneesCarte.tri(\'code\')">Numéro</button><button type="button" class="tcm-tri' + (S.tri === 'renta' ? ' on' : '') + '" onclick="V2.tourneesCarte.tri(\'renta\')">Rentabilité (la plus faible d\'abord)</button></div>';
     K.ordonner(X.A, S.tri).forEach(function (k) {
-      h += '<button type="button" class="tcm-tr" onclick="V2.tourneesCarte.tournee(\'' + k + '\')">' +
-        '<span class="tcm-nom"><i class="tcm-trait" style="background:' + couleur(k) + '"></i>' + esc(k + ' · ' + X.A[k].nom) + '</span>' + chiffres(k) + '</button>';
+      var gk = grpArrets(k);
+      h += '<button type="button" class="tcm-tr" style="--tcm-c:' + couleur(k) + '" onclick="V2.tourneesCarte.tournee(\'' + k + '\')">' +
+        '<span class="tcm-nom"><i class="tcm-trait" style="background:' + couleur(k) + '"></i>' + esc(k + ' · ' + X.A[k].nom) + '</span>' + chiffres(k) +
+        (gk ? '<span class="tcm-ch tcm-g"><i class="tcm-g-m" aria-hidden="true"></i>' + esc(gk) + ' livrée' + (/^1 /.test(gk) && gk.indexOf(' · ') < 0 ? '' : 's') + '</span>' : '') + '</button>';
     });
     return h;
   }
@@ -317,14 +351,16 @@
     var A = X.A[code]; if (!A) return '';
     var h = '<div class="tcm-dt"><button type="button" class="v2-btn v2-btn-ghost tcm-retour" onclick="V2.tourneesCarte.tourneeFermer()">← Toutes les tournées</button>' +
       '<div class="tcm-nom"><i class="tcm-trait" style="background:' + couleur(code) + '"></i>' + esc(code + ' · ' + A.nom) + '</div>' + chiffres(code) +
+      (grpArrets(code) ? '<span class="tcm-ch tcm-g"><i class="tcm-g-m" aria-hidden="true"></i>' + esc(grpArrets(code)) + '</span>' : '') +
       '<button type="button" class="v2-btn v2-btn-primary tcm-ouvrir" onclick="V2.tourneesCarte.tourneeOuvrir(\'' + code + '\')">Ouvrir le tableau de bord de la tournée</button>' +
       '<div class="tcm-aide">Dépôt, puis les arrêts dans l\'ordre de livraison.</div></div>';
     K.arretsOrdre(A).forEach(function (a) {
       var id = cleCip(a.id), sel = S.arretSel === id, fiche = K.ficheDe(a, V2.pharmacies);
       h += '<div class="tcm-arw' + (sel ? ' sel' : '') + '"><button type="button" class="tcm-ar" onclick="V2.tourneesCarte.arret(\'' + id + '\')" aria-expanded="' + (sel ? 'true' : 'false') + '">' +
-        '<b class="tcm-num tcm-num-l" style="background:' + couleur(code) + '">' + a.n + '</b>' +
+        '<b class="tcm-num tcm-num-l' + (grpSuivi(a.id) ? ' tcm-grp' : '') + '" style="background:' + couleur(code) + '">' + a.n + '</b>' +
         '<span class="tcm-nom">' + esc(joli(a.nom)) + '</span>' +
         '<span class="tcm-sub">' + esc(joli(a.ville)) + (a.com ? ' · ' + esc(a.com) : '') + '</span>' +
+        (grpSuivi(a.id) ? '<span class="tcm-gtag">Adhérente ' + esc(grpSuivi(a.id)) + '</span>' : '') +
         (a.renta_mois != null ? '<span class="tcm-ch' + (a.renta_mois < 0 ? ' tcm-neg' : '') + '">Rentabilité : <b>' + esc(TR().eur(a.renta_mois)) + '</b> par mois</span>' : '<span class="tcm-ch">Pas de ventes sur la période</span>') + '</button>' +
         (sel ? '<div class="tcm-det">' + (fiche ? '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.go(\'pharma\',\'' + cleCip(fiche) + '\')">Ouvrir la fiche de la pharmacie</button>' : '<div class="tcm-aide">La fiche de cette pharmacie n\'est pas disponible.</div>') + '</div>' : '') + '</div>';
     });
@@ -340,6 +376,7 @@
         '<span class="tcm-lg"><i class="tcm-pale"></i>Point pâle : pas dans ma liste de diffusion</span>';
     } else h += lg(NEUTRE, 'Pharmacie pas encore cliente');
     h += '<span class="tcm-lg"><i class="tcm-cli"></i>Pastille numérotée : cliente, dans l\'ordre de livraison de sa tournée</span>';
+    if (V2.tourneesPartage) h += '<span class="tcm-lg"><i class="tcm-g-m"></i>Anneau noir : adhérente ' + esc(V2.tourneesPartage.GROUPEMENTS_SUIVIS.join(' ou ')) + '</span>';
     if (suiviOk() && S.manque.length) h += '<span class="tcm-lg tcm-lg-m">Non lu : ' + esc(S.manque.join(', ')) + '. Ces couleurs ou suivis peuvent être incomplets ; rouvrir l\'écran pour réessayer.</span>';
     return h + '</div>';
   }
@@ -626,6 +663,11 @@
       '.tcm-vide{padding:22px 16px;font-size:13px;color:var(--muted);text-align:center}',
       '.tcm-plus{margin:12px 16px;min-height:44px}',
       '.tcm-depot-w,.tcm-num-w{background:none;border:none}',
+      '.tcm-tr{box-shadow:inset 6px 0 0 var(--tcm-c,transparent);padding-left:20px}',
+      '.tcm-num.tcm-grp{box-shadow:0 0 0 2.5px #10131C,0 2px 6px rgba(16,19,28,.35)}',
+      '.tcm-ch.tcm-g{display:flex;align-items:center;gap:6px;color:#10131C;font-weight:700}',
+      'i.tcm-g-m{flex:none;display:inline-block;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 0 2.5px #10131C inset}',
+      '.tcm-gtag{grid-column:2;justify-self:start;display:inline-block;margin-top:2px;padding:2px 8px;border-radius:999px;background:#10131C;color:#fff;font-size:11.5px;font-weight:700;line-height:1.4}',
       '.tcm-num{box-sizing:border-box;width:24px;height:24px;border-radius:50%;border:2px solid #fff;color:#fff;font-size:12px;font-weight:800;line-height:20px;text-align:center;box-shadow:0 1px 5px rgba(16,19,28,.45);font-variant-numeric:tabular-nums}',
       '.tcm-petit .tcm-num{transform:scale(.5);font-size:0}',
       '.tcm-num-l{display:inline-block;grid-row:1/4;width:28px;height:28px;line-height:24px;font-size:13px;flex:none}',

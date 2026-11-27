@@ -1409,4 +1409,31 @@
   #v2-root .gtrn-leg { padding: 12px 14px 4px; }
   #v2-root .gtrn-note { padding: 4px 14px 14px; }
 }
+/* 27/11/2026 — couleur et interactivité (maquette M2 « Par tournée », choix de Will) : chaque tournée concernée a sa couleur (--gtrn-c, posée par
+   le module depuis V2.tourneesPartage ; texte blanc ≥ 4,5:1 sur chacune) ; badge carré = déjà livrée, arrondi = la tournée qui la livrerait,
+   fond blanc = déjà cliente. Liste rangée par tournée : un bandeau à sa couleur qu'on ouvre. */
+#v2-root .gtrn-b.gtrn-c { border-color: var(--gtrn-c); background: var(--gtrn-c); color: #fff; }
+#v2-root .gtrn-b.gtrn-c.cl { background: #fff; color: var(--gtrn-c); }
+#v2-root .gtrn-b.gtrn-c.gtrn-proche { border-radius: 999px; }
+#v2-root .gtrn-petit .gtrn-mk .gtrn-b.gtrn-c { border-radius: 50%; }
+#v2-root .gtrn-dim .gtrn-mk { opacity: .28; }
+#v2-root .gtrn-dim .gtrn-lb { visibility: hidden; }
+#v2-root .gtrn-on.gtrn-dim .gtrn-mk { opacity: 1; }
+#v2-root .gtrn-on .gtrn-b.gtrn-c { box-shadow: 0 0 0 3px #fff, 0 0 0 7px color-mix(in srgb, var(--gtrn-c) 35%, transparent), 0 6px 14px rgba(var(--grp-ombre-rgb),.4); }
+#v2-root .gtrn-depot.gtrn-depot-sans { background: var(--gtrn-c, var(--grp-ink)); border-radius: 50%; }
+#v2-root .gtrn-sw.gtrn-sw-c { background: var(--gtrn-c); height: 5px; }
+#v2-root .gtrn-sw.gtrn-sw-sans { background: var(--gtrn-c, var(--grp-ink)); border-radius: 50%; }
+#v2-root .gtrn-sec { border-bottom: 1px solid rgba(var(--grp-ombre-rgb),.08); }
+#v2-root .gtrn-sec-hd { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 8px 14px; border: 0; background: var(--gtrn-c, var(--grp-vert-5d6577)); color: #fff; font: inherit; text-align: left; cursor: pointer; }
+#v2-root .gtrn-sec-loin .gtrn-sec-hd, #v2-root .gtrn-sec-sanspos .gtrn-sec-hd { background: var(--grp-vert-f0f3f1); color: var(--grp-ink); }
+#v2-root .gtrn-sec-hd:focus-visible { outline: 3px solid var(--grp-ink); outline-offset: -3px; }
+#v2-root .gtrn-cd { flex: none; min-width: 40px; font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; }
+#v2-root .gtrn-nm { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; line-height: 1.3; }
+#v2-root .gtrn-n { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 28px; height: 28px; padding: 0 8px; box-sizing: border-box; border-radius: 14px; background: #fff; color: var(--gtrn-c, var(--grp-ink)); font-weight: 800; font-size: 14px; }
+#v2-root .gtrn-ch { flex: none; width: 10px; height: 10px; border-right: 3px solid currentColor; border-bottom: 3px solid currentColor; transform: rotate(45deg) translate(-2px,-2px); transition: transform .2s; }
+#v2-root .gtrn-sec.open .gtrn-ch { transform: rotate(225deg) translate(-2px,-2px); }
+#v2-root .gtrn-sec.gtrn-dim .gtrn-sec-hd { background: var(--grp-vert-5d6577); }
+#v2-root .gtrn-sec.gtrn-dim .gtrn-n { color: var(--grp-ink); }
+#v2-root .gtrn-sec-bd { display: none; background: color-mix(in srgb, var(--gtrn-c, var(--grp-vert-8a91a3)) 5%, #fff); }
+#v2-root .gtrn-sec.open .gtrn-sec-bd { display: block; }
 @media (prefers-reduced-motion: reduce) { #v2-root .gtrn * { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
