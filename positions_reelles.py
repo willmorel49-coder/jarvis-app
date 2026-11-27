@@ -315,8 +315,9 @@ def calculer():
 
 
 def appliquer(pos):
-    """Replace les points de pharma-fr-data.js (seules lat, lng changent) et retire les non-officines de _NON_PH_IDS,
-    comme le fait build_pharma_fr.py à la régénération (27/11/2026, choix de Will). Les autres fichiers sont liés par id."""
+    """Replace les points de pharma-fr-data.js (seules lat, lng changent), retire les non-officines de _NON_PH_IDS et recopie
+    meta.fermees depuis fermetures_carte.json, comme le fait build_pharma_fr.py à la régénération (27/11/2026, choix de Will).
+    Les autres fichiers sont liés par id."""
     tete, data, queue = lire_pharma_fr(PHARMA_FR)
     avant = tete + PREFIXE + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + queue
     if avant != io.open(PHARMA_FR, encoding='utf-8').read():
@@ -326,6 +327,7 @@ def appliquer(pos):
     avant_n = len(data['p'])
     data['p'] = [p for p in data['p'] if str(p[13]) not in exclus]
     retires = avant_n - len(data['p'])
+    data['meta']['fermees'] = sorted(json.load(io.open(os.path.join(ROOT, 'fermetures_carte.json'), encoding='utf-8'))['officines'])
     n = 0
     for p in data['p']:
         oid = str(p[13])

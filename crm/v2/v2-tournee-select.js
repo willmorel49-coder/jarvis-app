@@ -140,6 +140,7 @@
     for (var i = 0; i < D.p.length; i++) {
       var p = D.p[i];
       if (!p || !isProspect(D, p)) continue;
+      if (V2.pfFermee && V2.pfFermee(p, D)) continue;   // 27/11/2026 : officine fermée (annuaire) → jamais proposée à la tournée
       var lat = p[0], lng = p[1];
       if (typeof lat !== 'number' || typeof lng !== 'number' || !isFinite(lat) || !isFinite(lng)) continue;
       prospects.push({ idx: i, dist: haversine(lat, lng, opts.destLat, opts.destLng) });

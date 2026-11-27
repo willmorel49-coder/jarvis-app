@@ -27,6 +27,8 @@
   // ── Calcul pur ────────────────────────────────────────────────
   function cleCip(v) { return String(v == null ? '' : v).replace(/[^0-9A-Za-z_-]/g, ''); }
   K.cleCip = cleCip;
+  // 27/11/2026 : officine fermée (annuaire) → hors de la carte (le juge commun est V2.pfFermee ; sans lui ou sans PHARMA_FR : rien n'est retiré).
+  function fermeeCip(cip) { var r = []; r[13] = cip; return !!(V2.pfFermee && glob.PHARMA_FR && V2.pfFermee(r, glob.PHARMA_FR)); }
   function kmOk(x) { return typeof x === 'number' && isFinite(x); }
 
   // Prospects de TOUTES les tournées, un par CIP (si un CIP figure dans plusieurs tournées : la plus proche), triés par distance à la
@@ -37,6 +39,7 @@
       TR().prospects((d.tournees[code] || {}).prospects).forEach(function (p) {
         var cip = cleCip(p.cip);
         if (!cip || !kmOk(p.lat) || !kmOk(p.lng) || !kmOk(p.km_route)) return;
+        if (fermeeCip(cip)) return;
         var o = { cip: cip, lat: p.lat, lng: p.lng, km: p.km_route, apres: p.apres, avant: p.avant, detour: p.detour, fiable: p.fiable, tournee: code };
         if (best[cip] && best[cip].km <= o.km) return;
         best[cip] = o;
@@ -120,9 +123,9 @@
   K.monter = function (el, ctx) {
     K.demonter();
     css(); X = ctx;
-    if (!MOD || MOD.d !== ctx.d) {
+    if (!MOD || MOD.d !== ctx.d || MOD.pf !== glob.PHARMA_FR) {
       var pros = K.prospects(ctx.d);
-      MOD = { d: ctx.d, prospects: pros, codes: Object.keys(ctx.d.tournees).sort(), rayonMax: K.rayonMax(pros) };
+      MOD = { d: ctx.d, pf: glob.PHARMA_FR, prospects: pros, codes: Object.keys(ctx.d.tournees).sort(), rayonMax: K.rayonMax(pros) };
       S.rayon = Math.min(S.rayon, MOD.rayonMax); S.tourneeSel = ''; S.choisi = ''; S.vueCarte = null;
     }
     el.innerHTML = '<div class="tcm" id="tcm"><div class="tcm-bar" id="tcm-bar"></div><div class="tcm-body"><div class="tcm-map" id="tcm-map" role="region" aria-label="Carte des tournées"></div><aside class="tcm-rail" id="tcm-rail" aria-label="Tournées et prospects"></aside></div></div>';
@@ -143,7 +146,10 @@
     });
     else S.ok = false;
   };
-  K.majNoms = function () { if (M || document.getElementById('tcm-rail')) majRail(); };
+  K.majNoms = function () {
+    if (MOD && X && MOD.pf !== glob.PHARMA_FR) { var h = document.getElementById('tcm'); if (h && h.parentNode) { K.monter(h.parentNode, X); return; } }   // PHARMA_FR arrivé après coup : on redessine sans les fermées
+    if (M || document.getElementById('tcm-rail')) majRail();
+  };
 
   // Suivi (verrou « oui » SEULEMENT). Une source qui échoue est NOTÉE dans S.manque : jamais lue comme « rien ».
   function chargerSuivi() {

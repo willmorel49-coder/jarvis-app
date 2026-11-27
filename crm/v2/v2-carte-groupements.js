@@ -59,6 +59,7 @@
     GIDX = {};
     for (var i = 0; i < D.p.length; i++) {
       var p = D.p[i], g = canonGrp(grpName(p));   // nom canonique → fusionne les doublons
+      if (V2.pfFermee && V2.pfFermee(p, D)) continue;   // 27/11/2026 : officine fermée (annuaire) → hors de la carte, de sa liste et des comptes du groupement ; fiche et recherche gardées
       if (!g || g === '—') continue;
       var e = GIDX[g] || (GIDX[g] = { c: 0, pr: 0, pts: [] });
       e.pts.push(i);

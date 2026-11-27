@@ -70,6 +70,8 @@
       return { cip: cip, nom: joli(p[6]), ville: joli(p[7]), cp: p[8], lat: p[0], lng: p[1], cliente: !!cli[cip], arret: arret[cip] ? arret[cip].code : '',
         ch: chiffres(cip), d10: distKm(p[0], p[1], tt.trace), detour: pr ? pr[6] : null, proche: proche, procheCode: qui };
     }).filter(function (e) { return e.proche <= SEUIL_LOIN; })
+      // 27/11/2026 : officine fermée (annuaire) non cliente → hors de la carte et de la liste (juge commun V2.pfFermee ; sans lui, rien n'est retiré)
+      .filter(function (e) { return e.cliente || !(glob.V2 && glob.V2.pfFermee && glob.V2.pfFermee(pf[e.cip], PF)); })
       .sort(function (a, b) { return a.d10 - b.d10; });
     var angers = Object.keys(cli).filter(function (id) { return /^ANGERS/i.test(cli[id].ville); }).map(function (id) {
       var o = cli[id], a = arret[id];

@@ -42,6 +42,7 @@
     return {
       pts: D.p, uga: D.uga, grp: D.grp,
       commsOf: A.commsOf, isClient: A.isClient,
+      fermee: function (p) { return !!(V2.pfFermee && V2.pfFermee(p, D)); },   // 27/11/2026 : officine fermée (annuaire) → hors de la carte, fiche et recherche gardées
       palierDe: function (p) { var m = /^Client ([ABC])$/.exec(A.segOf(p)); return m ? m[1] : ''; },
       voitCa: A.voitCa, caMois: caMois, kmTournee: kmTournee, info: infoDe
     };

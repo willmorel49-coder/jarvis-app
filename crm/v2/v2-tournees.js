@@ -1052,9 +1052,11 @@
 
   function route(code) {
     var t = S.A[code], d = document.getElementById('trn-route'); if (!t || !d) return;
-    var pr = t.prospects.slice(0, 6), gr = t.grossir.slice(0, 6);
+    // 27/11/2026 : officine fermée (annuaire) → hors de la carte et de la liste lettrée qui l'accompagne (juge commun : V2.pfFermee)
+    var tp = t.prospects.filter(function (p) { var r = []; r[13] = p.cip; return !(V2.pfFermee && glob.PHARMA_FR && V2.pfFermee(r, glob.PHARMA_FR)); });
+    var pr = tp.slice(0, 6), gr = t.grossir.slice(0, 6);
     d.innerHTML = '<div><div class="trn-mp" id="trn-mp"></div></div>' +
-      '<div class="trn-col"><h3>Prospects à voir en priorité <span class="trn-mu">· ' + t.nb_prospects_2km + ' à 2 km ou moins</span></h3>' +
+      '<div class="trn-col"><h3>Prospects à voir en priorité <span class="trn-mu">· ' + C.nb2km(tp) + ' à 2 km ou moins</span></h3>' +
       (pr.length ? pr.map(function (p, i) { var n = nomPF(p.cip);
         return '<div class="trn-li"><div><b>' + String.fromCharCode(65 + i) + ' · ' + esc(n.nom) + '</b><span>' + (n.ville ? esc(n.ville) + ' · ' : '') + esc(C.position(p)) + '</span></div><em>' + esc(C.detour(p).replace('détour ', '+')) + '</em></div>'; }).join('')
         : '<div class="trn-vide">Aucun prospect sur cette route.</div>') + '</div>' +

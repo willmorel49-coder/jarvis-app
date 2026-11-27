@@ -344,6 +344,16 @@ def positions_reelles():
     return {k: tuple(v) for k, v in pos.items()}
 
 
+def fermetures_carte():
+    """27/11/2026 — identifiants des officines fermées retirées de toutes les cartes (fermetures_carte.json, choix de Will
+    « Retirer de la carte » : fiche et recherche gardées). Fichier versionné : s'il manque, on s'arrête plutôt que de remettre
+    des pharmacies fermées sur les cartes sans rien dire."""
+    chemin = os.path.join(ROOT, 'fermetures_carte.json')
+    if not os.path.exists(chemin):
+        raise SystemExit('ARRÊT : fermetures_carte.json absent')
+    return sorted(json.load(open(chemin, encoding='utf-8'))['officines'])
+
+
 def exact_coords():
     """{id:(lat,lng)} — adresse exacte géocodée (cache STATS/geocode_addr_cache.json)."""
     addr = load_addresses()
@@ -542,7 +552,8 @@ def main():
     nClients = sum(1 for p in P if segs and inv(segs)[p[4]].startswith('Client'))
     data = {
         'meta': {'n': len(P), 'communes': len(need), 'clients': nClients,
-                 'source': 'Base France 12/2024 + FINESS (Corse) · France métropolitaine'},
+                 'source': 'Base France 12/2024 + FINESS (Corse) · France métropolitaine',
+                 'fermees': fermetures_carte()},   # 27/11/2026 : hors des cartes, fiche et recherche gardées
         'uga': inv(ugas), 'grp': inv(grps), 'seg': inv(segs), 'comm': inv(comms), 'p': P,
     }
     with open(OUT, 'w', encoding='utf-8') as fh:

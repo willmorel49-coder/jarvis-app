@@ -80,6 +80,7 @@
       for (i = 0; i < D.p.length; i++) {
         var p = D.p[i];
         if (typeof p[0] !== 'number' || typeof p[1] !== 'number' || isNaN(p[0]) || isNaN(p[1]) || (p[0] === 0 && p[1] === 0)) continue;   // 43 officines sans position (0,0) dans PHARMA_FR : ignorées
+        if (glob.V2 && glob.V2.pfFermee && glob.V2.pfFermee(p, D)) continue;   // 27/11/2026 : officine fermée (annuaire) → ne compte plus dans les officines d'une zone
         var dep = String(p[8] || '').slice(0, 2), isSec = !!deps[dep];
         if (isSec) St.offsSecteur.push(i);
         var h = rattache(St, p[0], p[1]);

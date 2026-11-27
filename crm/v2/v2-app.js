@@ -2926,6 +2926,18 @@
     }).catch(function () {});
   }
   // Chargeur partagé de la base nationale (2,7 Mo, lazy) — pour la recherche d'accueil et les fiches prospect.
+  // ── OFFICINES FERMÉES (27/11/2026, choix de Will « Retirer de la carte ») — fermeture prouvée à l'annuaire des entreprises
+  // (nom de la pharmacie + titulaire, tous les établissements fermés) : absentes de TOUTES les cartes, mais la fiche reste et la
+  // recherche la trouve toujours. Liste : PHARMA_FR.meta.fermees (fichier versionné fermetures_carte.json, recopié à chaque
+  // fabrication). Seul juge, appelé par chaque carte avant de poser un point. Une cliente n'est jamais retirée.
+  V2.pfFermee = function (p, D) {
+    D = D || window.PHARMA_FR;
+    var m = D && D.meta, f = m && m.fermees;
+    if (!p || !f || !f.length) return false;
+    if (!m._fermeesSet || m._fermeesSrc !== f) { var s = {}; for (var i = 0; i < f.length; i++) s[String(f[i])] = 1; m._fermeesSet = s; m._fermeesSrc = f; }
+    if (!m._fermeesSet[String(p[13])]) return false;
+    return String((D.seg && D.seg[p[4]]) || '').indexOf('Client') !== 0;
+  };
   // ── VÉRITÉ CLIENT (canonique, partagée) — un client = officine dont l'id est dans WML_OFFICINES.
   // Le seg BRUT de PHARMA_FR est FAUX (gonflé). MÊME règle que le Copilote (reconcileWithWml).
   // Idempotent (flag D._wmlRecon). À appeler dès que PHARMA_FR est chargé, avant tout affichage de client.

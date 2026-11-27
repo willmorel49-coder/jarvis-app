@@ -1,0 +1,206 @@
+{
+ "note": "Officines fermées retirées de TOUTES les cartes du CRM (choix de Will, 27/11/2026, « Retirer de la carte ») : fiche gardée, toujours trouvée par la recherche. Preuve : annuaire des entreprises (recherche-entreprises.api.gouv.fr, lu le 27/11/2026), société dont le titulaire JARVIS est dirigeant ET dont le nom concorde avec la pharmacie, tous ses établissements du code postal fermés ; aucune cliente. Recopié dans pharma-fr-data.js (meta.fermees) par build_pharma_fr.py, enrichir_pharma_fr.py et positions_reelles.py --appliquer. Ajouter une officine ici = la retirer des cartes.",
+ "officines": {
+  "2004363": {
+   "nom": "PHARMACIE VICTOR HUGO",
+   "cp": "02100",
+   "commune": "ST QUENTIN",
+   "etablissement_ferme_le": "2025-12-31",
+   "siren": [
+    "509868014"
+   ]
+  },
+  "2009160": {
+   "nom": "PHARMACIE DES BUJOLIERS",
+   "cp": "17770",
+   "commune": "ST CESAIRE",
+   "etablissement_ferme_le": "2025-06-30",
+   "siren": [
+    "443031539"
+   ]
+  },
+  "2012283": {
+   "nom": "PHARMACIE DU CHAMP DE MARS",
+   "cp": "26700",
+   "commune": "PIERRELATTE",
+   "etablissement_ferme_le": "2025-10-09",
+   "siren": [
+    "378209324",
+    "790524797"
+   ]
+  },
+  "2023515": {
+   "nom": "PHARMACIE CONDORCET",
+   "cp": "45400",
+   "commune": "FLEURY LES AUBRAIS",
+   "etablissement_ferme_le": "2026-03-31",
+   "siren": [
+    "353415789"
+   ]
+  },
+  "2034527": {
+   "nom": "PHARMACIE DE SAYTHE",
+   "cp": "69800",
+   "commune": "ST PRIEST",
+   "etablissement_ferme_le": "2025-01-16",
+   "siren": [
+    "351754379"
+   ]
+  },
+  "2044582": {
+   "nom": "PHARMACIE DE LA PLAGE",
+   "cp": "85160",
+   "commune": "ST JEAN DE MONTS",
+   "etablissement_ferme_le": "2026-04-01",
+   "siren": [
+    "434386728"
+   ]
+  },
+  "2076174": {
+   "nom": "PHARMACIE REPUBLIQUE",
+   "cp": "15000",
+   "commune": "AURILLAC",
+   "etablissement_ferme_le": "2025-01-31",
+   "siren": [
+    "851471730"
+   ]
+  },
+  "2081226": {
+   "nom": "PHARMACIE DES GARDILLOUX",
+   "cp": "19150",
+   "commune": "MARC LA TOUR",
+   "etablissement_ferme_le": "2025-04-23",
+   "siren": [
+    "493479505"
+   ]
+  },
+  "2132008": {
+   "nom": "PHARMACIE DU THEATRE",
+   "cp": "47300",
+   "commune": "VILLENEUVE SUR LOT",
+   "etablissement_ferme_le": "2025-08-29",
+   "siren": [
+    "824941512"
+   ]
+  },
+  "2132212": {
+   "nom": "PHARMACIE DU MARCHE",
+   "cp": "48400",
+   "commune": "FLORAC",
+   "etablissement_ferme_le": "2024-12-31",
+   "siren": [
+    "452104789"
+   ]
+  },
+  "2138319": {
+   "nom": "PHARMACIE DU MARCHE",
+   "cp": "52300",
+   "commune": "JOINVILLE",
+   "etablissement_ferme_le": "2025-06-27",
+   "siren": [
+    "401600879"
+   ]
+  },
+  "2151722": {
+   "nom": "PHARMACIE D HAUSSY",
+   "cp": "59294",
+   "commune": "HAUSSY",
+   "etablissement_ferme_le": "2026-03-31",
+   "siren": [
+    "391978590"
+   ]
+  },
+  "2159999": {
+   "nom": "PHARMACIE DES SABLONS",
+   "cp": "61110",
+   "commune": "CONDE SUR HUISNE",
+   "etablissement_ferme_le": "2024-12-18",
+   "siren": [
+    "835044280"
+   ]
+  },
+  "2162556": {
+   "nom": "PHARMACIE MODERNE",
+   "cp": "62630",
+   "commune": "ETAPLES",
+   "etablissement_ferme_le": "2025-09-29",
+   "siren": [
+    "510148927"
+   ]
+  },
+  "2201610": {
+   "nom": "PHARMACIE DE LA POSTE",
+   "cp": "77178",
+   "commune": "ST PATHUS",
+   "etablissement_ferme_le": "2025-04-01",
+   "siren": [
+    "533590725"
+   ]
+  },
+  "2221768": {
+   "nom": "PHARMACIE DE LA POSTE",
+   "cp": "90000",
+   "commune": "BELFORT",
+   "etablissement_ferme_le": "2025-12-31",
+   "siren": [
+    "888846938"
+   ]
+  },
+  "2221836": {
+   "nom": "PHARMACIE DE FRANCE",
+   "cp": "90000",
+   "commune": "BELFORT",
+   "etablissement_ferme_le": "2026-02-26",
+   "siren": [
+    "533866869"
+   ]
+  },
+  "2247388": {
+   "nom": "PHARMACIE COLISSON",
+   "cp": "47400",
+   "commune": "TONNEINS",
+   "etablissement_ferme_le": "2025-09-01",
+   "siren": [
+    "822194569"
+   ]
+  },
+  "2268790": {
+   "nom": "PHARMACIE DES BASTIONS",
+   "cp": "47400",
+   "commune": "TONNEINS",
+   "etablissement_ferme_le": "2025-12-31",
+   "siren": [
+    "412035529",
+    "822194635"
+   ]
+  },
+  "2269862": {
+   "nom": "PHARMACIE DE LA MAIRIE",
+   "cp": "44320",
+   "commune": "ST PERE EN RETZ",
+   "etablissement_ferme_le": "2025-12-01",
+   "siren": [
+    "499297364",
+    "499764504"
+   ]
+  },
+  "2276398": {
+   "nom": "PHARMACIE DE LA SAULDRE",
+   "cp": "41300",
+   "commune": "SALBRIS",
+   "etablissement_ferme_le": "2025-09-08",
+   "siren": [
+    "499220473"
+   ]
+  },
+  "2286013": {
+   "nom": "PHARMACIE DES THERMES",
+   "cp": "63130",
+   "commune": "ROYAT",
+   "etablissement_ferme_le": "2025-01-01",
+   "siren": [
+    "523417483"
+   ]
+  }
+ }
+}

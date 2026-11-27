@@ -83,12 +83,15 @@
   }
   function indicesDuSecteur(S, ctx) {
     var out = [];
-    for (var i = 0; i < ctx.pts.length; i++) if (dansSecteur(ctx.pts[i], S, ctx)) out.push(i);
+    for (var i = 0; i < ctx.pts.length; i++) {
+      if (ctx.fermee && ctx.fermee(ctx.pts[i])) continue;   // 27/11/2026 : officine fermée (annuaire) → hors de la carte et des comptes du secteur
+      if (dansSecteur(ctx.pts[i], S, ctx)) out.push(i);
+    }
     return out;
   }
   function indicesDeUga(idxUga, ctx) {
     var out = [];
-    for (var i = 0; i < ctx.pts.length; i++) if (ctx.pts[i][2] === idxUga) out.push(i);
+    for (var i = 0; i < ctx.pts.length; i++) if (ctx.pts[i][2] === idxUga && !(ctx.fermee && ctx.fermee(ctx.pts[i]))) out.push(i);   // fermée : hors des comptes
     return out;
   }
 

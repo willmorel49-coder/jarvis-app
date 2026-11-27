@@ -593,7 +593,14 @@ def main():
     log('   officines carte sans correspondance FINESS : %d (dont %d clients CRM jamais marqués fermés)'
         % (len(unmatched_carte_idx), n_skip_client))
     log('   fermetures PROUVÉES : %d' % len(fermees))
-    data['meta']['fermees'] = [f['id'] for f in fermees]
+    # 27/11/2026 — meta.fermees = officines RETIRÉES DES CARTES (choix de Will) : la liste relue et versionnée
+    # fermetures_carte.json, jamais ce calcul seul (preuve cp + nom, plus faible) ; ses trouvailles restent dans
+    # E-fermetures-prouvees.json, à relire avant de les ajouter au fichier.
+    _fc = os.path.join(ROOT, 'fermetures_carte.json')
+    if not os.path.exists(_fc):
+        sys.exit('ARRÊT : fermetures_carte.json absent')
+    data['meta']['fermees'] = sorted(json.load(open(_fc, encoding='utf-8'))['officines'])
+    log('   retirées des cartes (fermetures_carte.json) : %d' % len(data['meta']['fermees']))
     json.dump(fermees, open(os.path.join(OUT_SORTIES, 'E-fermetures-prouvees.json'), 'w', encoding='utf-8'),
               ensure_ascii=False, indent=2)
 

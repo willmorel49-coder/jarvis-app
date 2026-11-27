@@ -243,6 +243,7 @@
   }
   function deptOf(cp) { cp = String(cp || '').replace(/\s/g, ''); if (cp.length < 2) return ''; return /^97/.test(cp) ? cp.slice(0, 3) : cp.slice(0, 2); }
   function pass(p) {
+    if (V2.pfFermee && V2.pfFermee(p, D)) return false;   // 27/11/2026 : officine fermée (annuaire) → hors des cartes, fiche et recherche gardées
     if (secteurPass && !secteurPass(p)) return false;   // « Mon secteur » : seulement les officines des UGA du secteur affiché
     if (typeFocus === 'clients' && !isClient(p)) return false;
     if (typeFocus === 'prospects' && D.seg[p[4]] !== 'Prospect') return false;
@@ -786,7 +787,7 @@
          densHi: 12, densLo: 4, isol: -10, caTop: 6 },
     DELIV_RADIUS: 15   // km : un prospect n'est « logique » à livrer que si un client Intégral est à ≤ ce rayon
   };
-  function llOK(p) { return isFinite(p[0]) && isFinite(p[1]) && (p[0] !== 0 || p[1] !== 0); }
+  function llOK(p) { return isFinite(p[0]) && isFinite(p[1]) && (p[0] !== 0 || p[1] !== 0) && !(V2.pfFermee && V2.pfFermee(p, D)); }   // fermée (27/11/2026) : jamais candidate de tournée
   // ── GRILLE DE LIVRAISON : tous les clients Intégral (là où on livre déjà). Un prospect n'est « logique »
   //    à prospecter que s'il tombe dans le rayon de livraison d'un client. Hash spatial (cellules ~0,2°) pour la vitesse.
   var _clientCells = null, _clientCount = 0;
@@ -1103,6 +1104,7 @@
     var out = [];
     for (var i = 0; i < D.p.length; i++) {
       var p = D.p[i]; if (!isProspect(p)) continue;
+      if (V2.pfFermee && V2.pfFermee(p, D)) continue;   // fermée : pas proposée
       if (tourPos(keyOf(p)) >= 0) continue;
       var P = { lat: p[0], lng: p[1] };
       if (nearestClientKm(P) > TP.DELIV_RADIUS) continue;   // hors zone de livraison → pas proposé
