@@ -27,6 +27,10 @@ _COMPTE_NEUF = {
     # Pharmacie du Parc, 21 avenue du Parc, Blagnac (Céline) : même adresse, téléphone et titulaire ; 2015038 est le
     # code de la base nationale et des infos publiques, 2051038 n'avait ni adresse ni point (Will, 06/11/2026).
     '2051038': '2015038',
+    # Pharmacie du Rond-Point, 4 rue Roger Hostein, Cholet (Will) : ex-Pharmacie Quillet Ca Van, transférée (même
+    # titulaire, même téléphone et même mail). 2133331 janv.–avril 2026, 2011135 depuis août ; 2133331 est le code de
+    # la base nationale, des infos publiques (adresse après transfert, SIREN) et de la liste Essentiels (Will, 27/11/2026).
+    '2011135': '2133331',
 }
 _CODES_GARDES = set(_COMPTE_NEUF.values())
 

@@ -36,6 +36,12 @@ assert co('2015038EX') == ('2015038', True)
 assert co('2011419') == ('2063584', False)
 assert P.codes_comptes('2015038') == ['2051038', '2015038']
 
+# 3 bis. Cholet, Pharmacie du Rond-Point (transfert de la Pharmacie Quillet Ca Van, 27/11/2026) : une seule fiche,
+# sous 2133331 (base nationale, liste Essentiels), avec l'identité du compte d'après le transfert
+assert co('2011135') == ('2133331', False)
+assert co('2133331') == ('2133331', True)
+assert P.codes_comptes('2133331') == ['2011135', '2133331']
+
 # 4. Un code ne peut pas être dans les deux tables : le sens deviendrait ambigu
 deux = set(P._ANCIEN_COMPTE) | set(P._ANCIEN_COMPTE.values())
 assert not deux & (set(P._COMPTE_NEUF) | P._CODES_GARDES), deux & (set(P._COMPTE_NEUF) | P._CODES_GARDES)
