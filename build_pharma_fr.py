@@ -276,7 +276,8 @@ POSITIONS_CORRIGEES = {
     '2132741': (47.46689, -0.55757),  # PHARMACIE LE GALL, 49100 Angers
     '2132799': (47.47546, -0.54946),  # PHARMACIE DE L UNIVERSITE, 49100 Angers
     '2024084': (47.45599, -0.401),  # PHARMACIE DE L AUTHION, 49800 Loire Authion
-    '2279142': (47.26013, -0.0755),  # PHARMACIE DU THOUET, 49400 Saumur
+    '2279142': (47.26224, -0.09099),  # PHARMACIE DU THOUET, 49400 Saumur — 27/11/2026 : 51 bd du Maréchal de Lattre de Tassigny
+                                      # à l'Adresse nationale ; la fiche FINESS n'était placée qu'au centre de Saumur (1,2 km)
     '2134576': (47.61549, -0.46388),  # PHARMACIE DES ERABLES, 49125 Tierce
     '2183162': (48.01208, 0.20562),  # PHIE DE LA CROIX DE PIERRE, 72000 Le Mans
     '2139108': (48.0624, -0.75499),  # PHARMACIE LAVAL MURAT, 53000 Laval
@@ -288,6 +289,17 @@ POSITIONS_CORRIGEES = {
     '2041251': (46.97838, -0.20385),  # PHARMACIE DES CAPUCINS, 79100 Thouars
     '2133331': (47.04613, -0.87539),  # PHARMACIE QUILLET CA VAN, 49300 Cholet
 }
+
+
+def positions_reelles():
+    """27/11/2026 — {id:(lat,lng)} des officines reliées avec certitude à leur fiche FINESS (positions_reelles.py,
+    choix de Will « toute la France »). Fichier versionné : s'il manque, on s'arrête plutôt que de remettre
+    18 000 officines au centre de leur commune sans rien dire."""
+    chemin = os.path.join(ROOT, 'positions_reelles.json')
+    if not os.path.exists(chemin):
+        raise SystemExit('ARRÊT : positions_reelles.json absent (lancer positions_reelles.py)')
+    pos = json.load(open(chemin, encoding='utf-8'))['pos']
+    return {k: tuple(v) for k, v in pos.items()}
 
 
 def exact_coords():
@@ -368,6 +380,7 @@ def main():
 
     comm_by_id, ca_by_id = wml_commercials()   # ID officine -> commercial + CA (nos clients réseau)
     EX = exact_coords()                          # ID officine -> (lat,lng) adresse exacte
+    EX.update(positions_reelles())               # 27/11/2026 : adresse officielle (FINESS/BPE) des officines reliées avec certitude
     EX.update(POSITIONS_CORRIGEES)               # 30/10/2026 : corrections à la main, prioritaires
     GRPMAP, GRPCANON = load_groupement_map()     # (cp,nom)->groupement + fusion des libellés
     SEG_MAP = {'clients a': 'Client A', 'clients b': 'Client B', 'clients c': 'Client C', 'prospects': 'Prospect'}

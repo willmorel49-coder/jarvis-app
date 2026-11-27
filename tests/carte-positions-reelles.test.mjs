@@ -1,0 +1,44 @@
+// Positions réelles de la carte (27/11/2026, choix de Will « toute la France ») : chaque officine reliée avec certitude
+// à sa fiche FINESS est posée à son adresse officielle (positions_reelles.json, fabriqué par positions_reelles.py).
+// Ce test rouge = une régénération de pharma-fr-data.js a remis des officines au centre de leur commune.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const lire = f => fs.readFileSync(new URL('../' + f, import.meta.url), 'utf8');
+const g = {};
+new Function('window', lire('crm/v2/pharma-fr-data.js'))(g);
+const P = g.PHARMA_FR.p;
+const table = JSON.parse(lire('positions_reelles.json')).pos;
+const build = lire('build_pharma_fr.py');
+const corrigees = {};
+for (const m of build.slice(build.indexOf('POSITIONS_CORRIGEES = {'), build.indexOf('\n}\n', build.indexOf('POSITIONS_CORRIGEES = {')))
+  .matchAll(/'(\w+)': \(([-\d.]+), ([-\d.]+)\)/g)) corrigees[m[1]] = [Number(m[2]), Number(m[3])];
+
+test('la table couvre le gros de la carte (plus de 17 000 officines)', () => {
+  assert.ok(Object.keys(table).length > 17000, String(Object.keys(table).length));
+  assert.ok(Object.keys(corrigees).length >= 34);
+});
+
+test('chaque officine de la table est sur la carte à sa position réelle (corrections à la main prioritaires)', () => {
+  const fausses = [];
+  for (const p of P) {
+    const id = String(p[13]), cible = corrigees[id] || table[id];
+    if (cible && (p[0] !== cible[0] || p[1] !== cible[1])) fausses.push(id);
+  }
+  assert.deepEqual(fausses.slice(0, 10), [], fausses.length + ' officines hors de leur position réelle');
+});
+
+test('le programme de la carte relit la table, avant les corrections à la main', () => {
+  const a = build.indexOf('EX.update(positions_reelles())'), b = build.indexOf('EX.update(POSITIONS_CORRIGEES)');
+  assert.ok(a > 0 && b > a);
+});
+
+test('Pharmacie du Thouet (Saumur) au 51 bd du Maréchal de Lattre de Tassigny, pas au centre de Saumur', () => {
+  const p = P.find(x => String(x[13]) === '2279142');
+  assert.deepEqual([p[0], p[1]], [47.26224, -0.09099]);
+});
+
+test('aucun point hors de la France métropolitaine', () => {
+  assert.equal(P.filter(p => !(p[0] >= 41 && p[0] <= 51.6 && p[1] >= -5.5 && p[1] <= 9.8)).length, 0);
+});

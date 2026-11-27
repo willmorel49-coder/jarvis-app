@@ -149,8 +149,11 @@ const rural = rurales53[Math.floor(rurales53.length / 2)];
   // Le point cité dans le défaut (47,325 / -2,31, à 0,0003° de l'officine) : 5 quartiers, dont celui de Saint-Nazaire qui apportait sa population sans ses officines.
   const zb5 = P.zone(47.325, -2.31, 5), zb10 = P.zone(47.325, -2.31, 10);
   console.log('Point du défaut (47,325 / -2,31) : 5 km ' + Math.round(zb5.pop) + ' hab., ' + zb5.nbOff + ' off., ' + Math.round(zb5.habParOff) + ' hab./off. · 10 km ' + Math.round(zb10.habParOff) + ' [avant : 18 502 hab., 1 officine]');
-  ok(zb5.nbOff >= 3 && zb5.habParOff < 5000, 'point du défaut : 5 km = ' + Math.round(zb5.habParOff) + ' hab./officine avec ' + zb5.nbOff + ' officines (avant : 1 officine, 18 502)');
-  ok(zb5.habParOff / zb10.habParOff > 0.7 && zb5.habParOff / zb10.habParOff < 1.4, 'point du défaut : 5 km (' + Math.round(zb5.habParOff) + ') plausible face à 10 km (' + Math.round(zb10.habParOff) + ') : rapport ' + (zb5.habParOff / zb10.habParOff).toFixed(2) + ' entre 0,7 et 1,4');
+  // 27/11/2026 — officines posées à leur adresse officielle (positions_reelles.json) : le registre FINESS n'a que 2 officines à moins de
+  // 5 km de ce point (Pharmacie de la Brière, Pharmacie Lacroix à Saint-Nazaire) et 45 à moins de 10 km. Les seuils d'avant
+  // (au moins 3 officines, moins de 5 000 hab./officine, rapport 0,7-1,4) comptaient des points posés en spirale autour de Saint-Nazaire.
+  ok(zb5.nbOff >= 2 && zb5.habParOff < 10000, 'point du défaut : 5 km = ' + Math.round(zb5.habParOff) + ' hab./officine avec ' + zb5.nbOff + ' officines (avant : 1 officine, 18 502 ; FINESS : 2 à moins de 5 km)');
+  ok(zb5.habParOff / zb10.habParOff < 2.5, 'point du défaut : 5 km (' + Math.round(zb5.habParOff) + ') face à 10 km (' + Math.round(zb10.habParOff) + ') : rapport ' + (zb5.habParOff / zb10.habParOff).toFixed(2) + ' sous 2,5 (18 502 au défaut)');
   ok(z5.nbOff >= 2, 'La Brière (coordonnées exactes) : 5 km = ' + z5.nbOff + ' officines (avant : 1) — LIMITE CONNUE : ' + Math.round(z5.habParOff) + ' hab./officine, car la zone n\'est plus que 4 quartiers (Le Guézy, 4 873 hab., n\'a aucune officine DANS son contour) ; voir rapport-correctif.md');
   // le défaut tel qu\'il était : chaque quartier de la zone, ses officines sont toutes comptées (aucun quartier ne « perd » ses officines)
   const perdues = z5.quartiers.filter((c) => { const k = codeVersIdx.get(c); return [...attache.entries()].some(([n, q]) => q === k && !z5.officines.includes(PHARMA.p[n][13])); }).length;

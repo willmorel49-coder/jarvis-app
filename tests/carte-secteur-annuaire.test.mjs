@@ -59,8 +59,9 @@ test('l\'ordre ne compte pas : index fait avant la réconciliation = index fait 
 test('cas connus : Beaulieu (jumelle 440014009) à Nantes, Porte d\'Azur (jumelle 830004446) à Bandol même sans code postal', () => {
   const s = vraies();
   assert.deepEqual(s.V2.pointAnnuaire('2011018', '44200'), [47.20448, -1.53506]);
-  assert.deepEqual(s.V2.pointAnnuaire('2211215', ''), [43.14193, 5.74847]);
-  assert.deepEqual(s.V2.pointAnnuaire('2211215', '83150'), [43.14193, 5.74847]);
+  // 27/11/2026 : la jumelle 830004446 est posée au point de sa fiche FINESS (route de Marseille, positions_reelles.json), 236 m plus au nord.
+  assert.deepEqual(s.V2.pointAnnuaire('2211215', ''), [43.14394, 5.74753]);
+  assert.deepEqual(s.V2.pointAnnuaire('2211215', '83150'), [43.14394, 5.74753]);
   assert.equal(s.V2.pointAnnuaire('2261821', '95340'), null);   // Persan / Chambly : mis de côté par Will
 });
 test('garde-fou du département sur des lignes fabriquées', () => {
