@@ -1894,7 +1894,8 @@
     if (ph && champ) {
       var b = _phBase[pid] || (_phBase[pid] = {});
       if (!b.hasOwnProperty(champ)) { var w = (window.WML_OFFICINES || []).find(function (o) { return String(o.id) === String(pid); }); b[champ] = w ? w[champ] : ph[champ];
-        if (champ === 'groupement' && window.GRP_DEPART && window.GRP_DEPART[String(pid).replace(/[^0-9]/g, '')]) b[champ] = window.GRP_DEPART[String(pid).replace(/[^0-9]/g, '')]; }
+        if (champ === 'groupement' && window.GRP_DEPART && window.GRP_DEPART[String(pid).replace(/[^0-9]/g, '')]) b[champ] = window.GRP_DEPART[String(pid).replace(/[^0-9]/g, '')];
+        else if (champ === 'groupement' && window.GRP_RETIREES && window.GRP_RETIREES[String(pid).replace(/[^0-9]/g, '')]) b[champ] = window.GRP_RETIREES[String(pid).replace(/[^0-9]/g, '')]; }   // 27/11/2026 : retirée de la liste officielle (Bouchemaine)
       ph[champ] = v || b[champ];
     }
     if (col != null && window.PHARMA_FR && V2.pfPoser) V2.pfPoser(pharmaFrById(pid), col, v);
@@ -2027,7 +2028,8 @@
           feMemoire(pid, ph, 'groupement', null, v);
           window.GRP_OVR = window.GRP_OVR || {};
           var _gid = pid.replace(/[^0-9]/g, '');
-          if (v) window.GRP_OVR[_gid] = v; else if (window.GRP_DEPART && window.GRP_DEPART[_gid]) window.GRP_OVR[_gid] = window.GRP_DEPART[_gid]; else delete window.GRP_OVR[_gid];
+          if (v) window.GRP_OVR[_gid] = v; else if (window.GRP_DEPART && window.GRP_DEPART[_gid]) window.GRP_OVR[_gid] = window.GRP_DEPART[_gid];
+          else if (window.GRP_RETIREES && window.GRP_RETIREES[_gid]) window.GRP_OVR[_gid] = window.GRP_RETIREES[_gid]; else delete window.GRP_OVR[_gid];   // 27/11/2026 : correction effacée → retirée reste « — »
           ov.groupement = v; recon = true; if (kind === 'prospect') pro.groupement = v;
         } else if (k === 'ville' || k === 'cp') {
           // 16/10/2026 — aussi en correction (lue au démarrage pour toutes les officines) : listes, recherche et carte la reprennent
