@@ -309,8 +309,8 @@
     return '<i class="gtrn-b gtrn-' + e.statut + (e.cliente ? ' cl' : '') + (e.couleur ? ' gtrn-c' : '') + '"' + (e.couleur ? ' style="--gtrn-c:' + esc(e.couleur) + '"' : '') + '>' + esc(LETTRE) + e.no + '</i>';
   }
   function ligne(e, D) {
-    var etiq = e.statut === 'livree' ? 'déjà livrée' : e.statut === 'proche' ? (e.detour > 0 ? 'détour ' + nf(e.detour, 1) + NBSP + 'km' : 'sans détour') : e.statut === 'loin' ? 'à ' + km(e.dQui) : 'sans position';
-    var tag = e.statut === 'loin' ? e.qui : e.code || '';
+    var etiq = e.statut === 'livree' ? 'déjà livrée' : e.statut === 'proche' ? (e.detour > 0 ? 'détour ' + nf(e.detour, 1) + NBSP + 'km' : 'sans détour') : e.livrable ? 'à ' + km(e.dDepot) + ' du dépôt' : e.statut === 'loin' ? 'à ' + km(e.dQui) : 'sans position';
+    var tag = e.livrable || (e.statut === 'loin' ? e.qui : e.code || '');
     return '<button type="button" class="gtrn-row" data-cip="' + esc(e.cip) + '">' + (e.no ? badge(e) : '<i class="gtrn-b gtrn-sanspos">–</i>') +
       '<span class="gtrn-row-t"><b>' + esc(e.nom) + '</b><span>' + esc(e.ville) + ' · ' + (e.cliente ? 'cliente Intégral Pharma' : 'pas encore cliente') + '</span></span>' +
       '<em>' + esc(tag) + '<small>' + etiq + '</small></em></button>';
@@ -350,7 +350,7 @@
     }
     function legende() {
       var ex = function (st) { return P.tous.filter(function (e) { return e.statut === st; })[0]; };
-      var l = ex('livree'), p = ex('proche'), f = ex('loin');
+      var l = ex('livree'), p = ex('proche'), f = P.tous.filter(function (e) { return e.statut === 'loin' && !e.livrable; })[0], nLoin = D.loin.filter(function (e) { return !e.livrable; }).length;
       var nC = Object.keys(D.couleurs || {}).length, c0 = (D.couleurs || {})[Object.keys(D.couleurs || {})[0]];
       document.getElementById('gtrn-leg').innerHTML = (nC ? '<span><i class="gtrn-sw gtrn-sw-c" style="--gtrn-c:' + esc(c0) + '"></i>Une couleur par tournée qui livre ou livrerait nos adhérentes (' + nC + ')</span>' : '') +
         '<span><i class="gtrn-sw"></i>' + (nC ? 'Autre tournée' : 'Une tournée') + ' (' + (D.tournees.length - nC) + ')</span>' +
@@ -358,7 +358,7 @@
         D.depots.map(function (dp) { return '<span><i class="gtrn-sw gtrn-sw-d"></i>Dépôt · ' + esc(dp.ville || dp.nom || '') + (D.depots.length > 1 ? ' (' + esc(dp.s) + ')' : '') + '</span>'; }).join('') +
         (l ? '<span>' + badge(l) + 'Carré : déjà livrée (' + D.livrees.length + ')</span>' : '') +
         (mode === 'quot' && p ? '<span>' + badge(p) + 'Arrondi : la tournée qui la livrerait, avec détour (' + D.proches.length + ')</span>' : '') +
-        (mode === 'quot' && f ? '<span>' + badge(f) + 'À plus de ' + Ess.SEUIL_LOIN + NBSP + 'km de nos tournées (' + D.loin.length + ')</span>' : '') +
+        (mode === 'quot' && f ? '<span>' + badge(f) + 'À plus de ' + Ess.SEUIL_LOIN + NBSP + 'km de nos tournées (' + nLoin + ')</span>' : '') +
         '<span>Fond blanc : déjà cliente Intégral Pharma</span>';
     }
     // 27/11/2026 — M2 « Par tournée » : un bandeau par tournée concernée, à sa couleur, qu'on ouvre ; dedans, ses adhérentes.
