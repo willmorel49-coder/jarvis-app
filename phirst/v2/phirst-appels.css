@@ -157,6 +157,8 @@
 .po-bandeau[data-ton="alerte"]{background-color:#FBEBD8;border-color:#E9C79B}
 .po-bandeau p{margin:0;font-size:15px;line-height:1.4;font-weight:700;color:#16281E}
 .po-bouton{flex:none;min-height:44px;padding:0 14px;border:0;border-radius:12px;background-color:var(--au-accent,#1A3A2E);color:#fff;font-weight:700;font-size:15px}
+/* 27/11/2026 : « .pa button{color:inherit} » (plus précise) donnait au bouton la couleur du texte du bandeau, 1,24:1 sur le vert ; seule la couleur est reprise */
+.pa .po-bouton{color:#fff}
 .po-pop{display:grid;gap:6px;font-family:var(--font);color:#16281E}
 .po-pop small{font-size:13px;color:#4A5D51}
 .po-pop ul{margin:0;padding:0;list-style:none;font-size:13px}
