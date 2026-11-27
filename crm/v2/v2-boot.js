@@ -1308,25 +1308,38 @@
   // seau (eTag, lue en UNE liste par dossier et par session), dans un tiroir
   // que le service worker épargne. Empreinte illisible : repli sur le jeton.
   var CACHE_EMPREINTES = CACHE_PROTEGE + 'empreintes';
+  // 27/11/2026 (soir) — l'empreinte se lit FICHIER PAR FICHIER (`info`), plus par une liste du dossier.
+  // Mesuré dans le Safari de Will avec sa session : la liste du seau (racine comme ventes/…) échouait au bout
+  // de 32 s (544 « DatabaseTimeout ») depuis le dépôt de 11 793 etudes-enrichies/ (25 242 fichiers dans le seau,
+  // la liste relit les droits de chacun) ; ratée, elle était relancée par le fichier suivant : ~63 s avant
+  // le classement des Tournées. `info` d'un fichier : 0,1 s (10 en parallèle : 0,45 s), même empreinte que
+  // la liste (md5 du fichier), donc les copies déjà rangées sur les appareils restent bonnes.
+  // Au-delà de DELAI_EMPREINTE, repli sur le jeton de version, comme quand la liste ratait.
+  var DELAI_EMPREINTE = 4000;
   var _empreintes = {};
   function empreinteProtegee(fichier) {
-    var i = fichier.lastIndexOf('/');
-    var dossier = i < 0 ? '' : fichier.slice(0, i), nom = fichier.slice(i + 1);
     var c = (V2.sb && V2.sb()) || null;
     if (!c || !c.storage) return Promise.resolve(null);
-    if (!_empreintes[dossier]) {
-      _empreintes[dossier] = c.storage.from(SEAU_PROTEGE).list(dossier, { limit: 1000 })
-        .then(function (r) {
-          var m = {};
-          ((r && r.data) || []).forEach(function (o) {
-            var e = o && o.metadata && (o.metadata.eTag || o.updated_at);
-            if (o.name && e) m[o.name] = String(e).replace(/[^\w-]/g, '');
-          });
-          if (!Object.keys(m).length) delete _empreintes[dossier];   // réessayé au prochain fichier
-          return m;
-        }, function () { delete _empreintes[dossier]; return {}; });
-    }
-    return _empreintes[dossier].then(function (m) { return m[nom] || null; });
+    if (_empreintes[fichier]) return _empreintes[fichier];
+    var b = c.storage.from(SEAU_PROTEGE);
+    if (!b || typeof b.info !== 'function') return Promise.resolve(null);
+    var p = new Promise(function (resolve) {
+      var fini = false;
+      function rendre(e) {
+        if (fini) return; fini = true; clearTimeout(minuteur);
+        if (!e) delete _empreintes[fichier];   // réessayé à la prochaine demande de ce fichier
+        resolve(e ? String(e).replace(/[^\w-]/g, '') : null);
+      }
+      var minuteur = setTimeout(function () { rendre(null); }, DELAI_EMPREINTE);
+      try {
+        b.info(fichier).then(function (r) {
+          var d = r && r.data;
+          rendre(d && (d.etag || d.eTag || (d.metadata && d.metadata.eTag)) || null);
+        }, function () { rendre(null); });
+      } catch (e) { rendre(null); }
+    });
+    _empreintes[fichier] = p;
+    return p;
   }
 
   // Rend le TEXTE du fichier protégé `fichier` (nom dans le seau), par le
