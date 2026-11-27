@@ -1384,13 +1384,17 @@
     function oflTournSelect() {
       var T = window.TOURNEES_ECRAN, cl = 'ofl-sel' + (ofl.tourn ? ' ofl-on' : '');
       if (!T || !T.tournees) return '<label class="' + cl + ' ofl-off"><select disabled aria-label="Tournée de livraison"><option>Tournées en chargement…</option></select>' + chev + '</label>';
-      var g = {};
+      // 27/11/2026 — plusieurs établissements ont leurs tournées (OPS, CPR) : groupes rangés par établissement (ordre du fichier), puis par jours ;
+      // l'établissement est écrit devant les jours dès qu'il y en a plus d'un. Les établissements encore sans tournées sont nommés, lus dans le fichier.
+      var g = {}, ET = (T.etablissements || []), actifs = ET.filter(function (e) { return e.tournees === true; }).map(function (e) { return e.s; });
+      var plusieurs = actifs.length > 1, rangE = function (s) { var i = actifs.indexOf(s); return i < 0 ? 99 : i; };
       Object.keys(T.tournees).sort().forEach(function (k) {
         var t = T.tournees[k], j = (t.jours || []).slice().sort(function (a, b) { return JOURS.indexOf(a) - JOURS.indexOf(b); });
-        var cle = j.map(function (d) { return JOURS.indexOf(d); }).join(',');
-        (g[cle] || (g[cle] = { j: j, l: [] })).l.push(t);
+        var e = t.etab || 'OPS', cle = (plusieurs ? rangE(e) + '|' : '') + j.map(function (d) { return JOURS.indexOf(d); }).join(',');
+        (g[cle] || (g[cle] = { j: j, e: e, l: [] })).l.push(t);
       });
       var groupes = Object.keys(g).sort(function (a, b) {
+        if (plusieurs) { var ea = Number(a.split('|')[0]), eb = Number(b.split('|')[0]); if (ea !== eb) return ea - eb; a = a.split('|')[1]; b = b.split('|')[1]; }
         var A = a ? a.split(',').map(Number) : [99], B = b ? b.split(',').map(Number) : [99];
         for (var i = 0; i < Math.max(A.length, B.length); i++) { if (A[i] == null) return 1; if (B[i] == null) return -1; if (A[i] !== B[i]) return A[i] - B[i]; }
         return 0;
@@ -1398,12 +1402,16 @@
       return '<label class="' + cl + '"><select aria-label="Tournée de livraison" onchange="V2.oflTourn(this.value)">' +
         '<option value="">Tournée : toutes</option>' +
         groupes.map(function (cle) {
-          var j = g[cle].j, lib = !j.length ? 'Jours à préciser' : 'Livrées ' + j.join(' · ');
+          var j = g[cle].j, lib = (plusieurs ? g[cle].e + ' · ' : '') + (!j.length ? 'Jours à préciser' : 'Livrées ' + j.join(' · '));
           return '<optgroup label="' + V2.esc(lib) + '">' + g[cle].l.map(function (t) {
             return '<option value="' + V2.esc(t.code) + '"' + (ofl.tourn === t.code ? ' selected' : '') + '>' + V2.esc(t.code + ' · ' + t.nom) + '</option>';
           }).join('') + '</optgroup>';
         }).join('') +
-        '<optgroup label="Autres établissements"><option disabled>Tournées des autres établissements : pas encore reçues</option></optgroup>' +
+        (function () {
+          var att = ET.length ? ET.filter(function (e) { return e.tournees !== true; }).map(function (e) { return e.nom || e.s; }) : null;
+          if (att && !att.length) return '';
+          return '<optgroup label="Autres établissements"><option disabled>' + (att ? V2.esc('Tournées pas encore reçues : ' + att.join(', ')) : 'Tournées des autres établissements : pas encore reçues') + '</option></optgroup>';
+        })() +
         '</select>' + chev + '</label>';
     }
     var OFL_OPT = { ca: 'chiffre d’affaires', nom: 'nom', nm: 'notre marge Intégral', marge: 'marge du pharmacien', rap: 'à rappeler d’abord', tourn: 'tournée' };

@@ -775,6 +775,12 @@ test('multi-établissement : jours et transporteur nuls = rien d’inventé ; or
   assert.deepEqual(a.arrets.map(x => C.num(x)), ['1', '≈2']);
   const t = Object.assign({}, V3.tournees['ZZZ-T12'], { nb_estimes: 3 });
   assert.match(C.texteOrdre(t), /^Ordre de passage estimé pour 3 arrêts/);
+  // 27/11/2026 — la raison portée par le fichier (`ordre_note`) l'emporte, analysée ou brute ; vide ou absente = phrase d'origine
+  const note = 'Ordre de passage estimé pour les 2 arrêts, au plus court depuis le dépôt : les numéros de passage du fichier de l’établissement ne suivent pas la route.';
+  const tn = Object.assign({}, V3.tournees['ZZZ-T12'], { ordre: 'estime', ordre_note: note });
+  assert.equal(C.texteOrdre(tn), note); assert.equal(C.texteOrdre(C.analyser(tn)), note);
+  assert.match(C.texteOrdre(Object.assign({}, tn, { ordre_note: '  ' })), /^Ordre de passage estimé pour 1 arrêt :/);
+  assert.equal(C.texteOrdre(Object.assign({}, tn, { ordre: 'fichier' })), '', 'ordre du fichier : aucune phrase, même avec une note');
 });
 
 test('multi-établissement : OPS identique avec ou sans les tournées d’un autre établissement', () => {

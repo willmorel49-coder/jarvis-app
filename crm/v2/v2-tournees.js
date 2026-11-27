@@ -79,6 +79,8 @@
   // Phrase affichée quand l'ordre de passage n'est pas donné par le fichier (clientes livrées une fois par semaine) ; '' sinon.
   C.texteOrdre = function (t) {
     if (!t || (t.ordre !== 'partiel' && t.ordre !== 'estime')) return '';
+    // 27/11/2026 — la raison de l'estimation est portée par le fichier (`ordre_note`, CPR : ses numéros ne suivent pas la route) ; à défaut, la phrase d'origine.
+    if (typeof t.ordre_note === 'string' && t.ordre_note.trim()) return t.ordre_note.trim();
     var n = Number(t.nb_estimes) || ((t.arrets || []).filter(function (a) { return a.est; }).length);
     return 'Ordre de passage estimé pour ' + n + (n > 1 ? ' arrêts' : ' arrêt') + ' : le fichier de l’établissement ne le donne pas pour les clientes livrées une fois par semaine.';
   };
@@ -131,7 +133,7 @@
     grossir.sort(function (a, b) { return b.gain - a.gain; });
     var pros = C.prospects(t && t.prospects);
     return {
-      code: t.code, etab: C.etabDe(t), ordre: t.ordre || null, nb_estimes: t.nb_estimes || 0, nom: t.nom, jours: t.jours || [], jours_statut: t.jours_statut, transporteur: t.transporteur, nb_arrets: t.nb_arrets,
+      code: t.code, etab: C.etabDe(t), ordre: t.ordre || null, nb_estimes: t.nb_estimes || 0, ordre_note: t.ordre_note || '', nom: t.nom, jours: t.jours || [], jours_statut: t.jours_statut, transporteur: t.transporteur, nb_arrets: t.nb_arrets,
       km_total: r2((t.km_aller || 0) + (t.km_retour || 0)), marge_jour: t.marge_jour, jours_commande: t.jours_commande,
       rentabilite: t.rentabilite,
       rentabilite_mois: r2(R.reduce(function (s, a) { return s + a.r.rm; }, 0)),

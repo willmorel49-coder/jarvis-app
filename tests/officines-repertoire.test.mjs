@@ -107,3 +107,37 @@ test('« À rappeler » sans relevé : la phrase de l’ancien bloc, pas une lis
   assert.match(bloc, /V2\.decrochageUI\.compte\(\) == null/);
   assert.match(bloc, /Choisissez un commercial dans le menu ci-dessus pour voir ses officines à rappeler\./);
 });
+
+// 27/11/2026 — menu « Tournée » du répertoire avec deux établissements ayant leurs tournées (OPS, CPR) : groupes rangés par établissement,
+// établissement écrit devant les jours, et la dernière ligne nomme les établissements encore sans tournées (plus « pas encore reçues » pour tous).
+function menuTournees(T, tourn) {
+  const code = tranche('function oflTournSelect()', 'var OFL_OPT');
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return new Function('window', 'V2', 'ofl', 'chev', 'JOURS', code + '; return oflTournSelect();')(
+    { TOURNEES_ECRAN: T }, { esc }, { tourn: tourn || '' }, '', ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']);
+}
+const ETABS = [{ s: 'OPS', nom: 'Ouest Pharma Services', tournees: true }, { s: 'HP', nom: 'Hyères Pharma', tournees: false },
+  { s: 'CPR', nom: 'Comptoir Pharmaceutique du Rhône', tournees: true }, { s: 'SOP', nom: 'Sud Ouest Pharma', tournees: false }];
+const T2 = { etablissements: ETABS, tournees: {
+  T10: { code: 'T10', nom: 'Est', etab: 'OPS', jours: ['lundi'] }, T12: { code: 'T12', nom: 'Ouest', etab: 'OPS', jours: null },
+  'CPR-T01': { code: 'CPR-T01', nom: 'Vienne – Lyon', etab: 'CPR', jours: null }, 'CPR-T12': { code: 'CPR-T12', nom: 'Lyon', etab: 'CPR', jours: null } } };
+
+test('menu Tournée du répertoire : deux établissements = groupes par établissement, établissements manquants nommés', () => {
+  const h = menuTournees(T2);
+  const groupes = [...h.matchAll(/<optgroup label="([^"]*)">/g)].map(m => m[1]);
+  assert.deepEqual(groupes, ['OPS · Livrées lundi', 'OPS · Jours à préciser', 'CPR · Jours à préciser', 'Autres établissements']);
+  assert.match(h, /Tournées pas encore reçues : Hyères Pharma, Sud Ouest Pharma</);
+  assert.doesNotMatch(h, /Tournées des autres établissements : pas encore reçues/);
+  assert.match(h, /<option value="CPR-T12">CPR-T12 · Lyon<\/option>/); assert.match(h, /<option value="T12">T12 · Ouest<\/option>/);
+});
+
+test('menu Tournée du répertoire : un seul établissement = rendu d’avant (pas de préfixe), tous reçus = pas de ligne « autres »', () => {
+  const un = { etablissements: ETABS.map(e => Object.assign({}, e, { tournees: e.s === 'OPS' })), tournees: { T10: T2.tournees.T10, T12: T2.tournees.T12 } };
+  const h = menuTournees(un, 'T10');
+  assert.deepEqual([...h.matchAll(/<optgroup label="([^"]*)">/g)].map(m => m[1]), ['Livrées lundi', 'Jours à préciser', 'Autres établissements']);
+  assert.match(h, /<option value="T10" selected>/);
+  const sansListe = menuTournees({ tournees: { T10: T2.tournees.T10 } });
+  assert.match(sansListe, /Tournées des autres établissements : pas encore reçues/, 'fichier sans liste d’établissements : phrase d’origine');
+  const tous = menuTournees({ etablissements: ETABS.map(e => Object.assign({}, e, { tournees: true })), tournees: T2.tournees });
+  assert.doesNotMatch(tous, /Autres établissements/);
+});
