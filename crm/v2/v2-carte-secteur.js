@@ -551,7 +551,7 @@
     });
   }
   function ouvrirEnrichie(i, finess, tok) {
-    var res = {}, attente = 4;
+    var res = {}, attente = 3;   // trois signaux : feuille « Chez Intégral », modèle pur, module m1 (+ étude, tournées et ventes)
     function pret() {
       if (--attente > 0) return;
       if (tok !== S.pe.jeton || !S.pe.ouverte) return;
