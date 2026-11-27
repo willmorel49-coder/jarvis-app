@@ -42,3 +42,22 @@ test('Pharmacie du Thouet (Saumur) au 51 bd du Maréchal de Lattre de Tassigny, 
 test('aucun point hors de la France métropolitaine', () => {
   assert.equal(P.filter(p => !(p[0] >= 41 && p[0] <= 51.6 && p[1] >= -5.5 && p[1] <= 9.8)).length, 0);
 });
+
+// 27/11/2026, 2e passe (choix de Will) : double preuve (même téléphone dans la commune, ou nom + titulaire RPPS sur la même fiche)
+// et 37 non-officines écartées (_NON_PH_IDS). Les médecins propharmaciens (« CABINET MEDICAL » série 265xxxx) restent.
+const parId = Object.fromEntries(P.map(p => [String(p[13]), p]));
+test('double preuve : les deux Pharmacies Necker (Paris 15e) ne sont plus inversées, Les Andelys au 50 av. de la République', () => {
+  assert.deepEqual(parId['2053424'].slice(0, 2), [48.84225, 2.31357]);   // 47 bd Pasteur, tél. 01 47 83 69 27
+  assert.deepEqual(parId['2192161'].slice(0, 2), [48.84512, 2.31955]);   // 38 bd du Montparnasse, tél. 01 42 22 31 15
+  assert.deepEqual(parId['2089911'].slice(0, 2), [49.24396, 1.40527]);
+  assert.ok(Object.keys(table).length >= 18153, String(Object.keys(table).length));
+});
+
+test('les non-officines écartées ne sont plus sur la carte, les médecins propharmaciens y restent', () => {
+  const ids = build.slice(build.indexOf('_NON_PH_IDS = {'), build.indexOf('\n}\n', build.indexOf('_NON_PH_IDS = {')));
+  const exclus = [...ids.matchAll(/'(\w+)',/g)].map(m => m[1]);
+  assert.ok(exclus.length >= 38, String(exclus.length));
+  assert.deepEqual(exclus.filter(id => parId[id]), []);
+  assert.equal(P.filter(p => /^(CERP |ALLIANCE HEALTHCARE|PHOENIX OCP|MEGAPARA)/.test(p[6])).length, 0);
+  assert.ok(P.filter(p => String(p[13]).startsWith('265') && p[6] === 'CABINET MEDICAL').length >= 40);
+});
