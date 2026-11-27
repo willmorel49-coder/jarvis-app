@@ -34,11 +34,14 @@ window.V2_COMPTES = {
   // 26/11/2026 — Will : Alexandre Morel consulte seulement (hors société) : dans la liste d'accès de l'app, pas dans les contacts groupement.
   // 27/11/2026 — Will : Pauline Guillaumin suit OPSO depuis son JARVIS (même accès qu'Arthur et Guy). Le menu « Suivi des groupements » ne lui montre que
   // les apps dont la liste d'accès contient son adresse : OPSO oui, Essentiels Pharma non.
-  contactsGroupement: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'pauline.guillaumin@integralpharma.fr'],
+  // 27/11/2026 — Will : « donner aussi l'accès à Arthur sur son JARVIS à OPSO et à Essentiels Pharma » : Arthur Le Houerou voit les deux liens.
+  contactsGroupement: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'pauline.guillaumin@integralpharma.fr', 'arthur.lehouerou@integralpharma.fr'],
   // 26/11/2026 — choix 5 de Will : seuls comptes admis dans l'espace Essentiels Pharma (essentiels/v2) :
   // Will, Pascale, Alexandre (consultation de l'app), claude-test (preuves). Ni Emmanuel (OPSO, le client) ni les commerciaux.
   // Même liste côté serveur : jarvis_acces_essentiels() (étape 3, 26/11/2026). Cette liste décide de l'écran et du renvoi.
-  essentiels: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'alexandre.morel@me.com', 'claude-test@integralpharma.fr'],
+  // 27/11/2026 — Will : Arthur Le Houerou y entre aussi (même demande que ci-dessus). Commercial restreint : dans l'espace Essentiels il charge
+  // le jeu de ventes « ESSENTIELS » (adhérentes seules, groupements/config/essentiels.js `jeuVentes`), dans le CRM toujours le sien.
+  essentiels: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'alexandre.morel@me.com', 'arthur.lehouerou@integralpharma.fr', 'claude-test@integralpharma.fr'],
   // 10/11/2026 (Will) — équipe OPS : Will, Alexandre Morel (même accès que Will), Arthur Lehouerou, Valérie Morlaix, Karine (KV).
   // Lu par v2-app.js (V2.tourneesEquipe).
   // 27/11/2026 (Will, choix cliqué) — case « Tournées » aussi sur l'accueil de l'équipe CPR : Pauline G., Manon, Ingrid L., Morgane, Aurélie (compte pharmacien@cpharma.fr).

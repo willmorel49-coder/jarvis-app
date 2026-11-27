@@ -16,10 +16,13 @@ window.V2_GROUPEMENT = {
   // Clé de la liste des comptes admis dans crm/v2/v2-comptes.js (garde d'écran) ;
   // le vrai verrou serveur est jarvis_acces_essentiels(), qui garde les documents `essentiels/…`.
   acces: 'essentiels',
-  // Aucun jeu de ventes « Essentiels » à fabriquer : les trois comptes admis sont admin avec
-  // voit_tous_commerciaux (mesuré le 26/11/2026), ils chargent donc les fichiers de ventes complets.
-  // Le périmètre est ensuite borné côté écran par V2.appliquerPerimetreGroupement.
-  jeuVentes: null,
+  // Will, Pascale et Alexandre sont admin avec voit_tous_commerciaux (mesuré le 26/11/2026) : ils chargent
+  // les fichiers de ventes complets, ce réglage ne les concerne pas. 27/11/2026 — Arthur Le Houerou admis
+  // (Will) : commercial RESTREINT, il chargerait SON jeu (ses seules ventes). Dans l'espace Essentiels il
+  // charge donc le jeu « ESSENTIELS » (decouper_par_commercial.py, jeu_essentiels : toutes les ventes des
+  // adhérentes, rien du reste du réseau), lisible côté serveur par les comptes de jarvis_acces_essentiels().
+  // Le périmètre est ensuite borné côté écran par V2.appliquerPerimetreGroupement, comme pour les autres.
+  jeuVentes: 'ESSENTIELS',
   // Contrairement à OPSO (mode « consultation »), les comptes Essentiels lisent déjà ces fichiers
   // dans JARVIS : prix nets, marges et abandons de marge restent visibles.
   conditionsVisibles: true,

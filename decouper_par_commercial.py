@@ -58,6 +58,7 @@ SORTIE = os.path.join(V2, 'ventes')
 TAILLE_TRANCHE = 1_500_000
 ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain']   # = V2_COMPTES.escale (crm/v2/v2-comptes.js)
 OPSO = 'OPSO'   # valeur `commercial` du compte OPSO (Emmanuel Noblanc) : jeu à part, jeu_opso()
+ESSENTIELS = 'ESSENTIELS'   # = groupements/config/essentiels.js `jeuVentes` : jeu à part, jeu_essentiels() (27/11/2026)
 PROJET = 'iyvavhnlhxksokkerkos'
 CLE = os.path.expanduser('~/.config/jarvis/service-role-key')
 
@@ -340,7 +341,7 @@ def main():
 
     # 'OPSO' a sa propre branche (jeu_opso) : par le chemin générique il n'aurait aucune
     # officine « à lui » (aucun prénom) et tout le réseau en totaux par produit.
-    jeux = sorted((set(d_com) | set(profils_restreints()) | {'Escale'}) - {OPSO})
+    jeux = sorted((set(d_com) | set(profils_restreints()) | {'Escale'}) - {OPSO, ESSENTIELS})
     if os.path.isdir(SORTIE):
         shutil.rmtree(SORTIE)
 
@@ -427,7 +428,8 @@ def main():
         print('  %-24s %s  %6d lignes à lui · %6d totaux réseau · %d tranche(s) · %d CA · %d fiches'
               % (commercial, dossier(commercial), len(detail), len(agreges), len(tr), len(mes_ca), len(mes_det)))
     jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det)
-    print('%d jeux écrits dans crm/v2/ventes/' % (len(jeux) + 1))
+    jeu_essentiels(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det, rep_t, rep_e)
+    print('%d jeux écrits dans crm/v2/ventes/' % (len(jeux) + 2))
 
 
 def jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det):
@@ -503,6 +505,61 @@ def jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det):
     ecrire(os.path.join(rep, 'carte-detail.js'), tete_det + 'window.CARTE_DETAIL=' + compact(mes_det) + ';\n')
     print('  %-24s %s  %6d lignes OPSO · %d officines · 0 total réseau · %d tranche(s) · %d CA · %d fiches'
           % (OPSO, dossier(OPSO), len(lignes), len(rangs), len(tr), len(mes_ca), len(mes_det)))
+
+
+def jeu_essentiels(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det, rep_t, rep_e):
+    """27/11/2026 — Will : « donner aussi l'accès à Arthur sur son JARVIS à OPSO et à Essentiels Pharma ».
+    Arthur Le Houerou est un commercial RESTREINT : dans l'app Essentiels (essentiels/v2) il charge ce jeu
+    (groupements/config/essentiels.js `jeuVentes`), lisible côté serveur par les comptes de jarvis_acces_essentiels().
+    Contenu : toutes les ventes des adhérentes (tous commerciaux confondus), RIEN du reste du réseau — l'écran
+    (V2.perimetreParAlias) ne garde de toute façon que ces officines. Périmètre = V2.perimetreParAlias, à l'identique :
+    les CIP que GRP_DEPART (crm/v2/groupement-alias.js) range sous « Essentiels Pharma », rapprochés par code puis id
+    (premier arrivé gardé). Pas de marge-clients.js (« notre marge » par client), comme le jeu OPSO."""
+    m = re.search(r'window\.GRP_DEPART = (\{.*?\});', lire(os.path.join(V2, 'groupement-alias.js')), re.S)
+    norm = lambda c: re.sub(r'^0+', '', re.sub(r'\D', '', str('' if c is None else c)))
+    # Couples « CIP : groupement » lus tels quels (guillemets simples dans le fichier) ; seuls ceux d'Essentiels comptent.
+    cips = {norm(k) for k in re.findall(r'[\'"]([0-9]+)[\'"]\s*:\s*[\'"]Essentiels Pharma[\'"]', m.group(1)) if norm(k)} if m else set()
+    if not cips:
+        sys.exit('ARRÊT : GRP_DEPART illisible ou sans « Essentiels Pharma » (crm/v2/groupement-alias.js)')
+    by_cip = {}
+    for o in officines:   # = V2.perimetreParAlias : norm(p.code || p.id), premier arrivé gardé
+        c = norm(o.get('code') or o.get('id'))
+        if c and c not in by_cip:
+            by_cip[c] = o
+    ids = {str(by_cip[c].get('id')) for c in cips if c in by_cip}
+    rangs = {r for r, c in enumerate(d_off) if str(c) in ids}
+    lignes = [v for v in ventes if v[0] in rangs]
+    if not lignes:
+        sys.exit('ARRÊT : jeu Essentiels vide (%d CIP, %d officines rapprochées)' % (len(cips), len(ids)))
+
+    rep = os.path.join(SORTIE, dossier(ESSENTIELS))
+    tr = tranches(lignes)
+    emp = hashlib.sha1()
+    for i, t in enumerate(tr, 1):
+        emp.update(compact(t).encode('utf-8'))
+        ecrire(os.path.join(rep, 'wml-ventes-%02d.js' % i), (
+            '// WML · ventes {}/{} — {} lignes (jeu Essentiels Pharma : ses adhérentes seules, 27/11/2026).\n'
+            '(function(){{var a=window.WML_SALES||(window.WML_SALES=[]);'
+            'var c={};for(var i=0;i<c.length;i++)a.push(c[i]);}})();\n'
+        ).format(i, len(tr), len(t), compact(t)))
+    # Repères du réseau (comme le jeu d'un commercial) : rangs réduits aux adhérentes, donc les mêmes que dans la vue complète.
+    mes_codes = {d_off[r] for r in rangs}
+    index = {'n': len(tr), 'e': emp.hexdigest()[:12]}
+    for cle, rp in (('T', rep_t), ('E', rep_e)):
+        index[cle] = {'act': rp['act'], 'nph': rp['nph'], 'no': rp['no'],
+                      'rg': {c: r for c, r in rp['rg'].items() if c in mes_codes},
+                      'rgg': {c: r for c, r in rp['rgg'].items() if c in mes_codes}}
+    ecrire(os.path.join(rep, 'wml-ventes-index.js'), 'window.WML_TRANCHES_JEU = %s;\n' % compact(index))
+    # Rien du réseau : le jeu détaille déjà toutes ses adhérentes, l'écran les compte lui-même.
+    ecrire(os.path.join(rep, 'grp-agregats.js'), 'window.GRP_AGREGATS = {"P":[],"T":{},"E":{}};\n')
+    cles = {re.sub(r'[^0-9]', '', i) for i in ids}
+    mes_ca = {k: v for k, v in off_ca.items() if re.sub(r'[^0-9]', '', k) in cles}
+    ecrire(os.path.join(rep, 'wml-officines-ca.js'),
+           tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s%s};\n' % (len(mes_ca), json.dumps(mes_ca), suite_off(mes_ca)))
+    mes_det = {k: v for k, v in carte.items() if re.sub(r'[^0-9]', '', k) in cles}
+    ecrire(os.path.join(rep, 'carte-detail.js'), tete_det + 'window.CARTE_DETAIL=' + compact(mes_det) + ';\n')
+    print('  %-24s %s  %6d lignes Essentiels · %d/%d officines · 0 total réseau · %d tranche(s) · %d CA · %d fiches'
+          % (ESSENTIELS, dossier(ESSENTIELS), len(lignes), len(rangs), len(cips), len(tr), len(mes_ca), len(mes_det)))
 
 
 if __name__ == '__main__':

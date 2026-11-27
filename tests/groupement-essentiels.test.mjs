@@ -139,14 +139,15 @@ function acces(reglage, email) {
   ctx.email = email;
   return vm.runInContext('V2.accesGroupement().indexOf(email) >= 0', ctx);
 }
-test('accesGroupement : Essentiels = 3 comptes + claude-test, Emmanuel absent ; OPSO inverse', () => {
-  for (const m of ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'alexandre.morel@me.com', 'claude-test@integralpharma.fr']) assert.equal(acces('essentiels', m), true, m);
-  for (const m of ['emmanuel.noblanc@normandiepharma.fr', 'arthur.lehouerou@integralpharma.fr', 'guy.bourdon@integralpharma.fr']) assert.equal(acces('essentiels', m), false, m);
+test('accesGroupement : Essentiels = 3 comptes + Arthur (27/11) + claude-test, Emmanuel absent ; OPSO inverse', () => {
+  for (const m of ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'alexandre.morel@me.com', 'arthur.lehouerou@integralpharma.fr', 'claude-test@integralpharma.fr']) assert.equal(acces('essentiels', m), true, m);
+  for (const m of ['emmanuel.noblanc@normandiepharma.fr', 'guy.bourdon@integralpharma.fr', 'pauline.guillaumin@integralpharma.fr']) assert.equal(acces('essentiels', m), false, m);
   assert.equal(acces('opso', 'emmanuel.noblanc@normandiepharma.fr'), true);
   const ctx = {}; ctx.window = ctx; vm.createContext(ctx); vm.runInContext(lire('crm/v2/v2-comptes.js'), ctx);
   // Alexandre consulte seulement (correction de Will du 26/11) : accès à l'app, mais pas dans les contacts groupement.
   // 27/11/2026 : Pauline Guillaumin suit OPSO depuis JARVIS (même accès qu'Arthur et Guy) : dans les contacts et dans la liste OPSO, pas dans celle d'Essentiels.
-  assert.deepEqual(dehors(ctx, 'V2_COMPTES.contactsGroupement'), ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'pauline.guillaumin@integralpharma.fr']);
+  // 27/11/2026 (suite) : Arthur Le Houerou suit OPSO et Essentiels Pharma depuis son JARVIS.
+  assert.deepEqual(dehors(ctx, 'V2_COMPTES.contactsGroupement'), ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'pauline.guillaumin@integralpharma.fr', 'arthur.lehouerou@integralpharma.fr']);
 });
 
 test('menu « Suivi des groupements » : chaque lien porte sa liste d’accès ; Pauline G. ne voit que OPSO, Will et Pascale les deux', () => {
@@ -157,6 +158,8 @@ test('menu « Suivi des groupements » : chaque lien porte sa liste d’accès ;
   assert.match(app, /var apps = groupementsVisibles\(mail\);/); assert.match(app, /!apps\.length/);
   const vus = m => apps.filter(([a]) => C[a].includes(m)).map(([, n]) => n);
   assert.deepEqual(vus('pauline.guillaumin@integralpharma.fr'), ['OPSO']);
+  assert.deepEqual(vus('arthur.lehouerou@integralpharma.fr'), ['Essentiels Pharma', 'OPSO']);
+  assert.ok(C.contactsGroupement.includes('arthur.lehouerou@integralpharma.fr'), 'Arthur a l’entrée de menu');
   assert.deepEqual(vus('william.morel@me.com'), ['Essentiels Pharma', 'OPSO']); assert.deepEqual(vus('pascale.prieto@integralpharma.fr'), ['Essentiels Pharma', 'OPSO']);
   assert.deepEqual(vus('manon.dussurgey@integralpharma.fr'), [], 'pas dans les contacts groupement : aucune entrée de menu');
 });
@@ -170,10 +173,10 @@ test('équipe CPR : 5 comptes, tous dans « tournees » (case d’accueil) et «
   assert.ok(C.opso.includes('pauline.guillaumin@integralpharma.fr'));
 });
 
-test('réglage Essentiels : pas de ventes dédiées, conditions visibles, aucun drapeau OPSO', () => {
+test('réglage Essentiels : jeu de ventes ESSENTIELS (comptes restreints seulement), conditions visibles, aucun drapeau OPSO', () => {
   const ctx = {}; ctx.window = ctx; vm.createContext(ctx); vm.runInContext(lire('groupements/config/essentiels.js'), ctx);
   const g = dehors(ctx, 'V2_GROUPEMENT');
-  assert.deepEqual([g.id, g.nom, g.court, g.libelle, g.acces, g.jeuVentes, g.conditionsVisibles], ['essentiels', 'Essentiels Pharma', 'Essentiels', 'ESSENTIELS PHARMA', 'essentiels', null, true]);
+  assert.deepEqual([g.id, g.nom, g.court, g.libelle, g.acces, g.jeuVentes, g.conditionsVisibles], ['essentiels', 'Essentiels Pharma', 'Essentiels', 'ESSENTIELS PHARMA', 'essentiels', 'ESSENTIELS', true]);
   assert.deepEqual(g.perimetre, { source: 'alias', valeur: 'Essentiels Pharma' });
   assert.doesNotMatch(lire('essentiels/v2/index.html').split('\n').filter(l => l.includes('window.V2_BRAND =')).join(''), /opso\s*:/);
 });
