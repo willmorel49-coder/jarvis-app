@@ -124,7 +124,7 @@ const V2 = win.V2 = {
 // éprouve le vrai chemin, ou on n'éprouve rien.
 {
   const boot = readFileSync(join(DIR, 'v2-boot.js'), 'utf8');
-  for (const nom of ['bestPrice', 'fmtEur', 'fmtK', 'fmtNum', 'sumCA', 'margeMDLboite', 'tint']) {
+  for (const nom of ['offreAdmise', 'bestPrice', 'fmtEur', 'fmtK', 'fmtNum', 'sumCA', 'margeMDLboite', 'tint']) {
     const i = boot.indexOf('V2.' + nom + ' = function');
     assert.ok(i > 0, `V2.${nom} introuvable dans v2-boot.js`);
     let p = 0, j = boot.indexOf('{', i), fin = j;
