@@ -481,9 +481,10 @@
   function corpsPE() { return document.querySelector('#pe [data-pe-corps]'); }
   function direPE(html) { var c = corpsPE(); if (c) c.innerHTML = '<div class="pe-etat" role="status">' + html + '</div>'; var b = document.querySelector('#pe [data-pe-imprimer]'); if (b) b.hidden = true; }
   function demonterCarteEtude() { if (S.pe.carte) { try { S.pe.carte.map.remove(); } catch (e) { /* déjà démontée */ } S.pe.carte = null; } }
+  function demonterM1() { if (S.pe.m1) { try { S.pe.m1.demonter(); } catch (e) { /* déjà démontée */ } S.pe.m1 = null; } }
   function fermerEtude() {
     var pe = document.getElementById('pe'); if (!pe || !S.pe.ouverte) return;
-    S.pe.jeton++; S.pe.ouverte = false; demonterCarteEtude(); pe.hidden = true; document.body.classList.remove('pe-ouvert');
+    S.pe.jeton++; S.pe.ouverte = false; demonterCarteEtude(); demonterM1(); pe.hidden = true; document.body.classList.remove('pe-ouvert');
     var c = corpsPE(); if (c) c.innerHTML = '';
     var d = S.pe.dernier; if (d && document.contains(d) && d.focus) { try { d.focus({ preventScroll: true }); } catch (e) { /* rien à refocaliser */ } }
   }
@@ -496,7 +497,12 @@
     pe.hidden = false; document.body.classList.add('pe-ouvert'); pe.scrollTop = 0;
     try { pe.focus({ preventScroll: true }); } catch (e) { pe.focus(); }
     direPE('<p>L’étude de zone arrive…</p>');
-    if (!/^\d{9}$/.test(String(finess || ''))) { direPE('<p>Étude pas encore calculée pour cette officine.</p>'); return; }
+    if (!/^[0-9][0-9AB][0-9]{7}$/.test(String(finess || ''))) { direPE('<p>Étude pas encore calculée pour cette officine.</p>'); return; }
+    ouvrirEnrichie(i, finess, tok);
+  }
+  // L'ancienne étude (etudes-zone/<finess>.js : les 3 feuilles A4 de Phirst + « Chez Intégral ») : le secours quand l'étude enrichie manque.
+  function ouvrirAncienne(i, finess, tok) {
+    var A = S.A;
     var attente = 3, res = {};
     function pret() {
       if (--attente > 0) return;
@@ -522,6 +528,66 @@
     });
   }
 
+  // ═══ Étude enrichie (27/11/2026, maquette m1 « Le dossier vivant », choix de Will) ═══
+  // etudes-enrichies/<version>/<finess>.json.gz du seau protégé, décompressée dans le navigateur ; rendu commun avec Phirst
+  // (phirst/v2/phirst-etude-m1.js), « Chez Intégral » ajouté par JARVIS seulement. Fichier absent ou illisible : l'ancienne étude.
+  function attendreTourneesVentes(cb) {
+    var A = S.A, reste = 2, fin = function () { if (--reste === 0) cb(); };
+    charger('tournees', 'TOURNEES_ECRAN', 'tournees', function () { S.prepT = window.TOURNEES_ECRAN ? P.preparerTournees(window.TOURNEES_ECRAN) : S.prepT; });
+    var tt = Date.now(), iv = setInterval(function () { if (S.etat.tournees !== 'attente' || Date.now() - tt > 8000) { clearInterval(iv); fin(); } }, 120);
+    if (A.detailPret()) fin(); else A.detail(function () { S.etat.detail = A.detailPret() ? 'ok' : 'absent'; fin(); });
+  }
+  function chargerM1(cb) {
+    var pret = function () { try { window.ETUDE_M1.pret(function (ok) { cb(!!ok); }); } catch (e) { cb(false); } };
+    if (window.ETUDE_M1) { pret(); return; }
+    script('../../phirst/v2/phirst-etude-m1.js' + S.A.CB, function (ok) { if (ok && window.ETUDE_M1) pret(); else cb(false); });
+  }
+  function chargerEnrichie(finess, cb) {
+    var M = window.ETUDE_M1;
+    if (!M || !M.VERSION_DONNEES || !V2.binaireProtege) { cb(null); return; }
+    V2.binaireProtege('etudes-enrichies/' + M.VERSION_DONNEES + '/' + finess + '.json.gz', function (buf) {
+      if (!buf) { cb(null); return; }
+      M.degonfler(buf).then(function (e) { cb(e && e.meta && e.zones && e.reponses ? e : null); }, function () { cb(null); });
+    });
+  }
+  function ouvrirEnrichie(i, finess, tok) {
+    var res = {}, attente = 4;
+    function pret() {
+      if (--attente > 0) return;
+      if (tok !== S.pe.jeton || !S.pe.ouverte) return;
+      if (!res.m1 || !res.pur || !res.etude) { ouvrirAncienne(i, finess, tok); return; }
+      try { monterM1(res.etude, i); } catch (e) { demonterM1(); ouvrirAncienne(i, finess, tok); }
+    }
+    chargerCssEtude(function () { pret(); });   // feuille des chapitres « Chez Intégral » (pe-chap, pe-grille…)
+    chargerPur(function (ok) { res.pur = ok; pret(); });   // E.plur, E.joli pour « Chez Intégral »
+    chargerM1(function (ok) {
+      res.m1 = ok;
+      if (!ok) { pret(); return; }
+      chargerEnrichie(finess, function (E) { res.etude = E; attendreTourneesVentes(pret); });
+    });
+  }
+  function monterM1(e, i) {
+    var m = e.meta || {}, Dz = { pharmacie: { lat: m.lat, lon: m.lon }, zones: e.zones || {}, calcule_le: m.date_calcul_etude || '' };
+    var q = partIntegral(Dz, i), c = corpsPE();
+    var b = document.querySelector('#pe [data-pe-imprimer]'); if (b) b.hidden = true;   // l'étude enrichie a ses deux boutons (résumé, dossier complet)
+    c.innerHTML = '<div data-pe-m1></div>';
+    var titre = '<div class="pe-entete"><span><b>Chez Intégral</b> · ce que JARVIS ajoute</span><span>Étude du ' + esc(Dz.calcule_le) + '</span></div>';
+    S.pe.m1 = window.ETUDE_M1.monter(c.firstChild, e, {
+      vue: 'jarvis', defile: document.getElementById('pe'), chezIntegral: titre + q.band + q.h,
+      surCarte: function (map, L) { carteIntegral(map, L, q.z, c); }
+    });
+  }
+  // Sur la carte de l'étude enrichie : nos clientes et les tournées de livraison (comme la carte de l'ancienne étude).
+  function carteIntegral(m, L, z, hote) {
+    if (S.prepT) S.prepT.forEach(function (t) { L.polyline(t.pts, { color: '#1A2030', weight: 2.2, opacity: 0.55, dashArray: '7 6', interactive: false }).addTo(m); });
+    z.liste.forEach(function (x) {
+      L.circleMarker([x.c.lat, x.c.lng], { radius: 9, weight: 3, color: '#0050E6', fill: false, interactive: false }).addTo(m);
+      L.circleMarker([x.c.lat, x.c.lng], { radius: 5, weight: 2, color: '#fff', fillColor: '#0034A0', fillOpacity: 1, interactive: false }).addTo(m);
+    });
+    var lg = hote && hote.querySelector('.legende');
+    if (lg && (z.liste.length || (S.prepT && S.prepT.length))) lg.insertAdjacentHTML('beforeend', (z.liste.length ? '<span class="lz"><i style="background:#0034A0;border-radius:50%;box-shadow:0 0 0 2px #fff,0 0 0 4px #0050E6"></i>Nos clientes</span>' : '') + (S.prepT && S.prepT.length ? '<span class="lz"><i style="background:none;border-top:2px dashed #1A2030;border-radius:0;height:0"></i>Tournées de livraison</span>' : ''));
+  }
+
   // Toutes nos clientes (toutes équipes) avec leur position ; le chiffre d'affaires seulement quand ce compte a le droit de le voir.
   function clientesLisibles() {
     var A = S.A, D = A.donnees(), out = [];
@@ -535,8 +601,9 @@
   function eur(n) { return n === null || n === undefined ? 'inconnu' : P.nombre(n) + NB + '€'; }
   function pied(n, t) { return '<div class="pe-pied"><span>JARVIS · Intégral Pharma</span><span>' + n + ' / ' + t + '</span></div>'; }
 
-  // Les trois feuilles de Phirst + « Chez Intégral » (ce que JARVIS ajoute) : même code de rendu que Phirst, jamais copié.
-  function assembler(Dz, i) {
+  // « Chez Intégral » (ce que JARVIS ajoute) : la bande des trois chiffres et les chapitres A à D, servis à l'ancienne étude
+  // comme à l'étude enrichie. Dz : { pharmacie: { lat, lon }, zones: { 5, 10, 15: { contour } }, calcule_le }.
+  function partIntegral(Dz, i) {
     var E = window.PHIRST_ETUDE_PUR, A = S.A, D = A.donnees(), p = D.p[i], c = ctx(), id = String(p[13]);
     var cli = A.isClient(p), z = P.clientesDansZones(Dz, clientesLisibles(), id), m = moisDernier(), pz = Dz.pharmacie || {};
     var tn = (S.prepT && typeof pz.lat === 'number') ? P.plusProcheTournee(pz.lat, pz.lon, S.prepT) : kmTournee(p);
@@ -549,7 +616,6 @@
       '<div class="pe-cle"><div class="pe-v">' + z.nb[15] + '</div><div class="pe-l">' + plus(z.nb[15], 'cliente', 'clientes', 'cliente') + ' d’Intégral à moins de 15 minutes</div><span class="pe-src">Clientes de toutes les équipes</span></div>' +
       '<div class="pe-cle"><div class="pe-v">' + (tn ? P.nombre(tn.km, 1) + '<small style="font-size:22px;letter-spacing:0"> km</small>' : '—') + '</div><div class="pe-l">' + (tn ? 'de la tournée de livraison ' + esc(tn.code) : 'tournée de livraison : fichier non lu') + '</div><span class="pe-src">Distance à vol d’oiseau au tracé</span></div>' +
       '<div class="pe-cle"><div class="pe-v">' + (grpNom ? grpTous : '—') + '</div><div class="pe-l">' + (grpNom ? 'clientes d’Intégral dans son groupement (' + esc(grpNom) + ')' : 'groupement inconnu pour cette officine') + '</div><span class="pe-src">Toutes les équipes</span></div></div>';
-    var f1 = E.feuille1(Dz).replace('<div class="pe-pied">', band + '<div class="pe-pied">');
 
     // A · pourquoi l'appeler (prospect) ou ce que l'on sait (cliente)
     var h = '<div class="pe-chap"><div class="pe-chap-t"><span class="pe-chap-n">A</span><h2>' + (cli ? 'Cette officine est notre cliente' : 'Pourquoi l’appeler') + '</h2></div>';
@@ -602,6 +668,12 @@
     lim.push('Le chiffre d’affaires d’une officine qui n’est pas notre cliente : JARVIS ne le connaît pas.');
     if (lecturePartielle.length) lim.push('Cette étude s’affiche alors que ' + lecturePartielle.join(' et ') + ' : les lignes concernées sont vides ou marquées « inconnu ».');
     h += '<div class="pe-chap"><div class="pe-chap-t"><span class="pe-chap-n">D</span><h2>Ce que JARVIS ne sait pas ici</h2></div><ul class="pe-nsp">' + lim.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>';
+    return { band: band, h: h, z: z };
+  }
+  // Les trois feuilles de Phirst + « Chez Intégral » : même code de rendu que Phirst, jamais copié.
+  function assembler(Dz, i) {
+    var E = window.PHIRST_ETUDE_PUR, q = partIntegral(Dz, i), h = q.h, z = q.z;
+    var f1 = E.feuille1(Dz).replace('<div class="pe-pied">', q.band + '<div class="pe-pied">');
     var f4 = '<section class="pe-feuille" aria-label="Chez Intégral"><div class="pe-entete"><span><b>Chez Intégral</b> · ce que JARVIS ajoute</span><span>Étude du ' + esc(Dz.calcule_le || '') + '</span></div>' + h + pied('x', 'y') + '</section>';
     var f2 = E.feuille2(Dz, null, false), f3 = E.feuille3(Dz), tout = [f1, f4, f2, f3];
     tout = tout.map(function (s, k) { return s.replace(/<div class="pe-pied">.*?<\/div>/, pied(k + 1, tout.length)); });

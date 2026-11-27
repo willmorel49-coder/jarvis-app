@@ -1568,6 +1568,37 @@
                  function () { console.warn('[V2] fichier protégé manquant : ' + nom); cb(false); });
   };
 
+  // 27/11/2026 — étude de zone enrichie (etudes-enrichies/<version>/<finess>.json.gz) : des OCTETS compressés, pas un script.
+  // Le dossier est daté et ses fichiers ne sont jamais remplacés : la copie rangée sur l'appareil se garde sous le seul nom
+  // du fichier (même tiroir que les autres fichiers protégés). cb(ArrayBuffer), ou cb(null) si le fichier manque ou est refusé :
+  // l'appelant affiche alors l'ancienne étude. Un fichier absent n'est PAS une panne des données protégées : il ne reste pas
+  // noté dans V2.protegeEchec (qui fait prévenir l'écran).
+  V2.binaireProtege = function (fichier, cb) {
+    var cle = 'https://protege.local/' + fichier + '?v=fige';
+    function rien() { delete V2.protegeEchec[fichier]; cb(null); }
+    function telecharger(c) {
+      adresseProtegee(fichier).then(function (url) {
+        if (!url) { rien(); return; }
+        fetch(url).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.arrayBuffer();
+        }).then(function (b) {
+          if (!b || b.byteLength < 20) throw new Error('réponse vide');
+          try { if (c) c.put(cle, new Response(b.slice(0), { headers: { 'Content-Type': 'application/gzip' } })); } catch (e) {}
+          cb(b);
+        }).catch(rien);
+      });
+    }
+    try {
+      caches.open(CACHE_EMPREINTES).then(function (c) {
+        c.match(cle).then(function (hit) {
+          if (hit) { hit.arrayBuffer().then(cb, function () { telecharger(c); }); return; }
+          telecharger(c);
+        }, function () { telecharger(c); });
+      }, function () { telecharger(null); });
+    } catch (e) { telecharger(null); }
+  };
+
   function rafraichirSession(c) {
     try {
       if (!c.auth || !c.auth.refreshSession) return Promise.resolve();

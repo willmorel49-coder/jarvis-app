@@ -74,6 +74,11 @@ describe('vue Yann / vue téléprospectrice', () => {
     assert.match(src, /if \(tel \|\| S\.yann === false\) return \{ etat: 'ok', D: D, sommes: null, yann: false \}/)
     assert.ok(src.lastIndexOf("phirst_etudes_sommes") > src.indexOf('if (tel || S.yann === false)'), 'la table des sommes est lue APRÈS la garde')
     assert.equal((src.match(/phirst_etudes_sommes/g) || []).length, 2) // l'en-tête et l'unique lecture
+    // étude enrichie (27/11/2026) : le dossier sommes/ du seau n'est lu qu'APRÈS la garde téléprospectrice / vue sans sommes, et une seule fois
+    assert.match(src, /var sansSommes = r\[0\] \|\| S\.yann === false/)
+    assert.match(src, /if \(sansSommes\) return \{ e: sans, vue: 'telepro' \}/)
+    assert.equal((src.match(/lireGz\('sommes'\)/g) || []).length, 1)
+    assert.ok(src.indexOf("lireGz('sommes')") > src.indexOf('if (sansSommes) return'), 'les sommes sont lues APRÈS la garde')
   })
   test('« À surveiller » : sur la feuille interne seulement, jamais dans ce qui s’imprime', () => {
     const h = E.feuilles(D, sommesEssai, { yann: true })

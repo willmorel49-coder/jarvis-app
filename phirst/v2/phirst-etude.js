@@ -87,6 +87,46 @@
     S.carte = { map: m, cadrer: cadrer, ici: ici };
   }
   function demonterCarte() { if (S.carte) { try { S.carte.map.remove(); } catch (e) { /* déjà démontée */ } S.carte = null; } }
+  function demonterM1() { if (S.m1) { try { S.m1.demonter(); } catch (e) { /* déjà démontée */ } S.m1 = null; } }
+
+  /* ── 3 bis. L'étude enrichie (27/11/2026, maquette m1 « Le dossier vivant », choix de Will ; même calcul et même rendu que JARVIS).
+     Seau PRIVÉ etudes-zone : sans-sommes/<version>/<finess>.json.gz pour tous ; sommes/<version>/<finess>.json.gz SEULEMENT pour un
+     membre en vue Yann (jamais demandé pour la téléprospectrice), recollés dans le navigateur (ETUDE_M1.recoller = decouper.recoller).
+     Le FINESS vient de phirst_etudes. Rend { e, vue } ou null (module, fichier ou lecture absents) : l'ancienne étude s'affiche alors. */
+  function chargerM1(cb) {
+    var pret = function () { try { window.ETUDE_M1.pret(function (ok) { cb(!!ok); }); } catch (e) { cb(false); } };
+    if (window.ETUDE_M1) return pret();
+    cb(false);
+  }
+  function lireEnrichie(cles) {
+    var b = sb(); if (!b || !b.storage || !cles || !cles.length) return Promise.resolve(null);
+    return new Promise(function (ok) { chargerM1(ok); }).then(function (m1) {
+      var M = window.ETUDE_M1; if (!m1 || !M || !M.VERSION_DONNEES) return null;
+      return Promise.all([estTelepro(), Promise.resolve(b.from('phirst_etudes').select('cle,finess').in('cle', cles).limit(1))]).then(function (r) {
+        var sansSommes = r[0] || S.yann === false, l = r[1] && !r[1].error && (r[1].data || [])[0], f = l ? String(l.finess || '') : '';
+        if (!/^[0-9][0-9AB][0-9]{7}$/.test(f)) return null;
+        function lireGz(dossier) {
+          return Promise.resolve(b.storage.from('etudes-zone').download(dossier + '/' + M.VERSION_DONNEES + '/' + f + '.json.gz')).then(function (x) {
+            if (!x || x.error || !x.data) return null;
+            return x.data.arrayBuffer().then(M.degonfler);
+          });
+        }
+        return lireGz('sans-sommes').then(function (sans) {
+          if (!sans || !sans.meta || !sans.zones || !sans.reponses) return null;
+          if (sansSommes) return { e: sans, vue: 'telepro' };
+          // sommes illisibles pour un membre : l'étude s'affiche quand même, sans aucun montant (vue sans sommes)
+          return lireGz('sommes').then(function (som) { return som ? { e: M.recoller(sans, som), vue: 'yann' } : { e: sans, vue: 'telepro' }; },
+                                       function () { return { e: sans, vue: 'telepro' }; });
+        });
+      });
+    }).then(null, function () { return null; });
+  }
+  function monterM1(x) {
+    var c = corps(); c.innerHTML = '<div data-pe-m1></div>';
+    var b = document.querySelector('#pe [data-pe-imprimer]'); if (b) b.hidden = true;   // l'étude enrichie a ses deux boutons (résumé, dossier complet)
+    var nom = document.querySelector('#pe [data-pe-nom]'); if (nom && x.e.meta.nom) nom.textContent = x.e.meta.nom;
+    S.m1 = window.ETUDE_M1.monter(c.firstChild, x.e, { vue: x.vue, defile: document.getElementById('pe') });
+  }
   window.addEventListener('beforeprint', function () { if (S.ouverte && S.carte) S.carte.cadrer(); });
   window.addEventListener('afterprint', function () { if (S.ouverte && S.carte) S.carte.cadrer(); });
 
@@ -114,8 +154,16 @@
     var b = document.querySelector('#pe [data-pe-imprimer]'); if (b) b.hidden = true;
   }
   function charger() {
-    var tok = ++S.jeton; demonterCarte();
+    var tok = ++S.jeton; demonterCarte(); demonterM1();
     dire('<p>L’étude de zone arrive…</p>');
+    lireEnrichie(S.cles).then(function (x) {
+      if (tok !== S.jeton || !S.ouverte) return;
+      if (x) { try { monterM1(x); return; } catch (e) { demonterM1(); } }
+      chargerAncienne(tok);
+    });
+  }
+  // L'ancienne étude (les deux tables d'études, 3 feuilles A4) : le secours quand l'étude enrichie manque.
+  function chargerAncienne(tok) {
     lire(S.cles).then(function (r) {
       if (tok !== S.jeton || !S.ouverte) return;
       if (r.etat === 'absente') return dire('<p>L’étude de zone de cette pharmacie n’est pas encore prête.</p>');
@@ -145,7 +193,7 @@
   }
   function fermer(sansFocus) {
     var pe = document.getElementById('pe'); if (!pe || !S.ouverte) return;
-    S.jeton++; S.ouverte = false; demonterCarte(); pe.hidden = true; document.body.classList.remove('pe-ouvert');
+    S.jeton++; S.ouverte = false; demonterCarte(); demonterM1(); pe.hidden = true; document.body.classList.remove('pe-ouvert');
     var c = corps(); if (c) c.innerHTML = '';
     if (sansFocus !== true) {
       var cible = S.dernier && document.contains(S.dernier) ? S.dernier : document.querySelector('.pe-ouvre'); // la fiche a pu être redessinée : on retrouve son bouton
