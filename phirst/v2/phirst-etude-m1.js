@@ -142,7 +142,7 @@ function monter(hote, etude, opts) {
     el.innerHTML = '<b>' + cnt(h, '', 'rg-hab') + '</b><span>habitants à moins de ' + S.z + NBSP + 'min</span>';
     if (win.matchMedia('(max-width:640px)').matches) $('b', el).insertAdjacentHTML('beforeend', '<small>habitants à moins de ' + S.z + NBSP + 'min</small>');
   }
-  $('.em1-rg-chap').innerHTML = E.reponses.map(function (r, i) { return '<a href="#c-' + r.id + '" data-i="' + i + '" title="' + esc(r.titre) + '">' + (i + 1) + '</a>'; }).join('');
+  $('.em1-rg-chap').innerHTML = E.reponses.map(function (r, i) { return '<a href="#c-' + esc(r.id) + '" data-i="' + i + '" title="' + esc(r.titre) + '">' + (i + 1) + '</a>'; }).join('');
 
   /* ---------- couverture ---------- */
   function renderCouv() {
@@ -211,13 +211,13 @@ function monter(hote, etude, opts) {
   function voisinesListe() {
     var L = E.pharmacies.filter(function (p) { return +p.zone_min <= +S.z; }).sort(function (a, c) { return a.distance_km - c.distance_km; });
     if (!L.length) return '<p class="em1-srcb">Aucune pharmacie voisine à moins de ' + S.z + ' minutes.</p>';
-    var rows = L.slice(0, S.nbV).map(function (p) { return '<li><button type="button" class="em1-vrow" data-voisine="' + p.finess + '"><span class="em1-vn">' + esc(nomSur(p.nom)) + '</span><span class="em1-vm">' + esc(tc(p.commune)) + ' · ' + nb(p.distance_km, 1) + NBSP + 'km · ' + p.zone_min + NBSP + 'min</span><span class="em1-vt">' + (p.a_surveiller ? 'À surveiller' : '') + '</span><i class="em1-go" aria-hidden="true">›</i></button></li>'; }).join('');
+    var rows = L.slice(0, S.nbV).map(function (p) { return '<li><button type="button" class="em1-vrow" data-voisine="' + esc(p.finess) + '"><span class="em1-vn">' + esc(nomSur(p.nom)) + '</span><span class="em1-vm">' + esc(tc(p.commune)) + ' · ' + nb(p.distance_km, 1) + NBSP + 'km · ' + p.zone_min + NBSP + 'min</span><span class="em1-vt">' + (p.a_surveiller ? 'À surveiller' : '') + '</span><i class="em1-go" aria-hidden="true">›</i></button></li>'; }).join('');
     var reste = L.length - S.nbV;
     return '<div class="em1-voisines"><h4>Les ' + L.length + ' pharmacies voisines à moins de ' + S.z + ' minutes</h4><p class="em1-srcb" style="margin:0 0 8px">Touchez une ligne : sa fiche s\'ouvre dans la marge. « À surveiller » : titulaire de 60 ans et plus, exerçant seul.</p><ul class="em1-vlist">' + rows + '</ul>' + (reste > 0 ? '<button type="button" class="em1-plus" data-plus>Voir ' + Math.min(20, reste) + ' de plus (' + reste + ' restantes)</button>' : '') + '</div>';
   }
   function siefListe(b) {
     var d = (val(b, 'sief_detail') || {}).detail || []; if (!d.length) return '';
-    return '<div class="em1-voisines"><h4>Vers qui iraient ces habitants</h4><ul class="em1-vlist">' + d.slice(0, 6).map(function (x) { return '<li><button type="button" class="em1-vrow" data-voisine="' + x.finess + '"><span class="em1-vn">' + esc(nomSur(x.nom)) + '</span><span class="em1-vm">' + cnt(x.habitants, 'habitants', 'sief.' + x.finess) + ' · ' + nb(x.part_pct, 1) + NBSP + '% de votre zone naturelle</span><i class="em1-go" aria-hidden="true">›</i></button></li>'; }).join('') + '</ul></div>';
+    return '<div class="em1-voisines"><h4>Vers qui iraient ces habitants</h4><ul class="em1-vlist">' + d.slice(0, 6).map(function (x) { return '<li><button type="button" class="em1-vrow" data-voisine="' + esc(x.finess) + '"><span class="em1-vn">' + esc(nomSur(x.nom)) + '</span><span class="em1-vm">' + cnt(x.habitants, 'habitants', 'sief.' + x.finess) + ' · ' + nb(x.part_pct, 1) + NBSP + '% de votre zone naturelle</span><i class="em1-go" aria-hidden="true">›</i></button></li>'; }).join('') + '</ul></div>';
   }
   function comptesHTML() {
     var x = E.exploitant, cs = x.comptes || [];
@@ -241,7 +241,7 @@ function monter(hote, etude, opts) {
   var insec = function (s) { return s.replace(/(L\.? ?\d{4}-[\d-]*\d)/g, '<span class="em1-nw">$1</span>').replace(/(\d) (\d{3})(?!\d)/g, '$1 $2').replace(/(\d) (%|km|m)(?![a-zà-ÿ])/g, '$1 $2'); };
   function loiHTML(b) {
     if (!b.citations || !b.citations.length) return '';
-    var arts = b.citations.map(function (c) { return '<div class="em1-art"><h4>Article ' + esc(c.article) + ' <span>version en vigueur depuis le ' + esc(c.version) + '</span></h4>' + c.alineas.map(function (a) { return '<p class="em1-cite">' + esc(a) + '</p>'; }).join('') + '<p class="em1-srcb">' + esc(tx(c.modifie_par)) + ' · <a href="' + esc(c.url_legifrance) + '" target="_blank" rel="noopener">texte sur Légifrance</a></p></div>'; }).join('');
+    var arts = b.citations.map(function (c) { return '<div class="em1-art"><h4>Article ' + esc(c.article) + ' <span>version en vigueur depuis le ' + esc(c.version) + '</span></h4>' + c.alineas.map(function (a) { return '<p class="em1-cite">' + esc(a) + '</p>'; }).join('') + '<p class="em1-srcb">' + esc(tx(c.modifie_par)) + ' · <a href="' + esc(/^https:\/\//.test(c.url_legifrance || '') ? c.url_legifrance : '#') + '" target="_blank" rel="noopener">texte sur Légifrance</a></p></div>'; }).join('');
     var lec = b.lecture && b.lecture.length ? '<div class="em1-lecture"><h4>' + esc(tx(b.lecture_titre) || 'En clair') + '</h4><ul>' + b.lecture.map(function (l) { return '<li>' + insec(esc(l)) + '</li>'; }).join('') + '</ul></div>' : '';
     return lec + '<div class="em1-loi">' + arts + '</div>';
   }
@@ -417,7 +417,7 @@ function monter(hote, etude, opts) {
     voisinesLayer.clearLayers(); vmarks = {};
     E.pharmacies.filter(function (p) { return +p.zone_min <= +S.z; }).forEach(function (p) {
       var m = L.circleMarker([p.lat, p.lon], { radius: 7, className: 'em1-vm', weight: 2 }).addTo(voisinesLayer); vmarks[p.finess] = m;
-      m.bindTooltip(nomSur(p.nom), { direction: 'top' });
+      m.bindTooltip(esc(nomSur(p.nom)), { direction: 'top' }); // Leaflet écrit l'info-bulle en HTML : nom lu sur OpenStreetMap, modifiable par tous
       m.on('click', function () { ouvrirFiche(p.finess, m.getElement(), true); });
     });
     map.fitBounds(calques[S.z].getBounds(), { padding: [20, 20], animate: false });
@@ -437,7 +437,7 @@ function monter(hote, etude, opts) {
     var g = p['groupement']; d('Appartenance', g ? esc(g.nom) : 'inconnue', g ? (g.a_verifier ? 'à vérifier' : '') : esc(tx(p['groupement_raison'])));
     d('Horaires', p.horaires && p.horaires.texte ? esc(horaires(p.horaires.texte)) : 'inconnus', p.horaires ? (p.horaires.dimanche ? 'ouverte le dimanche · ' : '') + esc(tx(p.horaires.source)) : '');
     var ventes = (p.ventes || []).filter(function (v) { return v.date_publication || v.operation; }).slice(0, 1);
-    d('Fonds', ventes.length ? esc(ventes[0].operation || 'vente') + ' publié le ' + dateFr(ventes[0].date_publication) + (!tel && ventes[0].prix && ventes[0].prix.valeur != null ? ' · ' + fmtVal(ventes[0].prix.valeur, '€') : '') : 'aucune vente publiée');
+    d('Fonds', ventes.length ? esc(ventes[0].operation || 'vente') + ' publié le ' + esc(dateFr(ventes[0].date_publication)) + (!tel && ventes[0].prix && ventes[0].prix.valeur != null ? ' · ' + fmtVal(ventes[0].prix.valeur, '€') : '') : 'aucune vente publiée');
     if (!tel) d('Chiffre d\'affaires', p.exploitant_perime ? 'non affiché' : p.ca_publie && p.ca_publie.valeur != null ? fmtVal(p.ca_publie.valeur, '€') : 'inconnu', p.ca_publie ? '' : esc(tx(p.ca_raison)));
     f.innerHTML = '<button type="button" class="em1-x" aria-label="Fermer la fiche">×</button><h3 id="em1-fiche-titre">' + esc(nomSur(p.nom)) + '</h3><p class="em1-sous">' + esc(tc(p.commune)) + (p.a_surveiller ? ' · à surveiller' : '') + '</p><dl>' + dl.join('') + '</dl>' +
       '<button type="button" class="em1-btn-sim" data-simuler>Et si elle fermait ?</button><div class="em1-sim" hidden></div>';
