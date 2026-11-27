@@ -658,13 +658,15 @@
     ensurePhotos();
     root.innerHTML = V2.topbar({ back: true }) +
       '<div class="v2-wrap opf-page opx-ach' + (entree ? ' opx-first' : '') + '">' +
-        '<div class="opx-head"><div class="v2-page-title">Meilleurs achats</div>' +
+        '<div class="opx-head"><div class="v2-page-title">Les plus commandés</div>' +
           '<div class="opx-sub">Classés par nombre de pharmacies qui les commandent' +
           '<details class="opx-info"><summary aria-label="Comment c\'est classé">i</summary><span>À égalité, par quantités puis par CA. ' + (D.hasCat ? '' : 'Catégories en cours de chargement. ') + '</span></details>' +
           ' · ' + esc(periodeTxt(NB)) + '</div></div>' +
         '<div class="opf-tools">' +
           '<div class="opso-search">' + ICO('search', 18, 2) + '<input class="v2-field" type="search" aria-label="Chercher un produit ou un CIP" placeholder="Chercher un produit, un CIP…" value="' + esc(achSearch) + '" oninput="V2.opsoAchSearch(this.value)"></div>' +
           '<button class="v2-btn v2-btn-ghost opf-export" onclick="V2.opsoAchExport()">' + ICO('download', 16) + ' Exporter (CSV)</button>' +
+          // 27/11/2026 — choix de Will : les fiches marketing (même classement) ne sont plus un écran à part, elles s'impriment d'ici.
+          (V2.pages && V2.pages.marketing ? '<button class="v2-btn v2-btn-ghost opf-export" onclick="V2.go(\'marketing\')">' + ICO('fiche', 16) + ' Imprimer le catalogue</button>' : '') +
         '</div>' +
         '<div class="v2-tabs opx-tabs">' + tabsHtml + '</div>' + selHtml +
         '<div class="opx-list' + (swap ? ' opx-swap' : '') + '">' +

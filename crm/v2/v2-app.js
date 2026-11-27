@@ -292,6 +292,11 @@
     var back = opts.back
       ? '<button class="v2-back" onclick="V2.goBack()">' + ICO('back', 16) + 'Retour</button>'
       : '';
+    // 27/11/2026 — apps de groupement (OPSO, Essentiels) : les onglets en haut, comme JARVIS (groupements/v2/groupement-onglets.js).
+    // Un écran d'onglet n'a plus de « Retour » (on change d'onglet) ; un sous-écran (fiche, paramètre, catalogue à imprimer) le garde.
+    var gxO = (V2.enGroupement() && V2.groupementOnglets) ? V2.groupementOnglets : null;
+    var gxIci = gxO ? gxO.ou() : null;
+    if (back && gxIci && !gxIci.vue.cache && !(V2.route && V2.route.param)) back = '';
     var initials = (V2.user && V2.user.name ? V2.user.name.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('') : 'WM').toUpperCase();
     // Le logo Intégral Pharma est TOUJOURS présent et cliquable → accueil (depuis n'importe où).
     // Sur une page interne, on l'affiche en version compacte (logo seul) à côté du bouton retour.
@@ -349,15 +354,16 @@
           '<button type="button" class="tp-autres" aria-haspopup="menu" aria-expanded="false" onclick="V2.autresOutils(this)">Autres outils' + u2Ic('chev', 16, 'car') + '</button></nav>';
       } catch (e) { menu = ''; }
     }
+    if (gxO) { try { menu = gxO.barre(); } catch (e) { menu = ''; } }
     return '' +
-      '<div class="v2-top' + (menu ? ' tp-avec-menu' : '') + '">' +
+      '<div class="v2-top' + (menu ? ' tp-avec-menu' : '') + (gxO ? ' gx-top' : '') + '">' +
         '<div class="tp-g">' + back + brand + nom + '</div>' + menu +
         '<div class="tp-d">' +
           ((V2.route && V2.route.name === 'home' && V2.enGroupement()) ? '' : '<button type="button" class="v2-top-search' + ((V2.route && V2.route.name === 'home') ? ' tp-srch-acc' + ((window.V2_BRAND && window.V2_BRAND.portes) ? '' : ' tp-srch-sans') : '') + '" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
           idee + plus +
           '<button type="button" class="tp-avb" aria-label="Mon compte" aria-haspopup="menu" aria-expanded="false" title="' + esc(V2.user ? V2.user.name : '') + '" onclick="V2.userMenu(this)"><span class="v2-av">' + esc(initials) + '</span></button>' +
         '</div>' +
-      '</div>';
+      '</div>' + (gxO ? gxO.vues() : '');
   }
   V2.topbar = topbar;
 
@@ -1018,6 +1024,19 @@
         V2.modulesPrets.then(function () { V2._modulesAttente = false; V2.render(); });
       }
       return;
+    }
+    // 27/11/2026 — apps de groupement : plus d'accueil à tuiles, l'app s'ouvre sur le premier onglet (groupements/v2/groupement-onglets.js).
+    // Un écran fusionné (Suivi groupement → Tableau de bord, choix de Will du 27/11) : son ancienne adresse ouvre l'écran qui l'a absorbé.
+    if (V2.enGroupement() && V2.groupementOnglets && V2.groupementOnglets.remplace(V2.route.name)) {
+      V2.route = { name: V2.groupementOnglets.remplace(V2.route.name), param: null };
+      try { history.replaceState(null, '', location.pathname + location.search + '#' + V2.route.name); } catch (e) {}
+    }
+    if (V2.route.name === 'home' && V2.enGroupement() && V2.groupementOnglets) {
+      var gxOuv = V2.groupementOnglets.ouverture();
+      if (gxOuv) {
+        V2.route = { name: gxOuv, param: null };
+        try { history.replaceState(null, '', location.pathname + location.search + '#' + gxOuv); } catch (e) {}
+      }
     }
     var page = V2.pages[V2.route.name];
     if (!page) { V2.route.name = 'home'; page = V2.pages.home; }
@@ -2706,12 +2725,12 @@
     if (!V2.enGroupement() && V2.pages.concurrents) PAGES.splice(3, 0, ['concurrents', 'Concurrents · la carte des grossistes, leurs prix, actualité', 'spark']);
     // 04/09/2026 — l'app OPSO redevient un simple visu groupement : plus de
     // fiches commerciales chez elle (v2-fiches n'y est plus chargé).
-    if (V2.enGroupement() && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
+    if (V2.enGroupement() && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', (V2.groupementOnglets ? 'Imprimer le catalogue · les plus commandés, en fiches A4' : 'Fiches marketing OPSO'), 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
     // 29/09/2026 — écrans OPSO Pharmacies / Meilleurs achats, atteignables au clavier.
     if (V2.enGroupement() && V2.pages.opsobord) PAGES.push(['opsobord', ((V2.groupement && V2.groupement.textes && V2.groupement.textes.bordPalette) || 'Tableau de bord · chiffre, rémunération, trajectoire'), 'grid']);
     if (V2.enGroupement() && V2.pages.opsopharmacies) PAGES.push(['opsopharmacies', 'Pharmacies · évolution par officine', 'pharma']);
-    if (V2.enGroupement() && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
+    if (V2.enGroupement() && V2.pages.opsoachats) PAGES.push(['opsoachats', (V2.groupementOnglets ? 'Les plus commandés' : 'Meilleurs achats') + ' · classement par nombre de pharmacies', 'cat']);
     if (V2.enGroupement() && V2.groupementDocs && V2.pages[V2.groupementDocs.route]) PAGES.push([V2.groupementDocs.route, V2.groupementDocs.palette, 'fiche']);
     if (V2.enGroupement() && V2.groupementProduits && V2.pages[V2.groupementProduits.route]) PAGES.push([V2.groupementProduits.route, V2.groupementProduits.palette, 'cat']);
     if (V2.enGroupement() && V2.groupementFiche && V2.pages[V2.groupementFiche.route]) PAGES.push([V2.groupementFiche.route, V2.groupementFiche.palette, 'fiche']);
@@ -2748,6 +2767,8 @@
       if (V2.pages.rdvdispo) PAGES.push(['rdvdispo', 'Mes disponibilités & mon lien de réservation', 'cal']);
     }
     // Une page non chargée (app OPSO allégée) ne se propose pas au clavier.
+    // 27/11/2026 — apps de groupement à onglets : ni « Accueil » (l'app s'ouvre sur le Tableau de bord), ni écran fusionné (Suivi groupement).
+    if (V2.enGroupement() && V2.groupementOnglets) PAGES = PAGES.filter(function (p) { return p[0] !== 'home' && !V2.groupementOnglets.remplace(p[0]); });
     PAGES = PAGES.filter(function (p) { return p[0] === 'home' || !!V2.pages[p[0]]; });
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
     // 14/10/2026 — chaque grossiste est trouvable au clavier (« Sagitta », « Giphar »…) et ouvre sa fiche.

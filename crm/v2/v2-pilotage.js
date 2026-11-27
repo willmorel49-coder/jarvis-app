@@ -124,6 +124,13 @@
   function margeFroid(s, idx) { return estFroid(s, idx) && !estGenerique(s, idx) ? (+s.qte || 0) * (enReforme(s) ? MARGE_2027.boiteFroid : MARGE.boiteFroid) : 0; }
   function margeVente(s, idx) { idx = idx || productIndex(); return margeBase(s, idx) + margeFroid(s, idx); }
   V2.piloMargeVente = margeVente;
+  // 27/11/2026 — « Marge pharmacien générée » remonte du Suivi au Tableau de bord des groupements (choix de Will) :
+  // MÊME calcul que le chiffre du Pilotage (mdlOf ligne à ligne, même index produit).
+  V2.piloMargeGeneree = function (ventes) {
+    var idx = productIndex(), t = 0, ca = 0;
+    (ventes || []).forEach(function (s) { t += mdlOf(s, idx); ca += (s.mntNetHt || 0); });
+    return { total: t, pct: ca > 0 ? t / ca * 100 : 0 };
+  };
   // Cumul sur un lot de ventes : total + détail par palier (boîtes, CA, marge)
   // + les non remboursés à part (hors paliers) + le supplément chaîne du froid à
   // part : trois paliers + NR + froid = total.

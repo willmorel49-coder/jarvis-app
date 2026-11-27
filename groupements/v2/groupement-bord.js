@@ -420,6 +420,8 @@
         + '<div class="oa-field">'
           + '<div class="oa-field-h"><span class="oa-frac og-num" id="og-ring-frac"></span><span class="oa-field-l">adhérentes<br>clientes</span></div>'
           + '<div class="oa-dots" id="og-dots" role="img" aria-label="Adhérentes qui achètent chez Intégral Pharma"></div>'
+          // 27/11/2026 — repris du Suivi groupement (fusionné ici, choix de Will) : le taux d'activation, même compte que les pastilles.
+          + '<p class="oa-act og-num" id="og-act"></p>'
         + '</div>'
       + '</section>'
       // ── Le mois : histogramme vivant ──
@@ -433,6 +435,8 @@
             + '<div class="oa-kpis">'
               + '<div class="oa-kpi"><b class="og-num" id="og-mf-actives"></b><span>pharmacies actives</span></div>'
               + '<div class="oa-kpi"><b class="og-num" id="og-mf-moyenne"></b><span>par pharmacie active</span></div>'
+              // 27/11/2026 — repris du Suivi groupement : la marge pharmacien générée du mois (apparaît quand le catalogue est chargé).
+              + '<div class="oa-kpi oa-kpi--mdl" id="og-mf-mdl-box" hidden><b class="og-num" id="og-mf-mdl"></b><span id="og-mf-mdl-l">marge pharmacien générée</span></div>'
             + '</div>'
           + '</div>'
           + '<div class="oa-hist" id="og-months" role="group" aria-label="Choisir le mois"></div>'
@@ -442,9 +446,19 @@
       + '<div data-opso-slot="remuneration"></div>'
       // ── Mois par mois : achats HT, pharmacies, nouvelles (17/11/2026) ──
       + '<section class="v2-card og-block oa-mpm" aria-labelledby="oa-mpm-t">'
-        + '<header class="oa-head"><h2 class="oa-h" id="oa-mpm-t">Mois par mois</h2><span class="oa-chip" id="og-mpm-per"></span></header>'
+        + '<header class="oa-head"><h2 class="oa-h" id="oa-mpm-t">Mois par mois · achats et nouvelles pharmacies</h2><span class="oa-chip" id="og-mpm-per"></span></header>'
         + '<div id="og-mpm"></div>'
       + '</section>'
+      // ── Répartition par périmètre (reprise du Suivi groupement, 27/11/2026) : cachée tant qu'aucun périmètre n'est connu ──
+      + '<section class="v2-card og-block oa-per" aria-labelledby="oa-per-t" hidden>'
+        + '<header class="oa-head"><h2 class="oa-h" id="oa-per-t">Répartition par périmètre</h2><span class="oa-chip" id="og-per-per"></span></header>'
+        + '<div id="og-per"></div>'
+      + '</section>'
+      // ── Offilog · adhérentes clientes (repris du Suivi groupement, 27/11/2026) : absent quand le réglage dit offilog: false ──
+      + ((V2.groupement && V2.groupement.offilog === false) ? '' : '<section class="v2-card og-block oa-ofa" aria-labelledby="oa-ofa-t">'
+        + '<header class="oa-head"><h2 class="oa-h" id="oa-ofa-t">Offilog · adhérentes clientes</h2><span class="oa-chip" id="og-ofa-per"></span></header>'
+        + '<div id="og-ofa"><p class="mpm-note">Chargement du fichier Offilog…</p></div>'
+      + '</section>')
       // ── Le potentiel du catalogue : rotations du réseau × prix nets du catalogue (17/11/2026) ──
       // Rendu seulement si les rotations du groupement existent (sinon le bloc resterait sur « Chargement… »).
       + ((window.OPSO_ROTATIONS && window.OPSO_ROTATIONS.r) ? ('<section class="v2-card og-block oa-pot" aria-labelledby="oa-pot-t">'
@@ -461,7 +475,7 @@
         + '<div class="oa-pcols" aria-hidden="true"><span>Référence</span><span>Pharmacies</span><span>€ HT · boîtes</span></div>'
         + '<ol class="oa-rows" id="og-prod-list"></ol>'
         + '<div class="oa-pfoot"><button type="button" class="oa-more oa-tog" id="og-prod-all" aria-expanded="false" aria-controls="og-prod-list">Top 10</button>'
-          + (V2.pages && V2.pages.opsoachats ? '<a class="oa-link" href="javascript:void 0" onclick="V2.go(\'opsoachats\')">Meilleurs achats <span aria-hidden="true">→</span></a>' : '')
+          + (V2.pages && V2.pages.opsoachats ? '<a class="oa-link" href="javascript:void 0" onclick="V2.go(\'opsoachats\')">Les plus commandés <span aria-hidden="true">→</span></a>' : '')
         + '</div>'
       + '</section>'
       // ── Trajectoire ──
@@ -608,6 +622,12 @@
         for (var di = 0; di < DATA.adherentes; di++) dh += di < DATA.pharmaClientes ? '<i class="on" style="--k:' + di + '"></i>' : '<i></i>';
         dotsEl.innerHTML = dh;
       }
+      var actEl = byId('og-act');
+      if (actEl && DATA.adherentes > 0) {
+        var aActiver = Math.max(0, DATA.adherentes - DATA.pharmaClientes);
+        actEl.textContent = 'Taux d\'activation ' + Math.round(DATA.pharmaClientes / DATA.adherentes * 100) + ' % · '
+          + aActiver + ' adhérente' + (aActiver > 1 ? 's' : '') + ' à activer';
+      }
       var amtEl = byId('og-hero-amount');
       amtEl.textContent = euros(DATA.total);
       amtEl.setAttribute('data-count', Math.round(DATA.total)); amtEl.setAttribute('data-fmt', 'eur');
@@ -619,10 +639,12 @@
       // ---- Mois par mois (17/11/2026) : réécrit seulement si le contenu change ----
       var mpmEl = byId('og-mpm');
       if (mpmEl) {
-        var MPM = moisParMois();
+        var MPM = moisParMois({ noms: true });
         if (mpmEl._h !== MPM.html) { mpmEl._h = MPM.html; mpmEl.innerHTML = MPM.html; }
         byId('og-mpm-per').textContent = MPM.periode;
       }
+      try { renderPerimetres(scope, DATA); } catch (e) { try { console.warn('[groupement] périmètres :', e && e.message); } catch (x) {} }
+      try { renderOffilog(scope); } catch (e) { try { console.warn('[groupement] Offilog des adhérentes :', e && e.message); } catch (x) {} }
       try { renderPotentiel(scope, DATA); } catch (e) { try { console.warn('[opso] potentiel du catalogue :', e && e.message); } catch (x) {} }   // jamais le reste du tableau de bord cassé
 
       // ---- Le mois : histogramme, une colonne cliquable par mois ----
@@ -679,6 +701,29 @@
         }
         monthPills.forEach(function (p, k) { p.setAttribute('aria-pressed', k === i ? 'true' : 'false'); });
         currentMonth = i;
+        try { majMarge(i); } catch (e) { try { console.warn('[groupement] marge du mois :', e && e.message); } catch (x) {} }
+      }
+      // 27/11/2026 — « Marge pharmacien générée » (venue du Suivi, choix de Will) : même calcul que le Pilotage, ventes du mois choisi.
+      // Elle lit le catalogue complet (bench, sagitta), demandé APRÈS l'ouverture : le chiffre apparaît à son arrivée.
+      var mdlBox = byId('og-mf-mdl-box');
+      function majMarge(i) {
+        if (!mdlBox || !V2.piloMargeGeneree) return;
+        if (V2.dataLoaded && !(V2.dataLoaded('bench') && V2.dataLoaded('sagitta'))) {
+          var ko = V2.protegeEchec && (V2.protegeEchec.bench || V2.protegeEchec.sagitta);
+          if (!ko && !V2._mdlAttente && V2.loadFiles) {
+            V2._mdlAttente = true;
+            V2.loadFiles(['bench', 'sagitta']).then(function () {
+              V2._mdlAttente = false;
+              if (document.body.contains(mdlBox) && currentMonth != null && V2.dataLoaded('bench') && V2.dataLoaded('sagitta')) majMarge(currentMonth);
+            }, function () { V2._mdlAttente = false; });
+          }
+          return;
+        }
+        var mo = DATA.mois[i];
+        var M = V2.piloMargeGeneree((V2.sales || []).filter(function (s) { return s.year === mo.y && s.month === mo.m; }));
+        byId('og-mf-mdl').textContent = euros(M.total);
+        byId('og-mf-mdl-l').textContent = 'marge pharmacien générée · ' + pct1(M.pct) + ' des achats';
+        mdlBox.hidden = false;
       }
       function selectMonth(i) {
         if (i === currentMonth) return;
@@ -1223,6 +1268,65 @@
       + '.pot-n{grid-area:n}.pot-e{grid-area:e}.pot-bar{grid-area:bar;align-self:center}.pot-b{grid-area:b}'
     + '}';
   var _potCharge = false;
+  // 27/11/2026 — « Répartition par périmètre » (venue du Suivi, choix de Will). Mêmes comptes que le bandeau : une adhérente est
+  // cliente si elle a acheté sur la période (total > 0) ; achats HT de la période du bandeau. Aucun périmètre connu (Essentiels) : rien.
+  function perimetresCalc(pharmacies, sales) {
+    var tot = {}, P = {};
+    (sales || []).forEach(function (s) { tot[s.pharmacyId] = (tot[s.pharmacyId] || 0) + (s.mntNetHt || 0); });
+    (pharmacies || []).forEach(function (p) {
+      var per = String(p.perimetre || '').trim() || 'Autre';
+      var o = P[per] || (P[per] = { nom: per, adh: 0, clientes: 0, ca: 0 });
+      o.adh++;
+      if ((tot[p.id] || 0) > 0) { o.clientes++; o.ca += tot[p.id]; }
+    });
+    var L = Object.keys(P).map(function (k) { return P[k]; }).sort(function (a, b) { return (b.ca - a.ca) || (b.adh - a.adh); });
+    return L.some(function (o) { return o.nom !== 'Autre'; }) ? L : [];
+  }
+  function renderPerimetres(scope, DATA) {
+    var el = scope.querySelector ? scope.querySelector('#og-per') : null;
+    if (!el) return;
+    var sec = el.closest ? el.closest('.oa-per') : null;
+    var L = perimetresCalc(V2.pharmacies || [], V2.sales || []);
+    if (!L.length) { if (sec) sec.hidden = true; return; }
+    var h = '<ol class="per-rows">' + L.map(function (o) {
+      var pc = o.adh ? o.clientes / o.adh : 0;
+      return '<li class="per-r"><span class="per-n">' + esc(o.nom) + '</span>'
+        + '<span class="mpm-bar per-bar" aria-hidden="true"><i style="--w:' + Math.max(0.02, pc).toFixed(4) + '"></i></span>'
+        + '<span class="per-c og-num"><b>' + o.clientes + '</b>/' + o.adh + ' clientes</span>'
+        + '<span class="per-p og-num">' + Math.round(pc * 100) + ' %</span>'
+        + '<b class="per-ca og-num">' + euros(o.ca) + '</b></li>';
+    }).join('') + '</ol>'
+      + '<p class="mpm-note">Cliente : adhérente qui a acheté chez Intégral Pharma sur la période. Achats HT, avoirs déduits.</p>';
+    if (el._h !== h) { el._h = h; el.innerHTML = h; }
+    var per = scope.querySelector('#og-per-per'); if (per) per.textContent = DATA.periode ? DATA.periode.charAt(0).toUpperCase() + DATA.periode.slice(1) : '';
+    if (sec) sec.hidden = false;
+  }
+
+  // 27/11/2026 — bloc Offilog des adhérentes (venu du Suivi groupement). Le fichier Offilog (wmlca) n'est pas attendu à
+  // l'ouverture de l'app : il se charge après le premier affichage, puis le bloc se remplit. Un échec de chargement se dit.
+  function renderOffilog(scope) {
+    var el = scope.querySelector ? scope.querySelector('#og-ofa') : null;
+    if (!el) return;
+    var sec = el.closest ? el.closest('.oa-ofa') : null;
+    var charge = !V2.dataLoaded || V2.dataLoaded('wmlca');
+    if (!charge) {
+      if (V2.protegeEchec && V2.protegeEchec.wmlca) { el.innerHTML = '<p class="mpm-note">Le fichier Offilog n\'a pas pu se charger. Rechargez la page pour réessayer.</p>'; return; }
+      if (!V2._ofaAttente && V2.loadFiles) {
+        V2._ofaAttente = true;
+        V2.loadFiles(['wmlca']).then(function () {
+          V2._ofaAttente = false;
+          var r = document.getElementById('v2-root');
+          if (r && r.querySelector('#og-ofa')) renderOffilog(r);
+        }, function () { V2._ofaAttente = false; });
+      }
+      return;
+    }
+    var OFA = offilogAdherentes();
+    if (!OFA.html) { if (sec) sec.hidden = true; return; }   // pas de table Offilog : le bloc n'apparaît pas
+    if (sec) sec.hidden = false;
+    if (el._h !== OFA.html) { el._h = OFA.html; el.innerHTML = OFA.html; }
+    var per = scope.querySelector('#og-ofa-per'); if (per) per.textContent = OFA.periode;
+  }
   function renderPotentiel(scope, DATA) {
     var el = scope.querySelector && scope.querySelector('#og-pot'); if (!el) return;
     var C = V2.opsoCatalogue, R = window.OPSO_ROTATIONS;
