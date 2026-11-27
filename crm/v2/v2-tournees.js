@@ -260,6 +260,43 @@
       renta_mois: r2(C.mediane(V.map(function (c) { return c.tot.renta_mois; }))) } : null;
     return { code: t.code, nom: t.nom, mois: d.mois.slice(), cout: cout, clientes: cl, serie: serie, tot: tot, med: med, fen: fen };
   };
+  // 27/11/2026 (choix de Will) : au téléphone, « La tournée mois par mois » se replie sur une phrase : le meilleur et le plus faible mois COMPLET
+  // de Notre marge (un mois incomplet n'a pas toutes ses ventes : il n'est ni l'un ni l'autre). null s'il n'y a pas deux mois complets différents.
+  C.resumeMois = function (tb, couv) {
+    if (!tb || !Array.isArray(tb.serie)) return null;
+    var c = [];
+    tb.serie.forEach(function (s, i) { if (!(couv && couv[tb.mois[i]])) c.push({ k: tb.mois[i], v: s[1] }); });
+    if (c.length < 2) return null;
+    var h = c[0], b = c[0];
+    c.forEach(function (x) { if (x.v > h.v) h = x; if (x.v < b.v) b = x; });
+    return h === b ? null : { haut: h, bas: b };
+  };
+  // 27/11/2026 (choix de Will) : carte « Sur la route », les arrêts dont les ronds se chevauchent à l'écran sont réunis dans UNE bulle.
+  // pts = [{x, y}] en pixels, dans l'ordre des arrêts ; rayon(indices) = rayon à l'écran d'une marque (rond seul ou bulle) ; deux marques
+  // fusionnent tant que leurs disques se recouvrent de plus de `marge` px, la paire la plus recouverte d'abord. Rend [{ m: [indices], x, y }].
+  C.grouperPoints = function (pts, rayon, marge) {
+    var G = (pts || []).map(function (p, i) { return { x: p.x, y: p.y, m: [i] }; }), mg = marge || 0;
+    for (;;) {
+      var best = null, bd = 0;
+      for (var i = 0; i < G.length; i++) for (var j = i + 1; j < G.length; j++) {
+        var a = G[i], b = G[j], d = Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)), e = d - (rayon(a.m) + rayon(b.m) - mg);
+        if (e < bd) { bd = e; best = [i, j]; }
+      }
+      if (!best) break;
+      var A = G[best[0]], B = G[best[1]], na = A.m.length, nb = B.m.length;
+      G[best[0]] = { x: (A.x * na + B.x * nb) / (na + nb), y: (A.y * na + B.y * nb) / (na + nb), m: A.m.concat(B.m).sort(function (u, v) { return u - v; }) };
+      G.splice(best[1], 1);
+    }
+    return G.sort(function (u, v) { return u.m[0] - v.m[0]; });
+  };
+  // texte d'une bulle : « 3 à 7 » pour des arrêts qui se suivent, « 3 et 9 » pour deux arrêts, sinon « 5 arrêts »
+  C.texteGroupe = function (ns) {
+    var s = (ns || []).slice().sort(function (u, v) { return u - v; }), n = s.length;
+    if (!n) return '';
+    if (n === 1) return String(s[0]);
+    if (n === 2) return s[0] + ' et ' + s[1];
+    return s[n - 1] - s[0] === n - 1 ? s[0] + ' à ' + s[n - 1] : n + ' arrêts';
+  };
   // Clientes « qui commandent souvent pour peu de marge » : plus de commandes par mois ET moins de marge par commande que la médiane.
   C.souventPeu = function (tb) {
     if (!tb || !tb.med) return [];
@@ -578,6 +615,10 @@
       '.trn-pt{width:28px;height:28px;border-radius:50%;border:2px solid #fff;color:#fff;font:700 11px/24px var(--font);text-align:center;box-shadow:0 2px 6px rgba(16,19,28,.3);cursor:pointer}',
       '.trn-pt.est{border-style:dashed}',   // place estimée (CPR) : bord en tirets
       '.trn-pt.sel{box-shadow:0 0 0 3px #10131C,0 2px 8px rgba(16,19,28,.4)}',
+      // bulle des arrêts qui se chevauchent (27/11/2026) : blanche, bord encre, un toucher zoome dessus ; arrêt choisi dedans = bulle encre
+      '.trn-gp{box-sizing:border-box;width:100%;height:28px;padding:0 6px;border-radius:14px;background:#fff;color:#10131C;border:2px solid #10131C;font:800 11px/24px var(--font);text-align:center;white-space:nowrap;box-shadow:0 2px 6px rgba(16,19,28,.3);cursor:pointer}',
+      '.trn-gp.sel{background:#10131C;color:#fff}',
+      '.trn-cache{display:none!important}',
       '.trn-lo{width:24px;height:24px;margin:1px;background:#fff;border:2px solid var(--ip-blue);transform:rotate(45deg);border-radius:4px;box-shadow:0 2px 6px rgba(0,52,160,.35);display:flex;align-items:center;justify-content:center}',
       '.trn-lo span{transform:rotate(-45deg);font:700 11px/1 var(--font);color:var(--ip-blue)}',
       '.trn-err{max-width:560px;margin:56px auto;padding:28px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2)}',
@@ -885,15 +926,15 @@
     }
     h += '<section class="trn-tiles" aria-label="Totaux de la tournée">' + tuiles(tb) + '</section>' +
       '<div class="trn-g2"><section class="trn-card" aria-labelledby="trn-h-mois"><div class="trn-ch"><h2 id="trn-h-mois">La tournée mois par mois</h2>' +
-        '<span class="trn-seg" role="group" aria-label="Mesure du graphique" id="trn-seg"></span></div><p class="trn-sub" id="trn-sub-mois"></p>' +
-        '<div class="trn-chart" id="trn-ch-mois"></div><div class="trn-lg" id="trn-lg-mois"></div><div class="trn-scr"><table class="trn-mt" id="trn-mt"></table></div></section>' +
+        '<span class="trn-seg" role="group" aria-label="Mesure du graphique" id="trn-seg"></span></div><div id="trn-pli-mois-r"></div><div id="trn-pli-mois"><p class="trn-sub" id="trn-sub-mois"></p>' +
+        '<div class="trn-chart" id="trn-ch-mois"></div><div class="trn-lg" id="trn-lg-mois"></div><div class="trn-scr"><table class="trn-mt" id="trn-mt"></table></div></div></section>' +
       '<section class="trn-card" aria-labelledby="trn-h-fam"><h2 id="trn-h-fam">Répartition par famille</h2><p class="trn-sub">Part de Notre marge de la tournée, par famille de produits, ' + esc(S.d.periode || '') + '.</p><div id="trn-fams"></div></section></div>' +
       '<div class="trn-g3"><section class="trn-card" aria-labelledby="trn-h-renta"><h2 id="trn-h-renta">Où part la rentabilité</h2>' +
         '<p class="trn-sub">Rentabilité par mois de chaque cliente (Notre marge − livraisons, sur les mois où elle a été livrée). Pertes à gauche du zéro, en rouge ; gains à droite. Touchez une barre pour voir la cliente.</p><div class="trn-chart" id="trn-ch-renta"></div></section>' +
       '<section class="trn-card" aria-labelledby="trn-h-nuage"><h2 id="trn-h-nuage">Commandes par mois × marge par commande</h2>' +
-        '<p class="trn-sub">Un point = une cliente. Les lignes pointillées sont les médianes de la tournée. Touchez un point pour voir la cliente.</p><div class="trn-chart" id="trn-ch-nuage"></div>' +
-        '<div class="trn-lg"><span><i class="b"></i>Cliente</span><span><i class="z"></i>Commandent souvent, pour peu de marge (plus de commandes par mois et moins de marge par commande que la médiane)</span></div>' +
-        '<p class="trn-quad" id="trn-quad"></p><div class="trn-chip" id="trn-chip" aria-live="polite"></div></section></div>' +
+        '<div id="trn-pli-nuage"><p class="trn-sub">Un point = une cliente. Les lignes pointillées sont les médianes de la tournée. Touchez un point pour voir la cliente.</p><div class="trn-chart" id="trn-ch-nuage"></div>' +
+        '<div class="trn-lg"><span><i class="b"></i>Cliente</span><span><i class="z"></i>Commandent souvent, pour peu de marge (plus de commandes par mois et moins de marge par commande que la médiane)</span></div></div>' +
+        '<p class="trn-quad" id="trn-quad"></p><div id="trn-pli-nuage-r"></div><div class="trn-chip" id="trn-chip" aria-live="polite"></div></section></div>' +
       '<section class="trn-card" aria-labelledby="trn-h-route"><h2 id="trn-h-route">Sur la route</h2><p class="trn-sub">Carte de la tournée (couleur = rentabilité par mois de la cliente), prospects à voir en priorité et clientes à faire grossir. Touchez une cliente pour la voir.' + (tactile() ? ' Deux doigts pour déplacer ou zoomer la carte.' : '') + '</p><div class="trn-route" id="trn-route"></div></section>' +
       '<div class="trn-g3"><section class="trn-card" aria-labelledby="trn-h-sim" id="trn-sim"></section><section class="trn-card" aria-labelledby="trn-h-cmp" id="trn-cmp"></section></div>' +
       '<section class="trn-card" aria-labelledby="trn-h-liste" id="trn-liste-c"><h2 id="trn-h-liste">Les clientes de la tournée</h2>' +
@@ -1177,14 +1218,35 @@
       var g = L.layerGroup().addTo(m);
       var line = L.polyline(t.trace, { color: '#0050E6', weight: 4, opacity: 1 }).addTo(g);
       if (D && D.lat != null) L.circleMarker([D.lat, D.lng], { radius: 9, color: '#fff', weight: 3, fillColor: '#10131C', fillOpacity: 1 }).bindTooltip('Dépôt · ' + esc(D.nom), { direction: 'top' }).addTo(g);
+      var tac = tactile(), arr = [], gA = L.layerGroup().addTo(g), gB = L.layerGroup().addTo(g);
       t.arrets.forEach(function (a) {
         var pid = String(a.id);
-        var z = tactile() ? 44 : 28;   // au téléphone, la zone touchable fait 44 px autour du rond de 28 px
-        var ic = L.divIcon({ className: 'trn-ic', iconSize: [z, z], iconAnchor: [z / 2, z / 2], html: '<div class="trn-pt' + (pid === S.pid ? ' sel' : '') + (a.est ? ' est' : '') + '" data-p="' + esc(pid) + '" style="background:' + COUL[a.statut] + (z > 28 ? ';margin:' + (z - 28) / 2 + 'px' : '') + '">' + a.n + '</div>' });
-        L.marker([a.lat, a.lng], { icon: ic, zIndexOffset: 100, keyboard: true, title: C.num(a) + ' · ' + joli(a.nom) }).addTo(g)
+        var z = tac ? 44 : 28;   // au téléphone, la zone touchable fait 44 px autour du rond de 28 px
+        var ic = L.divIcon({ className: 'trn-ic', iconSize: [z, z], iconAnchor: [z / 2, z / 2], html: '<div class="trn-pt' + (a.est ? ' est' : '') + '" data-p="' + esc(pid) + '" style="background:' + COUL[a.statut] + (z > 28 ? ';margin:' + (z - 28) / 2 + 'px' : '') + '">' + a.n + '</div>' });
+        arr.push({ a: a, pid: pid, mk: L.marker([a.lat, a.lng], { icon: ic, zIndexOffset: 100, keyboard: true, title: C.num(a) + ' · ' + joli(a.nom) })
           .bindTooltip('<b>' + C.num(a) + ' · ' + esc(joli(a.nom)) + '</b><br>' + esc(joli(a.ville)) + (a.renta_mois != null ? '<br>' + eurF(a.renta_mois) + ' par mois' : '<br>Sans commande'), { direction: 'top', offset: [0, -10] })
-          .on('click', function () { choisir(pid); });
+          .on('click', function () { choisir(pid); }) });
       });
+      // 27/11/2026 (choix de Will) : les arrêts dont les ronds se chevauchent à ce zoom sont réunis dans une bulle « 3 à 7 » ; un toucher zoome
+      // dessus et les numéros se séparent. Recalculé à chaque zoom ; au zoom 17 et plus, tous les arrêts s'affichent seuls.
+      var texteG = function (mm) { return C.texteGroupe(mm.map(function (i) { return arr[i].a.n; })); };
+      var largG = function (mm) { return Math.max(tac ? 44 : 36, Math.round(20 + texteG(mm).length * 6.6)); };
+      var regrouper = function () {
+        gA.clearLayers(); gB.clearLayers();
+        var G = m.getZoom() >= 17 ? arr.map(function (x, i) { return { m: [i] }; })
+          : C.grouperPoints(arr.map(function (x) { return m.latLngToLayerPoint([x.a.lat, x.a.lng]); }), function (mm) { return mm.length > 1 ? largG(mm) / 2 : 14; }, 4);
+        G.forEach(function (gr) {
+          if (gr.m.length === 1) { gA.addLayer(arr[gr.m[0]].mk); return; }
+          var xs = gr.m.map(function (i) { return arr[i]; }), lab = texteG(gr.m), w = largG(gr.m), hz = tac ? 44 : 28;
+          var est = xs.some(function (x) { return x.a.est; }) ? '≈ ' : '';
+          var ic = L.divIcon({ className: 'trn-ic', iconSize: [w, hz], iconAnchor: [w / 2, hz / 2], html: '<div class="trn-gp" data-g="' + esc(xs.map(function (x) { return x.pid; }).join(' ')) + '"' + (hz > 28 ? ' style="margin-top:' + (hz - 28) / 2 + 'px"' : '') + '>' + est + esc(lab) + '</div>' });
+          L.marker(m.layerPointToLatLng(L.point(gr.x, gr.y)), { icon: ic, zIndexOffset: 200, keyboard: true, title: 'Arrêts ' + lab + ' : zoomer pour les voir' }).addTo(gB)
+            .bindTooltip(xs.slice(0, 8).map(function (x) { return '<b>' + C.num(x.a) + '</b> · ' + esc(joli(x.a.nom)); }).join('<br>') + (xs.length > 8 ? '<br>et ' + (xs.length - 8) + ' autres' : ''), { direction: 'top', offset: [0, -10] })
+            .on('click', function () { try { m.fitBounds(L.latLngBounds(xs.map(function (x) { return [x.a.lat, x.a.lng]; })).pad(0.35), { maxZoom: 17, animate: false }); } catch (e) {} });   // sans animation, comme les autres cadrages de cette carte
+        });
+        surligner();
+      };
+      m.on('zoomend', regrouper);
       pr.forEach(function (p, i) {
         var l = String.fromCharCode(65 + i), n = nomPF(p.cip);
         var zp = tactile() ? 44 : 26;   // au téléphone, zone touchable de 44 px autour du losange
@@ -1198,7 +1260,7 @@
       try { if (mobile() && t.arrets.length > 1) bArr = L.latLngBounds(t.arrets.map(function (a) { return [a.lat, a.lng]; })); } catch (e) { bArr = null; }
       var fit = function () { try { m.invalidateSize(); m.fitBounds((bArr || line.getBounds()).pad(bArr ? 0.04 : 0.08), { animate: false }); } catch (e) {} };
       S.map = m; S.cur = { fit: fit };
-      fit(); setTimeout(fit, 0); setTimeout(function () { if (S.map === m) fit(); }, 400);
+      fit(); regrouper(); setTimeout(fit, 0); setTimeout(function () { if (S.map === m) fit(); }, 400);
     });
   }
 
@@ -1317,13 +1379,32 @@
       (rs.length ? '<details><summary>Réserves de prix, mois par mois</summary><ul>' + rs.map(function (k) { return '<li><b>' + esc(cap(C.moisLong(k))) + '</b> : ' + esc(R[k]) + '</li>'; }).join('') + '</ul></details>' : '') + '</footer>';
   }
 
-  function graphiques() { chMois(); chRenta(); chNuage(); surligner(); }
+  function graphiques() { plis(); chMois(); chRenta(); chNuage(); surligner(); }
+  // 27/11/2026 (choix de Will) : au téléphone, « La tournée mois par mois » et « Commandes × marge » se replient sur une phrase et un bouton,
+  // comme « Et si » et « Comparer » ; à l'ordinateur, rien ne change. Le détail de la cliente choisie (#trn-chip) reste toujours visible.
+  function plie(k) { return mobile() && !S.ouvert[k]; }
+  function plis() {
+    ['mois', 'nuage'].forEach(function (k) {
+      var p = plie(k), z = document.getElementById('trn-pli-' + k), r = document.getElementById('trn-pli-' + k + '-r');
+      if (z) z.classList.toggle('trn-cache', p);
+      if (k === 'mois') { var sg = document.getElementById('trn-seg'); if (sg) sg.classList.toggle('trn-cache', p); }
+      if (r) r.innerHTML = p ? resumePli(k) : '';
+    });
+  }
+  function resumePli(k) {
+    if (k === 'nuage') return '<div class="trn-act"><button type="button" class="trn-lien" data-act="ouvrir-nuage">Voir le graphique</button></div>';   // la phrase = #trn-quad, toujours affichée
+    var R = C.resumeMois(S.tb, S.d.couv);
+    return (R ? '<p class="trn-res1">Notre marge : meilleur mois complet <b>' + esc(C.moisLong(R.haut.k)) + '</b> (' + eurF(R.haut.v) + '), le plus faible <b>' + esc(C.moisLong(R.bas.k)) + '</b> (' + eurF(R.bas.v) + ').</p>' : '') +
+      '<div class="trn-act"><button type="button" class="trn-lien" data-act="ouvrir-mois">Voir le graphique mois par mois</button></div>';
+  }
   function surligner() {
     [].forEach.call(document.querySelectorAll('#trn-page [data-p]'), function (e) {
       var on = e.getAttribute('data-p') === S.pid;
       e.classList.toggle('sel', on);
       if (e.tagName === 'TR') e.setAttribute('aria-selected', String(on));
     });
+    // bulle de la carte qui contient la cliente choisie
+    [].forEach.call(document.querySelectorAll('#trn-page [data-g]'), function (e) { e.classList.toggle('sel', !!S.pid && (' ' + e.getAttribute('data-g') + ' ').indexOf(' ' + S.pid + ' ') >= 0); });
   }
   function choisir(pid) {
     S.pid = (pid && S.pid !== pid) ? pid : null;
@@ -1356,6 +1437,8 @@
         }
         else if (a === 'ouvrir-sim') { S.ouvert.sim = true; simCarte(); var ic2 = document.getElementById('trn-sim-cout'); if (ic2 && !tactile()) ic2.focus(); }
         else if (a === 'ouvrir-cmp') { S.ouvert.cmp = true; cmpCarte(); }
+        else if (a === 'ouvrir-mois') { S.ouvert.mois = true; plis(); chMois(); }
+        else if (a === 'ouvrir-nuage') { S.ouvert.nuage = true; plis(); chNuage(); surligner(); }
         else if (a === 'sim-cout') { S.simCout = null; var ic = document.getElementById('trn-sim-cout'); if (ic) ic.value = String(S.tb ? S.tb.cout : ''); simResultat(); }
         else if (a === 'voir-ligne') {
           var r = document.querySelector('#trn-lst tr[data-p="' + (glob.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');

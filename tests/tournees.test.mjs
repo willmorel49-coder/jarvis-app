@@ -814,3 +814,40 @@ test('livrablesSans : seulement les codes décidés, nom et distance depuis la b
   const Vrai = require('../crm/v2/v2-tournees-partage.js');
   assert.deepEqual(C.livrablesSans('SOP', { p: [] }, Vrai, {}).liste.map(o => o.cip), ['2080814', '2016822']);
 });
+
+// 27/11/2026 (choix de Will) : phrase du graphique mois par mois replié au téléphone, et bulles des arrêts qui se chevauchent sur la carte
+test('resumeMois : meilleur et plus faible mois COMPLET de Notre marge, mois incomplet écarté', () => {
+  const tb = { mois: ['2026-01', '2026-02', '2026-03', '2026-04'], serie: [[0, 500, 0, 0, 0], [0, 900, 0, 0, 0], [0, 300, 0, 0, 0], [0, 50, 0, 0, 0]] };
+  const r = C.resumeMois(tb, { '2026-04': 0.4 });
+  assert.equal(r.haut.k, '2026-02'); assert.equal(r.haut.v, 900);
+  assert.equal(r.bas.k, '2026-03'); assert.equal(r.bas.v, 300);   // avril (50) est incomplet : ni meilleur ni plus faible
+  assert.equal(C.resumeMois(tb, { '2026-01': 1, '2026-02': 1, '2026-03': 1 }), null);   // un seul mois complet
+  assert.equal(C.resumeMois({ mois: ['2026-01', '2026-02'], serie: [[0, 7, 0, 0, 0], [0, 7, 0, 0, 0]] }, null), null);   // aucun écart
+  assert.equal(C.resumeMois(null), null);
+});
+test('grouperPoints : les ronds qui se recouvrent fusionnent, les autres restent seuls', () => {
+  const r = (mm) => (mm.length > 1 ? 20 : 14);
+  // 0 et 1 à 10 px (recouvrement 18 > 4) ; 2 à 200 px ; 3 à 27 px de 2 (recouvrement 1 < 4 : reste seul)
+  const G = C.grouperPoints([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 200, y: 0 }, { x: 227, y: 0 }], r, 4);
+  assert.deepEqual(G.map((g) => g.m), [[0, 1], [2], [3]]);
+  assert.equal(G[0].x, 5);   // bulle au centre de ses arrêts
+  // en chaîne : la bulle (rayon 20) avale le voisin qu'un rond seul n'aurait pas touché
+  assert.deepEqual(C.grouperPoints([{ x: 0, y: 0 }, { x: 8, y: 0 }, { x: 32, y: 0 }], r, 4).map((g) => g.m), [[0, 1, 2]]);
+  assert.deepEqual(C.grouperPoints([], r, 4), []);
+  // aucune paire de marques rendues ne se recouvre de plus de la marge
+  const pts = Array.from({ length: 30 }, (_, i) => ({ x: (i * 37) % 120, y: (i * 53) % 90 }));
+  const H = C.grouperPoints(pts, r, 4);
+  for (let i = 0; i < H.length; i++) for (let j = i + 1; j < H.length; j++) {
+    const d = Math.hypot(H[i].x - H[j].x, H[i].y - H[j].y);
+    assert.ok(d >= r(H[i].m) + r(H[j].m) - 4, 'marques ' + i + ' et ' + j + ' superposées');
+  }
+  assert.equal(H.reduce((s, g) => s + g.m.length, 0), 30);   // aucun arrêt perdu
+});
+test('texteGroupe : « 3 à 7 », « 3 et 9 », « 4 arrêts »', () => {
+  assert.equal(C.texteGroupe([5, 3, 4, 7, 6]), '3 à 7');
+  assert.equal(C.texteGroupe([4, 3]), '3 et 4');
+  assert.equal(C.texteGroupe([9, 3]), '3 et 9');
+  assert.equal(C.texteGroupe([2, 5, 9, 11]), '4 arrêts');
+  assert.equal(C.texteGroupe([12]), '12');
+  assert.equal(C.texteGroupe([]), '');
+});
