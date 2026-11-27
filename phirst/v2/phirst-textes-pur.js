@@ -25,6 +25,9 @@
     { cle: 'ehpad', raison: 'EHPAD voisin', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. Un EHPAD est installé près de votre officine : Yann installe des robots PDA, qui préparent les piluliers. Cela peut vous ouvrir ce marché. Avez-vous deux minutes ?' },
     { cle: 'pda', raison: 'Marché public PDA', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. Un marché public de préparation des doses à administrer vient d’être publié près de chez vous. Yann équipe des officines en robots PDA : il peut vous dire ce qu’il faut prévoir.' },
     { cle: 'ars', raison: 'Transfert autorisé par l’ARS', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. L’ARS vient d’autoriser le transfert de votre officine : Yann conçoit l’agencement des nouveaux locaux et suit le chantier. Avez-vous deux minutes ?' },
+    /* 27/11/2026 — les lignes repérées au FINESS (motif « ars ») : la pharmacie a DÉJÀ ouvert, d'où deux phrases à part (choix cliqué de Will), voir clePhrase. */
+    { cle: 'finess_ouverture', raison: 'Transfert ou création repérés au FINESS', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. Votre officine a ouvert récemment à cette adresse : comment se passe l’installation ? Après une ouverture, Yann aide souvent à revoir un rayon, le comptoir ou à prévoir un robot. Avez-vous deux minutes ?' },
+    { cle: 'finess_regroupement', raison: 'Regroupement repéré au FINESS', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. Vos deux officines viennent de se regrouper : comment se passe l’installation ? Deux équipes et deux stocks dans un même lieu, c’est souvent le moment de revoir l’agencement ou de prévoir un robot. Avez-vous deux minutes ?' },
     { cle: 'client', raison: 'Client qui revient', propo: 'Bonjour, ici l’équipe de Yann, l’agenceur avec qui vous avez déjà travaillé. Nous prenons de vos nouvelles : un nouveau projet se dessine-t-il dans votre officine ?' },
     { cle: 'recommande', raison: 'Recommandé par un confrère', propo: 'Bonjour, un confrère de votre région nous a recommandés auprès de vous. Yann est agenceur de pharmacies et a équipé son officine. Puis-je vous présenter ce qu’il a fait ?' },
     { cle: 'relance', raison: 'Relance promise', propo: 'Bonjour, je vous rappelle comme convenu, de la part de Yann. Avez-vous eu le temps d’y réfléchir ? Je suis là pour fixer un moment qui vous arrange.' },
@@ -60,6 +63,15 @@
     var r = raisonDe(cle); if (!r) return null;
     var par = phrases && !Array.isArray(phrases) ? phrases : phrasesParCle(phrases), t = par && typeof par[r.cle] === 'string' ? par[r.cle].trim() : '';
     return t ? { cle: r.cle, raison: r.raison, texte: t, source: 'yann' } : { cle: r.cle, raison: r.raison, texte: r.propo, source: 'proposition' };
+  }
+  /* 27/11/2026 — la clé de la phrase d'une ligne de la liste. Les lignes que le robot a repérées au FINESS (~/phirst-ligne/ligne-l4.mjs, ETIQUETTE_FINESS)
+     ont le motif « ars », mais la pharmacie a DÉJÀ ouvert à sa nouvelle adresse : « L'ARS vient d'autoriser le transfert » y serait faux.
+     Leur phrase se choisit donc par l'étiquette ; toute autre ligne garde celle de son motif. */
+  function clePhrase(r) {
+    var m = r ? r.motif : null, e = r && typeof r.etiquette === 'string' ? P.norm(r.etiquette) : '';
+    if (m === 'ars' && /^(transfert repere|creation reperee) au finess$/.test(e)) return 'finess_ouverture';
+    if (m === 'ars' && e === 'regroupement repere au finess') return 'finess_regroupement';
+    return m;
   }
   /* La mention sous « Pour commencer ». `yann` : celui qui regarde est Yann (le lien vers Réglages n'a de sens que pour lui). */
   function mentionPhrase(source, yann) {
@@ -215,7 +227,7 @@
     return 'Votre confrère ' + de(ref.ville) + ', à ' + km + ' km, a travaillé avec Yann : ' + pose + (ref.an ? ' en ' + ref.an : '') + '.' + fin;
   }
 
-  return { LONG_MAX: LONG_MAX, RAISONS: RAISONS, A_VENIR: A_VENIR, MAILS: MAILS, REPONSES_DEPART: REPONSES_DEPART, raisonDe: raisonDe, phrasesParCle: phrasesParCle, phraseDe: phraseDe,
+  return { LONG_MAX: LONG_MAX, RAISONS: RAISONS, A_VENIR: A_VENIR, MAILS: MAILS, REPONSES_DEPART: REPONSES_DEPART, raisonDe: raisonDe, phrasesParCle: phrasesParCle, phraseDe: phraseDe, clePhrase: clePhrase,
     mentionPhrase: mentionPhrase, modifiee: modifiee, secondes: secondes, texteValide: texteValide,
     comptesDuMois: comptesDuMois, foisDuMois: foisDuMois, reponsesTriees: reponsesTriees, cleDe: cleDe, objectionNette: objectionNette, validerReponse: validerReponse, ditsEnTexte: ditsEnTexte,
     departementDe: departementDe, villeAvecDep: villeAvecDep, anneeValide: anneeValide, validerReference: validerReference, choisirPosition: choisirPosition, ligneReference: ligneReference,

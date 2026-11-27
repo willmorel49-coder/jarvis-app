@@ -403,7 +403,7 @@
      de départ de phirst-textes-pur.js, marquées comme telles. ── */
   function lienReglages() { return S.telepro ? '' : ' · <button type="button" class="pt-lien" data-vers="reglages">Réglages</button>'; }
   function blocPhrase(r) {
-    var ph = T.phraseDe(r.motif, S.textes ? S.textes.phrases : {});
+    var ph = T.phraseDe(T.clePhrase(r), S.textes ? S.textes.phrases : {});   // 27/11/2026 : une ligne repérée au FINESS a sa propre phrase
     if (!ph) return '';
     var m = T.mentionPhrase(ph.source, !S.telepro), txt = m.texte + (S.textes ? '' : ' · ses phrases n’ont pas pu être lues');
     return '<section class="pt-carte" aria-label="Pour commencer"><h3 class="pt-h">Pour commencer<span class="pt-mention">' + esc(txt) + (m.lienReglages ? lienReglages() : '') + '</span></h3>' +
