@@ -209,7 +209,7 @@
     try { m.attributionControl.setPrefix(false); } catch (e) {}
     if (V2.fondCarte) V2.fondCarte(m);
     m.setView([47.3, -1.75], 8);
-    M = { map: m, canvas: L.canvas({ padding: 0.3 }), host: host, pol: {}, pas: {}, mar: {}, ann: {}, g: { traces: L.layerGroup(), clientes: L.layerGroup(), prospects: L.layerGroup(), anneaux: L.layerGroup(), depot: L.layerGroup() } };
+    M = { map: m, canvas: L.canvas({ padding: 0.3 }), host: host, pol: {}, pas: {}, pasA: {}, mar: {}, ann: {}, g: { traces: L.layerGroup(), clientes: L.layerGroup(), bulles: L.layerGroup(), prospects: L.layerGroup(), anneaux: L.layerGroup(), depot: L.layerGroup() } };
     MOD.codes.forEach(function (code) {
       var t = d.tournees[code], tr = t.trace || [], col = couleur(code);
       if (tr.length > 1) {
@@ -225,6 +225,7 @@
         mk.bindTooltip('<b>' + esc(joli(a.nom)) + '</b><span>N° ' + a.n + ' · ' + esc(joli(a.ville)) + '</span>' + (gA ? '<span>Adhérente ' + esc(gA) + '</span>' : '') + '<em>' + esc(tLbl(code)) + (a.renta_mois != null ? ' · rentabilité ' + esc(TR().eur(a.renta_mois)) + ' par mois' : '') + '</em>', { direction: 'top', offset: [0, -10], className: 'cn-tip' });
         mk.on('click', function () { K.tournee(code); K.arret(a.id, true); });
         (M.pas[code] = M.pas[code] || []).push(mk);
+        (M.pasA[code] = M.pasA[code] || []).push({ a: a, mk: mk });
         M.g.clientes.addLayer(mk);
       });
     });
@@ -240,10 +241,9 @@
       mk.on('click', function () { K.choisir(p.cip, true); });
       M.mar[p.cip] = mk;
     });
-    [M.g.traces, M.g.clientes, M.g.depot].forEach(function (g) { g.addTo(m); });
+    [M.g.traces, M.g.clientes, M.g.bulles, M.g.depot].forEach(function (g) { g.addTo(m); });
     appliquerVue(); appliquerRayon();
-    var zz = function () { var el = m.getContainer(); if (el) el.classList.toggle('tcm-petit', m.getZoom() < 10); };
-    m.on('zoomend', zz); zz();
+    m.on('zoomend', function () { petitsPoints(); regrouper(); });
     if (S.vueCarte) { try { m.invalidateSize({ animate: false }); m.setView(S.vueCarte.c, S.vueCarte.z, { animate: false }); } catch (e2) {} }
     else cadrer(S.tourneeSel);
     if (!K._resize) { K._resize = true; glob.addEventListener('resize', function () { if (M && M.map && document.getElementById('tcm-map')) { try { M.map.invalidateSize(); } catch (e) {} } }); }
@@ -268,6 +268,32 @@
     Object.keys(M.pol).forEach(function (k) {
       var sel = S.tourneeSel === k, atten = !!S.tourneeSel && !sel;
       M.pol[k].setStyle({ opacity: atten ? 0.22 : 0.92, weight: sel ? 6 : 4 });
+    });
+    petitsPoints(); regrouper();
+  }
+  // Vue de toutes les tournées : sous le zoom 10, de petits points sans numéro. Une tournée choisie : ses numéros restent lisibles à tout zoom.
+  function petitsPoints() { var el = M && M.map.getContainer(); if (el) el.classList.toggle('tcm-petit', M.map.getZoom() < 10 && !S.tourneeSel); }
+  // 27/11/2026 au soir (choix de Will) : une tournée choisie, ses arrêts qui se chevauchent à l'écran sont réunis dans une bulle « 3 à 7 », comme sur la carte
+  // « Sur la route » du tableau de bord (mêmes fonctions : V2.tournees.grouperPoints / texteGroupe) ; un toucher zoome dessus et les numéros se séparent.
+  // Recalculé à chaque zoom ; au zoom 17 et plus, tous les arrêts s'affichent seuls. La vue de toutes les tournées n'a pas de bulles.
+  function regrouper() {
+    if (!M) return;
+    M.g.bulles.clearLayers();
+    var T = V2.tournees, code = S.tourneeSel, xs = (code && M.pasA[code]) || [];
+    if (!xs.length || !T || !T.grouperPoints || !T.texteGroupe) return;
+    var L = glob.L, m = M.map, tac = X.tactile();
+    var texteG = function (mm) { return T.texteGroupe(mm.map(function (i) { return xs[i].a.n; })); };
+    var largG = function (mm) { return Math.max(tac ? 44 : 36, Math.round(20 + texteG(mm).length * 6.6)); };
+    var G = m.getZoom() >= 17 ? xs.map(function (x, i) { return { m: [i] }; })
+      : T.grouperPoints(xs.map(function (x) { return m.latLngToLayerPoint([x.a.lat, x.a.lng]); }), function (mm) { return mm.length > 1 ? largG(mm) / 2 : 12; }, 4);
+    G.forEach(function (gr) {
+      if (gr.m.length === 1) { var mk = xs[gr.m[0]].mk; if (!M.g.clientes.hasLayer(mk)) M.g.clientes.addLayer(mk); return; }
+      var ys = gr.m.map(function (i) { return xs[i]; }), lab = texteG(gr.m), w = largG(gr.m), hz = tac ? 44 : 28;   // au téléphone, zone touchable de 44 px
+      ys.forEach(function (y) { if (M.g.clientes.hasLayer(y.mk)) M.g.clientes.removeLayer(y.mk); });
+      var ic = L.divIcon({ className: 'tcm-gp-w', iconSize: [w, hz], iconAnchor: [w / 2, hz / 2], html: '<div class="tcm-gp" data-g="' + esc(ys.map(function (y) { return cleCip(y.a.id); }).join(' ')) + '"' + (hz > 28 ? ' style="margin-top:' + (hz - 28) / 2 + 'px"' : '') + '>' + esc(lab) + '</div>' });
+      L.marker(m.layerPointToLatLng(L.point(gr.x, gr.y)), { icon: ic, zIndexOffset: 600, keyboard: true, title: 'Arrêts ' + lab + ' : zoomer pour les voir' }).addTo(M.g.bulles)
+        .bindTooltip(ys.slice(0, 8).map(function (y) { return '<b>N° ' + y.a.n + '</b> · ' + esc(joli(y.a.nom)); }).join('<br>') + (ys.length > 8 ? '<br>et ' + (ys.length - 8) + ' autres' : ''), { direction: 'top', offset: [0, -10], className: 'cn-tip' })
+        .on('click', function () { try { m.fitBounds(L.latLngBounds(ys.map(function (y) { return [y.a.lat, y.a.lng]; })).pad(0.35), { maxZoom: 17, animate: false }); } catch (e) {} });   // sans animation, comme les autres cadrages de cette carte
     });
   }
   function appliquerRayon() {
@@ -670,6 +696,8 @@
       '.tcm-gtag{grid-column:2;justify-self:start;display:inline-block;margin-top:2px;padding:2px 8px;border-radius:999px;background:#10131C;color:#fff;font-size:11.5px;font-weight:700;line-height:1.4}',
       '.tcm-num{box-sizing:border-box;width:24px;height:24px;border-radius:50%;border:2px solid #fff;color:#fff;font-size:12px;font-weight:800;line-height:20px;text-align:center;box-shadow:0 1px 5px rgba(16,19,28,.45);font-variant-numeric:tabular-nums}',
       '.tcm-petit .tcm-num{transform:scale(.5);font-size:0}',
+      '.tcm-gp-w{background:none;border:none}',
+      '.tcm-gp{box-sizing:border-box;width:100%;height:28px;padding:0 6px;border-radius:14px;background:#fff;color:#10131C;border:2px solid #10131C;font:800 11px/24px var(--font);text-align:center;white-space:nowrap;box-shadow:0 2px 6px rgba(16,19,28,.3);cursor:pointer}',
       '.tcm-num-l{display:inline-block;grid-row:1/4;width:28px;height:28px;line-height:24px;font-size:13px;flex:none}',
       '.tcm-depot{box-sizing:border-box;width:64px;height:24px;line-height:24px;text-align:center;font-size:11.5px;font-weight:800;color:#fff;background:#10131C;border:2px solid #fff;border-radius:6px;box-shadow:0 3px 10px rgba(16,19,28,.4)}',
       '@media(max-width:760px){',
