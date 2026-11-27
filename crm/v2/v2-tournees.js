@@ -316,6 +316,7 @@
   //    (d.couv, lu dans le fichier) sont laissés de côté et nommés à l'écran. « Par mois » compte ici TOUS les mois de la fenêtre, même sans
   //    commande (une cliente qui ne commande plus doit apparaître en baisse). Hausse ou baisse = au moins 10 % d'écart ; sinon stable.
   C.SEUIL_TENDANCE = 10;
+  C.PCT_LISIBLE = 300;   // au-delà (marge plus que quadruplée), la tendance s'affiche en euros par mois
   C.fenetreTendance = function (mois, couv) {
     var ok = [], exclus = [];
     (mois || []).forEach(function (k, i) { if (couv && couv[k]) exclus.push(k); else ok.push(i); });
@@ -343,7 +344,9 @@
   C.texteTendance = function (t) {
     if (!t || t.sens === 'aucune') return '—';
     if (t.sens === 'nouvelle') return 'Nouvelle';
-    if (t.pct != null) return (t.pct > 0 ? '+' : '') + C.nf(t.pct, 0) + NB + '%';
+    // 27/11/2026 (audit) : « +6 809 % » (marge d'avant presque nulle) ne se lit pas ; au-delà de C.PCT_LISIBLE, l'écart en euros par mois.
+    // Le calcul (pct, sens, tri) ne change pas : seul l'affichage.
+    if (t.pct != null && !(t.pct > C.PCT_LISIBLE && typeof t.ecart === 'number')) return (t.pct > 0 ? '+' : '') + C.nf(t.pct, 0) + NB + '%';
     return C.eurSigne(t.ecart, 0) + NB + 'par mois';
   };
   C.moisListe = function (mois, ix) {   // « juin, juillet et octobre »
@@ -486,7 +489,7 @@
   var LCOLS = [['ca', 'CA', eurF], ['marge', 'Notre marge', eurF], ['taux', 'Taux de marge', C.pct], ['cmd', 'Commandes', C.ent], ['cmd_mois', 'Commandes par mois', C.dec1],
     ['marge_cmd', 'Marge par commande', eurF], ['cout', 'Coût des livraisons', eurF], ['renta', 'Rentabilité', eurF], ['renta_mois', 'Rentabilité par mois', eurF]];
   var S = { brut: null, vues: {}, d: null, A: null, erreur: '', charge: false, etab: 'OPS', open: null, sortK: 'rentabilite_mois', sortDir: -1, map: null, cur: null, pf: null, root: null,
-    vue: 'classement', tb: null, tbCode: null, mes: 'ca', pid: null, lk: 'n', ld: 1, rz: false, larg: 0, marq: {} };
+    vue: 'classement', tb: null, tbCode: null, plus: {}, ouvert: {}, mes: 'ca', pid: null, lk: 'n', ld: 1, rz: false, larg: 0, marq: {} };
 
   function interdit() {
     var b = glob.V2_BRAND, u = V2.user;
@@ -532,9 +535,11 @@
       '.trn-pill.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}',
       '.trn-pill.on:not(.sel){background:var(--card);border-color:var(--ip-blue);color:var(--ip-blue);box-shadow:none}',   // 27/11/2026 : deux établissements actifs (OPS, CPR) : seul celui qu'on regarde est plein
       '.trn-pill.off{background:var(--surf-sunken);color:var(--muted);border-style:dashed}',
-      '.trn-pill.sel:not(.on){border-style:solid;border-color:var(--ip-blue);color:var(--ip-blue)}',
+      // 27/11/2026 (audit) : un établissement « à recevoir » choisi (HP, SOP…) prenait l'allure d'OPS ou CPR NON choisis ; choisi = plein, comme eux
+      '.trn-pill.sel:not(.on){border-style:solid;border-color:var(--ip-blue);background:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}',
       '.trn-pill .soft{font-weight:500;font-size:12px;color:var(--muted)}',
-      '.trn-pill.on .soft{color:#fff}',
+      '.trn-pill.on .soft,.trn-pill.sel .soft{color:#fff}',
+      '.trn-pill.on:not(.sel) .soft{color:var(--muted)}',
       '.trn-attente{max-width:560px;margin:56px auto;padding:32px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2)}',
       '.trn-attente-t{font-size:22px;font-weight:700;margin-bottom:8px}',
       '.trn-attente p{color:var(--muted);margin:12px 0 0}',
@@ -662,6 +667,9 @@
       '.trn-btn{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap-min);padding:0 18px;border-radius:var(--r-pill);background:var(--ip-blue);color:#fff;font:700 13px var(--font);box-shadow:var(--sh-blue);border:0;cursor:pointer}',
       '.trn-btn.b2{background:var(--card);color:var(--ip-ink);border:1px solid var(--line-strong);box-shadow:var(--sh-1)}',
       '.trn-ghost{color:var(--muted);font-size:12.5px;margin:0}',
+      // 27/11/2026 : « Voir les N autres » sous une liste raccourcie, et phrase-résumé d'un outil replié
+      '.trn-plus{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px;font-size:12.5px;color:var(--muted)}',
+      '.trn-res1{font-size:14px;line-height:1.5;margin:6px 0 10px}.trn-res1 b{font-weight:800}',
       '.trn-route{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:16px}',
       '.trn-route .trn-mp{height:320px;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line-strong)}',
       '.trn-route h3{font-size:13px;font-weight:700;margin:0 0 8px}.trn-route h3 .trn-mu{font-weight:500;color:var(--muted)}',
@@ -703,7 +711,7 @@
         '.trn-tile{padding:12px}.trn-tile .v{font-size:20px}',
         '.trn-card{padding:14px}',
         '.trn-route{grid-template-columns:1fr}.trn-route>div:first-child{grid-column:auto}',
-        '.trn-route .trn-mp{height:260px}.trn-route .trn-col{max-height:none}',
+        '.trn-route .trn-mp{height:340px}.trn-route .trn-col{max-height:none}',
         '.trn-fam{grid-template-columns:minmax(0,1.2fr) minmax(40px,.8fr) 70px;gap:8px}',
         '.trn-lst>tbody>tr>td:first-child,.trn-lst>tfoot>tr>td:first-child{min-width:132px;max-width:132px;white-space:normal;line-height:1.25;padding-top:4px;padding-bottom:4px}',   // 360 px : nom sur deux lignes plutôt qu'une colonne figée à moitié d'écran
         '.trn-lst>tbody>tr>td{height:44px}.trn-lst>thead>tr>th button{min-height:44px;min-width:44px;width:100%}',   // lignes et titres de tri touchables, même sans écran tactile détecté
@@ -806,7 +814,7 @@
       if (lv && !glob.PHARMA_FR && V2.ensurePharmaFr) V2.ensurePharmaFr(function () { if (V2.route && V2.route.name === 'tournees' && S.etab === e.s) V2.render(); });
       corps.innerHTML = e ? '<div class="trn-attente"><div class="trn-attente-t">Tournées à recevoir</div><div><b>' + esc(e.nom) + '</b> · ' + esc(e.ville) +
         '</div><p>Les tournées de cet établissement n’ont pas encore été transmises. Aucun chiffre n’est affiché tant que le fichier n’est pas reçu.</p>' +
-        (lv ? '<div class="trn-livr"><div class="trn-livr-t">Pharmacies qu’il pourrait livrer · ' + lv.liste.length + '</div>' + lv.liste.map(function (o) {
+        (lv ? '<div class="trn-livr"><div class="trn-livr-t">Pharmacies qu’il pourrait\u00a0livrer\u00a0·\u00a0' + lv.liste.length + '</div>' + lv.liste.map(function (o) {
           return '<div class="trn-livr-r"><i aria-hidden="true"></i><span><b>' + esc(o.nom ? joli(o.nom) : 'Pharmacie (code ' + o.cip + ')') + '</b><small>' +
             esc(o.ville ? joli(o.ville) + (o.cp ? ' (' + o.cp + ')' : '') : 'position en cours de chargement') + (o.groupement ? ' · adhérente ' + esc(o.groupement) : '') + '</small></span>' +
             '<em>' + (o.km != null ? esc(String(o.km).replace('.', ',')) + NB + 'km' : '') + '</em></div>';
@@ -854,7 +862,7 @@
 
   function tableauDeBord(code) {
     var root = S.root, t = S.A[code], raw = S.d.tournees[code];
-    if (S.tbCode !== code) { S.pid = null; S.tbCode = code; S.lk = 'n'; S.ld = 1; S.simCout = null; S.simRed = 0; S.cmpB = null; }
+    if (S.tbCode !== code) { S.pid = null; S.tbCode = code; S.lk = 'n'; S.ld = 1; S.simCout = null; S.simRed = 0; S.cmpB = null; S.plus = {}; S.ouvert = {}; }
     var tb = S.tb = C.tableau(raw, S.d), e = etabCourant();
     var ord = C.classer(S.A, 'rentabilite_mois', -1), rang = ord.indexOf(code) + 1;
     var codes = Object.keys(S.A).sort();
@@ -889,7 +897,7 @@
       '<section class="trn-card" aria-labelledby="trn-h-route"><h2 id="trn-h-route">Sur la route</h2><p class="trn-sub">Carte de la tournée (couleur = rentabilité par mois de la cliente), prospects à voir en priorité et clientes à faire grossir. Touchez une cliente pour la voir.' + (tactile() ? ' Deux doigts pour déplacer ou zoomer la carte.' : '') + '</p><div class="trn-route" id="trn-route"></div></section>' +
       '<div class="trn-g3"><section class="trn-card" aria-labelledby="trn-h-sim" id="trn-sim"></section><section class="trn-card" aria-labelledby="trn-h-cmp" id="trn-cmp"></section></div>' +
       '<section class="trn-card" aria-labelledby="trn-h-liste" id="trn-liste-c"><h2 id="trn-h-liste">Les clientes de la tournée</h2>' +
-        '<p class="trn-sub" id="trn-sub-liste"></p><p class="trn-tendn" id="trn-tendn">' + texteTendances(tb) + '</p><div class="trn-scr" id="trn-scr-liste"><table class="trn-lst" id="trn-lst"></table></div>' +
+        '<p class="trn-sub" id="trn-sub-liste"></p><p class="trn-tendn" id="trn-tendn">' + texteTendances(tb) + '</p><div class="trn-scr" id="trn-scr-liste"><table class="trn-lst" id="trn-lst"></table></div><div class="trn-plus" id="trn-plus-liste"></div>' +
         '<p class="trn-fen" id="trn-fen">' + esc(C.texteFenetre(tb.mois, tb.fen)) + '</p></section>' +
       notes(tb) + '</div>';
     root.innerHTML = h;
@@ -1000,21 +1008,31 @@
   // « Où part la rentabilité » : une barre par cliente, de la plus rentable à la plus en perte
   function chRenta() {
     var el = document.getElementById('trn-ch-renta'); if (!S.tb || !el) return;
-    var cl = avecVentes().sort(function (a, b) { return b.tot.renta_mois - a.tot.renta_mois; }), mob = mobile();
-    var W = Math.max(280, el.clientWidth || 520), rh = tactile() ? 44 : 26, lw = mob ? 136 : 200, vw = mob ? 74 : 80, H = cl.length * rh + 22;
+    var tous = avecVentes().sort(function (a, b) { return b.tot.renta_mois - a.tot.renta_mois; }), mob = mobile();
+    // 27/11/2026 (audit, page de 5 à 11 écrans) : les 5 plus rentables et les 5 plus en perte ; le milieu sur demande (S.plus.renta).
+    // La cliente choisie ailleurs (liste, carte) reste toujours visible. L'échelle reste celle de toutes les clientes.
+    var PLI = 5, cache = !S.plus.renta && tous.length > 2 * PLI + 2;
+    var cl = cache ? tous.filter(function (c, i) { return i < PLI || i >= tous.length - PLI || c.id === S.pid; }) : tous;
+    var nCache = tous.length - cl.length;
+    // 27/11/2026 (audit) : au téléphone, le nom s'écrit SUR sa ligne, au-dessus de la barre (à côté, il était coupé par « … »)
+    var W = Math.max(280, el.clientWidth || 520), rh = mob ? 50 : tactile() ? 44 : 26, lw = mob ? 4 : 200, vw = mob ? 4 : 80, H = cl.length * rh + 22;
     var mn = 0, mx = 0;
-    cl.forEach(function (c) { var v = c.tot.renta_mois; if (v < mn) mn = v; if (v > mx) mx = v; });
+    tous.forEach(function (c) { var v = c.tot.renta_mois; if (v < mn) mn = v; if (v > mx) mx = v; });
     var aw = W - lw - vw - 8, sc = aw / ((mx - mn) || 1), x0 = lw + (-mn) * sc;
     var o = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Rentabilité par mois de chaque cliente de la tournée">';
     o += '<line class="trn-gl0" x1="' + x0.toFixed(1) + '" x2="' + x0.toFixed(1) + '" y1="0" y2="' + (H - 22) + '"/>';
     cl.forEach(function (c, i) {
       var v = c.tot.renta_mois, y = i * rh, bw = Math.abs(v) * sc, bx = v < 0 ? x0 - bw : x0, bhh = rh > 30 ? 14 : 12;
+      var yt = mob ? y + 17 : y + rh / 2 + 4, yb = mob ? y + 26 : y + rh / 2 - bhh / 2;   // téléphone : texte en haut, barre dessous
       o += '<g class="trn-hit" data-p="' + esc(c.id) + '" tabindex="0" role="button" aria-label="' + esc(joli(c.nom)) + ' : rentabilité par mois ' + eurF(v) + '"><rect class="bg" x="0" y="' + y + '" width="' + W + '" height="' + rh + '" rx="6"/>' +
-        '<text class="trn-rl" x="4" y="' + (y + rh / 2 + 4) + '"><tspan class="trn-rn">' + C.num(c) + ' · </tspan>' + esc(court(c.nom, mob ? 16 : 26)) + '</text>' +
-        '<rect class="' + (v < 0 ? 'trn-negf' : 'trn-pos') + '" x="' + bx.toFixed(1) + '" y="' + (y + rh / 2 - bhh / 2) + '" width="' + Math.max(bw, 1.5).toFixed(1) + '" height="' + bhh + '" rx="3"/>' +
-        '<text class="trn-rv' + (v < 0 ? ' n' : '') + '" x="' + (W - 2) + '" y="' + (y + rh / 2 + 4) + '" data-chk="c.' + esc(c.id) + '.renta_mois">' + eurF(v) + '</text></g>';
+        '<text class="trn-rl" x="4" y="' + yt + '"><tspan class="trn-rn">' + C.num(c) + ' · </tspan>' + esc(court(c.nom, mob ? Math.max(18, Math.floor((W - 96) / 6.6)) : 26)) + '</text>' +
+        '<rect class="' + (v < 0 ? 'trn-negf' : 'trn-pos') + '" x="' + bx.toFixed(1) + '" y="' + yb + '" width="' + Math.max(bw, 1.5).toFixed(1) + '" height="' + bhh + '" rx="3"/>' +
+        '<text class="trn-rv' + (v < 0 ? ' n' : '') + '" x="' + (W - 2) + '" y="' + yt + '" data-chk="c.' + esc(c.id) + '.renta_mois">' + eurF(v) + '</text></g>';
     });
-    el.innerHTML = o + '<text class="trn-ax" x="' + x0.toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">0 €</text></svg>';
+    el.innerHTML = o + '<text class="trn-ax" x="' + x0.toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">0 €</text></svg>' +
+      (tous.length > 2 * PLI + 2 ? '<div class="trn-plus">' + (cache
+        ? '<span>Les ' + PLI + ' plus rentables et les ' + PLI + ' plus en perte.</span><button type="button" class="trn-lien" data-act="plus-renta">Voir les ' + nCache + ' autres clientes</button>'
+        : '<button type="button" class="trn-lien" data-act="moins-renta">Garder les ' + PLI + ' premières et les ' + PLI + ' dernières</button>') + '</div>' : '');
   }
 
   // nuage : commandes par mois (x) × marge par commande (y), médianes de la tournée en pointillés, zone « souvent pour peu de marge » en rose
@@ -1088,7 +1106,10 @@
   function liste() {
     var tb = S.tb, el = document.getElementById('trn-lst'); if (!tb || !el) return;
     var scr = document.getElementById('trn-scr-liste'), sl = scr ? scr.scrollLeft : 0;
-    var cl = C.trier(tb.clientes, S.lk, S.ld), c0 = tb.code, t = tb.tot;
+    var tous = C.trier(tb.clientes, S.lk, S.ld), c0 = tb.code, t = tb.tot;
+    // 27/11/2026 (audit) : 8 lignes dans l'ordre choisi (tri compris), puis « Voir les N autres » ; la cliente choisie reste visible.
+    var PLI = 8, cache = !S.plus.liste && tous.length > PLI + 2;
+    var cl = cache ? tous.filter(function (c, i) { return i < PLI || c.id === S.pid; }) : tous;
     var titre = S.lk === 'n' ? 'dans l’ordre de livraison' : 'triées par ' + (S.lk === 'tend' ? 'tendance' : LCOLS.filter(function (k) { return k[0] === S.lk; })[0][1].toLowerCase()) + (S.ld < 0 ? ', de la plus forte à la plus faible' : ', de la plus faible à la plus forte');
     var sub = document.getElementById('trn-sub-liste');
     if (sub) sub.textContent = 'Clientes ' + titre + '. Coût des livraisons = commandes × ' + eurF(tb.cout) + ' · Rentabilité = Notre marge − livraisons · « par mois » = sur les mois où la cliente a été livrée. Touchez un titre pour trier, une ligne pour voir la cliente mois par mois.';
@@ -1101,7 +1122,7 @@
     cl.forEach(function (c) {
       var sel = c.id === S.pid;
       var nm = '<td title="' + esc(joli(c.nom)) + ' · ' + esc(joli(c.ville)) + '"><i' + (c.est ? ' title="Place estimée dans la tournée"' : '') + '>' + C.num(c) + '</i>' + esc(court(c.nom, 60)) + '</td>';   // au téléphone : « Ph. » pour garder le nom lisible
-      if (!c.tot) { h += '<tr data-p="' + esc(c.id) + '" tabindex="0" class="' + (sel ? 'sel' : '') + '" aria-selected="' + sel + '">' + nm + '<td class="none" colspan="' + (LCOLS.length + 1) + '">Aucune commande ' + esc(S.d.periode || '') + '</td></tr>'; }
+      if (!c.tot) { h += '<tr data-p="' + esc(c.id) + '" tabindex="0" class="' + (sel ? 'sel' : '') + '" aria-selected="' + sel + '">' + nm + '<td class="none" colspan="' + (LCOLS.length + 1) + '" title="Aucune commande ' + esc(S.d.periode || '') + '">Aucune commande' + (tv ? '' : ' ' + esc(S.d.periode || '')) + '</td></tr>'; }   // téléphone : la période, dite au-dessus, coupait la ligne à droite (27/11)
       else {
         var td = tdTend(c.tend, 'c.' + esc(c.id) + '.tend');
         h += '<tr data-p="' + esc(c.id) + '" tabindex="0" class="' + (sel ? 'sel' : '') + '" aria-selected="' + sel + '">' + nm + (tv ? td : '') + LCOLS.map(function (k) {
@@ -1118,6 +1139,10 @@
     h += '</tbody><tfoot><tr><td>Total de la tournée ' + esc(c0) + '</td>' + (tv ? tt : '') + LCOLS.map(function (k) { return '<td class="' + negc(t[k[0]]) + '" data-chk="t.' + esc(c0) + '.' + k[0] + '">' + k[2](t[k[0]]) + '</td>'; }).join('') + (tv ? '' : tt) + '</tr></tfoot>';
     el.innerHTML = h;
     if (scr) scr.scrollLeft = sl;
+    var pl = document.getElementById('trn-plus-liste');
+    if (pl) pl.innerHTML = tous.length > PLI + 2 ? (cache
+      ? '<button type="button" class="trn-lien" data-act="plus-liste">Voir les ' + (tous.length - cl.length) + ' autres clientes</button>'
+      : '<button type="button" class="trn-lien" data-act="moins-liste">Garder les ' + PLI + ' premières</button>') : '';
   }
 
   function route(code) {
@@ -1167,7 +1192,11 @@
         L.marker([p.lat, p.lng], { icon: ic, zIndexOffset: 400 }).addTo(g)
           .bindTooltip('<b>' + l + ' · ' + esc(n.nom) + '</b><br>' + esc(n.ville) + '<br>' + esc(C.detour(p)), { direction: 'top', offset: [0, -10] });
       });
-      var fit = function () { try { m.invalidateSize(); m.fitBounds(line.getBounds().pad(0.08), { animate: false }); } catch (e) {} };
+      // 27/11/2026 (audit) : au téléphone, cadrer la trace entière (aller et retour du dépôt compris) dézoomait la T10 de Rennes à Poitiers,
+      // numéros d'arrêts empilés : on y cadre les ARRÊTS ; deux doigts pour voir le reste. À l'ordinateur, la trace entière, comme avant.
+      var bArr = null;
+      try { if (mobile() && t.arrets.length > 1) bArr = L.latLngBounds(t.arrets.map(function (a) { return [a.lat, a.lng]; })); } catch (e) { bArr = null; }
+      var fit = function () { try { m.invalidateSize(); m.fitBounds((bArr || line.getBounds()).pad(bArr ? 0.04 : 0.08), { animate: false }); } catch (e) {} };
       S.map = m; S.cur = { fit: fit };
       fit(); setTimeout(fit, 0); setTimeout(function () { if (S.map === m) fit(); }, 400);
     });
@@ -1210,6 +1239,14 @@
   function simCarte() {
     var el = document.getElementById('trn-sim'), tb = S.tb; if (!el || !tb) return;
     var cout = S.simCout == null ? tb.cout : S.simCout;
+    // 27/11/2026 (audit) : replié par défaut sur une phrase (rentabilité d'aujourd'hui et seuil), l'outil s'ouvre au clic (S.ouvert.sim)
+    if (!S.ouvert.sim) {
+      var r0 = C.simuler(tb, tb.cout, 0);
+      el.innerHTML = '<h2 id="trn-h-sim">Et si…</h2><p class="trn-res1">' + (r0 ? 'Aujourd’hui, livraison à ' + eurF(r0.actuel.cout) + ' : <b class="' + negc(r0.actuel.renta_mois) + '">' + eurF(r0.actuel.renta_mois) + '</b> de rentabilité par mois' +
+        (typeof r0.seuil === 'number' ? ' ; au-delà de <b>' + eurF(r0.seuil) + '</b> par livraison, la tournée entière perd de l’argent.' : '.') : 'Simulation indisponible pour cette tournée.') + '</p>' +
+        '<div class="trn-act"><button type="button" class="trn-lien" data-act="ouvrir-sim">Simuler un autre coût ou moins de livraisons</button></div>';
+      return;
+    }
     el.innerHTML = '<h2 id="trn-h-sim">Et si…</h2><p class="trn-sub">Changez le coût d’une livraison, ou livrez moins souvent les clientes en perte : la rentabilité de la tournée est recalculée sur la période. Simulation seulement, rien n’est enregistré.</p>' +
       '<div class="trn-champ"><label for="trn-sim-cout">Coût d’une livraison</label><span class="u"><input id="trn-sim-cout" class="trn-in" type="number" inputmode="decimal" min="0" step="0.5" value="' + (typeof cout === 'number' ? cout : '') + '">€</span></div>' +
       '<div class="trn-champ"><span class="lab" id="trn-sim-l">Livraisons en moins pour les clientes en perte</span><span class="trn-seg" role="group" aria-labelledby="trn-sim-l" id="trn-sim-seg">' +
@@ -1241,6 +1278,14 @@
     var h = '<h2 id="trn-h-cmp">Comparer avec une autre tournée</h2>';
     if (!autres.length) { el.innerHTML = h + '<p class="trn-ghost">Une seule tournée dans le fichier : rien à comparer.</p>'; return; }
     if (!S.cmpB || !S.A[S.cmpB] || S.cmpB === code) S.cmpB = autres[0];
+    // 27/11/2026 (audit) : replié par défaut sur une phrase face à la mieux classée des autres, le tableau s'ouvre au clic (S.ouvert.cmp)
+    if (!S.ouvert.cmp) {
+      var ta = S.A[code], tb2 = S.A[S.cmpB];
+      el.innerHTML = h + '<p class="trn-res1">Rentabilité par mois : <b class="' + negc(ta.rentabilite_mois) + '">' + eurF(ta.rentabilite_mois) + '</b> pour ' + esc(code) +
+        ', <b class="' + negc(tb2.rentabilite_mois) + '">' + eurF(tb2.rentabilite_mois) + '</b> pour ' + esc(S.cmpB) + ' · ' + esc(tb2.nom) + ' (la mieux classée des autres tournées).</p>' +
+        '<div class="trn-act"><button type="button" class="trn-lien" data-act="ouvrir-cmp">Comparer en détail avec une tournée au choix</button></div>';
+      return;
+    }
     el.innerHTML = h + '<p class="trn-sub">Mêmes chiffres que le classement et le tableau de bord. En gras et en couleur : la meilleure des deux, quand « meilleure » a un sens. Par défaut, la mieux classée des autres tournées.</p>' +
       '<label class="trn-sel-l">Comparer avec <select class="trn-sel" id="trn-cmp-sel">' + autres.slice().sort().map(function (c) {
         return '<option value="' + esc(c) + '"' + (c === S.cmpB ? ' selected' : '') + '>' + esc(c) + ' · ' + esc(S.A[c].nom) + '</option>'; }).join('') + '</select></label>' +
@@ -1282,7 +1327,7 @@
   }
   function choisir(pid) {
     S.pid = (pid && S.pid !== pid) ? pid : null;
-    liste(); surligner(); chip();
+    liste(); if (!S.plus.renta) chRenta(); surligner(); chip();
   }
 
   function brancher(root) {
@@ -1304,6 +1349,13 @@
         else if (a === 'fiche' && id) V2.go('pharma', id);
         else if (a === 'fermer') choisir(null);
         else if (a === 'excel') exporter();
+        else if (a === 'plus-renta' || a === 'moins-renta') { S.plus.renta = a === 'plus-renta'; chRenta(); surligner(); }
+        else if (a === 'plus-liste' || a === 'moins-liste') {
+          S.plus.liste = a === 'plus-liste'; liste(); surligner();
+          if (a === 'moins-liste') { var lc = document.getElementById('trn-liste-c'); if (lc && lc.scrollIntoView) lc.scrollIntoView({ block: 'start' }); }
+        }
+        else if (a === 'ouvrir-sim') { S.ouvert.sim = true; simCarte(); var ic2 = document.getElementById('trn-sim-cout'); if (ic2 && !tactile()) ic2.focus(); }
+        else if (a === 'ouvrir-cmp') { S.ouvert.cmp = true; cmpCarte(); }
         else if (a === 'sim-cout') { S.simCout = null; var ic = document.getElementById('trn-sim-cout'); if (ic) ic.value = String(S.tb ? S.tb.cout : ''); simResultat(); }
         else if (a === 'voir-ligne') {
           var r = document.querySelector('#trn-lst tr[data-p="' + (glob.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');

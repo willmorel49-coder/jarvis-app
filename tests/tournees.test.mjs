@@ -331,6 +331,10 @@ test('texte d’une tendance : pourcentage signé, « Nouvelle », tiret, ou eur
   assert.equal(C.texteTendance(null), '—');
   assert.equal(C.texteTendance({ sens: 'hausse', pct: null, ecart: 30 }), '+30' + NBSP + '€' + NBSP + 'par mois');
   assert.equal(C.texteTendance({ sens: 'baisse', pct: null, ecart: -6 }), '−6' + NBSP + '€' + NBSP + 'par mois');
+  // 27/11/2026 : « +6 809 % » illisible → au-delà de +300 %, l'écart en euros par mois ; jusqu'à 300 %, le pourcentage
+  assert.equal(C.texteTendance({ sens: 'hausse', pct: 6809.4, ecart: 251.6 }), '+252' + NBSP + '€' + NBSP + 'par mois');
+  assert.equal(C.texteTendance({ sens: 'hausse', pct: 300, ecart: 90 }), '+300' + NBSP + '%');
+  assert.equal(C.texteTendance({ sens: 'baisse', pct: -95, ecart: -40 }), '−95' + NBSP + '%');
   assert.equal(C.texteTendance({ sens: 'stable', pct: null, ecart: 0 }), '0' + NBSP + '€' + NBSP + 'par mois');
 });
 

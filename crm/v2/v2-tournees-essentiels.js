@@ -195,7 +195,7 @@
       '.ess1-leg{display:flex;flex-wrap:wrap;gap:8px 18px;padding:12px 22px 14px;font-size:13px;color:#33405C;align-items:center}',
       '.ess1-leg span{display:inline-flex;align-items:center;gap:7px}',
       '.ess1-btns{position:absolute;right:10px;top:10px;z-index:500;display:flex;gap:6px}.ess1-btns button{font:inherit;font-weight:700;font-size:13px;min-height:44px;padding:0 14px;border:1px solid #CBD8F1;border-radius:999px;background:#fff;color:' + ENCRE + ';cursor:pointer;box-shadow:0 4px 12px -4px rgba(26,32,48,.3)}',
-      '@media(max-width:900px){.ess1-body{grid-template-columns:minmax(0,1fr)}.ess1-map{height:400px}.ess1-side{height:auto;max-height:420px;border-left:0;border-top:1px solid #E3EAF8}.ess1-leg{padding:12px 14px 14px}}',
+      '@media(max-width:900px){.ess1-body{grid-template-columns:minmax(0,1fr)}.ess1-map{height:360px}.ess1-side{height:auto;max-height:300px;border-left:0;border-top:1px solid #E3EAF8}.ess1-leg{padding:12px 14px 14px}}',
       '@media(max-width:700px){.ess-hd{padding:16px 14px 4px}.ess-sub{margin:4px 14px 0}.ess h2{font-size:19px}.ess-seg{width:100%}.ess-seg button{flex:1;padding:0 8px}}',
       '@media(prefers-reduced-motion:reduce){.ess *{transition-duration:.01ms!important;animation-duration:.01ms!important}}'
     ].join('\n');
@@ -215,7 +215,7 @@
     if (!tiles || root.querySelector('#ess-root')) return;
     css();
     var box = document.createElement('div'); box.id = 'ess-root';
-    tiles.parentNode.insertBefore(box, tiles);
+    tiles.parentNode.insertBefore(box, tiles.nextSibling);   // 27/11/2026 (audit) : APRÈS les tuiles de chiffres, qui passaient sous le 1er écran (1 018 px à l'ordinateur, 1 590 au téléphone)
     var D = donnees();
     if (!D) {
       box.innerHTML = '<section class="ess" aria-label="La T10, Angers et les Essentiels"><div class="ess-hd"><div><div class="ess-k">Calque sur la carte de la T10</div><h2>La T10, les clientes d’Angers et les Essentiels</h2></div></div>' +
@@ -380,7 +380,8 @@
           obst.push({ ll: L.latLng(a.lat, a.lng), r: ang ? 19 : 13 });
         });
         D.angersSans.forEach(function (a) {
-          var ic = L.divIcon({ className: '', iconSize: [38, 38], iconAnchor: [19, 19], html: '<div class="ess-pt ang" style="margin:4px;background:#fff;color:' + BLEU + ';border-color:' + BLEU + '">–</div>' });
+          var zs = tactile() ? 44 : 38;   // 27/11/2026 (audit) : 38 px au téléphone, sous les 44 px d'une cible au doigt
+          var ic = L.divIcon({ className: '', iconSize: [zs, zs], iconAnchor: [zs / 2, zs / 2], html: '<div class="ess-pt ang" style="margin:' + (zs - 30) / 2 + 'px;background:#fff;color:' + BLEU + ';border-color:' + BLEU + '">–</div>' });
           L.marker([a.lat, a.lng], { icon: ic, zIndexOffset: 500 }).addTo(carte).bindTooltip('<b>' + esc(a.nom) + '</b><br>cliente, aucune livraison sur janvier à octobre', { direction: 'top' });
           obst.push({ ll: L.latLng(a.lat, a.lng), r: 19 });
         });
