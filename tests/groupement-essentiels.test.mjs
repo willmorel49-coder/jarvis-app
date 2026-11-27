@@ -1,6 +1,6 @@
 // 26/11/2026 — option B, étape 4 : Essentiels Pharma = deuxième habillage du même code JARVIS.
 // Ce banc charge le code RÉEL de crm/v2/v2-boot.js (périmètre, garde d'accès) avec de faux jeux de données :
-//   - périmètre « alias » : 28 CIP de GRP_DEPART, 7 clientes, 21 non clientes lues dans PHARMA_FR ;
+//   - périmètre « alias » : 31 CIP de GRP_DEPART, 7 clientes, 24 non clientes lues dans PHARMA_FR ;
 //   - sans PHARMA_FR : « CIP … » puis complété quand la base arrive, jamais de nom inventé ;
 //   - OPSO inchangé : même sortie que le code d'avant l'étape 4 (commit 6965a3c98) sur le même listing ;
 //   - accesGroupement() lit la bonne liste (Emmanuel absent d'Essentiels, claude-test présent) ;
@@ -23,22 +23,22 @@ function tranche(src, debut, fin) {
 // Périmètre (nouveau code) : de l'en-tête de V2.appliquerPerimetreGroupement jusqu'à V2.mapOfficines.
 const PERIM = tranche(BOOT, '  V2.appliquerPerimetreGroupement = function', '  // 11/09/2026 (phase 5)');
 
-const CIP28 = Object.keys(vm.runInNewContext('var window = {}; ' + lire('crm/v2/groupement-alias.js').split('\n').filter(l => l.startsWith('window.GRP_DEPART')).join('\n') + '; window.GRP_DEPART'));
+const CIP31 = Object.keys(vm.runInNewContext('var window = {}; ' + lire('crm/v2/groupement-alias.js').split('\n').filter(l => l.startsWith('window.GRP_DEPART')).join('\n') + '; window.GRP_DEPART'));
 const AUTRES = ['9000001', '9000002'];
 
 function monde({ pfr = true, ann = false, ensure = true } = {}) {
   const ctx = { console: { warn() {}, log() {} } }; ctx.window = ctx; vm.createContext(ctx);
   ctx.V2 = { pharmacies: [], sales: [], render() { ctx.rendus = (ctx.rendus || 0) + 1; } };
-  const dep = {}; CIP28.forEach(c => { dep[c] = 'Essentiels Pharma'; }); AUTRES.forEach(c => { dep[c] = 'Un autre groupement'; });
+  const dep = {}; CIP31.forEach(c => { dep[c] = 'Essentiels Pharma'; }); AUTRES.forEach(c => { dep[c] = 'Un autre groupement'; });
   ctx.GRP_DEPART = dep;
-  ctx.GRP_OVR = { [CIP28[0]]: 'Un autre groupement' };   // ne doit PAS être lu (décision de Will du 24/11 : 28)
+  ctx.GRP_OVR = { [CIP31[0]]: 'Un autre groupement' };   // ne doit PAS être lu (liste officielle du 27/11 : 31)
   ctx.V2_GROUPEMENT = JSON.parse(JSON.stringify({ id: 'essentiels', libelle: 'ESSENTIELS PHARMA', perimetre: { source: 'alias', valeur: 'Essentiels Pharma' } }));
   // 7 clientes du groupement (ids CRM sans rapport avec le CIP) + 3 clientes d'autres groupements
-  ctx.V2.pharmacies = CIP28.slice(0, 7).map((c, i) => ({ id: 'C' + i, name: 'CLIENTE ' + i, code: c, ville: 'V' + i, cp: '1000' + i, tel: '01', color: '#123456', potentiel: 5 }))
+  ctx.V2.pharmacies = CIP31.slice(0, 7).map((c, i) => ({ id: 'C' + i, name: 'CLIENTE ' + i, code: c, ville: 'V' + i, cp: '1000' + i, tel: '01', color: '#123456', potentiel: 5 }))
     .concat(['8000001', '8000002', '8000003'].map((c, i) => ({ id: 'X' + i, name: 'AUTRE ' + i, code: c })));
-  ctx.V2.sales = [].concat(...CIP28.slice(0, 7).map((c, i) => [{ pharmacyId: 'C' + i, mntNetHt: 10 }, { pharmacyId: 'C' + i, mntNetHt: 5 }]),
+  ctx.V2.sales = [].concat(...CIP31.slice(0, 7).map((c, i) => [{ pharmacyId: 'C' + i, mntNetHt: 10 }, { pharmacyId: 'C' + i, mntNetHt: 5 }]),
     ['X0', 'X1', 'X2'].map(id => ({ pharmacyId: id, mntNetHt: 99 })));
-  const pfrData = () => ({ p: CIP28.map((c, i) => {
+  const pfrData = () => ({ p: CIP31.map((c, i) => {
     const p = []; p[6] = 'PHARMACIE DU PORT ' + i; p[7] = 'SAINT MALO'; p[8] = '350' + i; p[9] = '020000000' + i;
     if (ann) { p[13] = 'ID-CRM-' + i; p._ann = c; } else p[13] = c;
     return p;
@@ -52,22 +52,22 @@ function monde({ pfr = true, ann = false, ensure = true } = {}) {
 const dehors = (ctx, expr) => JSON.parse(vm.runInContext('JSON.stringify(' + expr + ')', ctx));
 const lignes = ctx => dehors(ctx, 'V2.pharmacies');
 
-test('alias : 28 lignes, 7 clientes, noms des 21 autres lus dans PHARMA_FR, ventes hors périmètre retirées', () => {
-  assert.equal(CIP28.length, 28);
+test('alias : 31 lignes, 7 clientes, noms des 24 autres lus dans PHARMA_FR, ventes hors périmètre retirées', () => {
+  assert.equal(CIP31.length, 31);
   const ctx = monde();
   vm.runInContext('V2.appliquerPerimetreGroupement();', ctx);
   const L = lignes(ctx);
-  assert.equal(L.length, 28);
+  assert.equal(L.length, 31);
   assert.equal(L.filter(l => l.inDb).length, 7);
   const nonCl = L.filter(l => !l.inDb);
-  assert.equal(nonCl.length, 21);
+  assert.equal(nonCl.length, 24);
   for (const l of nonCl) { assert.match(l.name, /^Pharmacie du Port \d+$/); assert.equal(l.ville, 'Saint Malo'); assert.ok(l.cp && l.tel); assert.ok(l.id.startsWith('LST-')); assert.notEqual(l.nomProvisoire, true); }
   for (const l of L) { assert.equal(l.groupement, 'ESSENTIELS PHARMA'); assert.equal(l.hasStats, false); assert.equal(l.debut, ''); assert.equal(l.perimetre, ''); }
   assert.deepEqual(L.slice(0, 7).map(l => l.id), ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6']);   // id CRM gardé
   const ventes = dehors(ctx, 'V2.sales');
   assert.equal(ventes.length, 14);   // les 3 clientes d'autres groupements n'y sont plus
   assert.ok(ventes.every(s => /^C\d$/.test(s.pharmacyId)));
-  assert.equal(CIP28[0] in ctx.GRP_DEPART, true);   // GRP_OVR (qui retire un CIP) n'est pas lu : toujours 28
+  assert.equal(CIP31[0] in ctx.GRP_DEPART, true);   // GRP_OVR (qui retire un CIP) n'est pas lu : toujours 31
 });
 
 test('alias : V2.applyOpsoPerimeter est le même objet que V2.appliquerPerimetreGroupement', () => {
@@ -78,7 +78,7 @@ test('alias : V2.applyOpsoPerimeter est le même objet que V2.appliquerPerimetre
 test('alias : la base nationale peut avoir remplacé p[13] par l\'id du CRM (ancien dans p._ann)', () => {
   const ctx = monde({ ann: true });
   vm.runInContext('V2.appliquerPerimetreGroupement();', ctx);
-  assert.equal(lignes(ctx).filter(l => /^Pharmacie du Port/.test(l.name)).length, 21);
+  assert.equal(lignes(ctx).filter(l => /^Pharmacie du Port/.test(l.name)).length, 24);
 });
 
 test('alias sans PHARMA_FR : « CIP … » provisoire, puis complété et redessiné ; jamais de nom inventé', () => {
@@ -86,13 +86,13 @@ test('alias sans PHARMA_FR : « CIP … » provisoire, puis complété et redess
   vm.runInContext('V2.appliquerPerimetreGroupement();', ctx);
   let L = lignes(ctx);
   const nonCl = L.filter(l => !l.inDb);
-  assert.equal(nonCl.length, 21);
+  assert.equal(nonCl.length, 24);
   assert.ok(nonCl.every(l => l.name === 'CIP ' + l.code && l.nomProvisoire === true));
   // la base arrive plus tard
   const ctx2 = monde({ pfr: false });
   vm.runInContext('V2.appliquerPerimetreGroupement();', ctx2);
   L = lignes(ctx2);
-  assert.equal(L.filter(l => !l.inDb && /^Pharmacie du Port/.test(l.name)).length, 21);
+  assert.equal(L.filter(l => !l.inDb && /^Pharmacie du Port/.test(l.name)).length, 24);
   assert.equal(ctx2.rendus, 1);
   // un CIP absent de la base reste « CIP … »
   const ctx3 = monde({ pfr: false, ensure: false });
@@ -178,11 +178,11 @@ test('textes « OPSO » des modules communs : identiques chez OPSO, au nom du gr
 // Accueil dessiné avant les ventes : V2.mapOfficines ne rend que le périmètre en mode alias ; inchangé ailleurs.
 test('mapOfficines : bornée au périmètre chez Essentiels, intacte chez JARVIS et OPSO', () => {
   const code = tranche(BOOT, '  V2.mapOfficines = function', '  // ── Périmètre ESCALE PHARMA');
-  const ofs = CIP28.slice(0, 7).map((c, i) => ({ id: c, name: 'E' + i, code: c })).concat(['8000001', '8000002', '8000003'].map((c, i) => ({ id: c, name: 'X' + i, code: c })));
+  const ofs = CIP31.slice(0, 7).map((c, i) => ({ id: c, name: 'E' + i, code: c })).concat(['8000001', '8000002', '8000003'].map((c, i) => ({ id: c, name: 'X' + i, code: c })));
   const nb = reglage => {
     const ctx = { console }; ctx.window = ctx; vm.createContext(ctx);
-    ctx.V2 = {}; ctx.WML_OFFICINES = ofs; ctx.GRP_DEPART = { [CIP28[0]]: 'Essentiels Pharma' };
-    CIP28.slice(1).forEach(c => { ctx.GRP_DEPART[c] = 'Essentiels Pharma'; });
+    ctx.V2 = {}; ctx.WML_OFFICINES = ofs; ctx.GRP_DEPART = { [CIP31[0]]: 'Essentiels Pharma' };
+    CIP31.slice(1).forEach(c => { ctx.GRP_DEPART[c] = 'Essentiels Pharma'; });
     if (reglage) ctx.V2_GROUPEMENT = reglage;
     vm.runInContext(code, ctx);
     return vm.runInContext('V2.mapOfficines().length', ctx);

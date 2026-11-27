@@ -13211,7 +13211,7 @@ function renderGroupement() {
   // officines groupées par département
   const byDep = {};
   O.forEach(o => { const d = (o.cp || '00').slice(0,2); (byDep[d] = byDep[d] || []).push(o); });
-  const depName = { '27':'Eure','44':'Loire-Atlantique','49':'Maine-et-Loire','53':'Mayenne','72':'Sarthe','79':'Deux-Sèvres','92':'Hauts-de-Seine' };
+  const depName = { '19':'Corrèze','27':'Eure','33':'Gironde','44':'Loire-Atlantique','49':'Maine-et-Loire','53':'Mayenne','72':'Sarthe','75':'Paris','79':'Deux-Sèvres','86':'Vienne','92':'Hauts-de-Seine','94':'Val-de-Marne' };
   const offList = Object.keys(byDep).sort().map(dep => `
       <div style="margin-bottom:14px">
         <div style="font-size:11px;font-weight:800;color:${grnT};text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">${esc(depName[dep] || dep)} · ${byDep[dep].length}</div>
@@ -13284,7 +13284,7 @@ function renderGroupement() {
 
       <div class="card" style="padding:16px 20px;margin-bottom:24px;border-left:3px solid ${grn};background:var(--opso-green-pale)">
         <div style="font-weight:700;color:var(--text);margin-bottom:4px">📊 Ventes par officine</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.5">Liste officielle (23 officines, source : store-locator Essentiels Pharma). ${O.filter(o=>o.client).length} sont déjà clientes Intégral — leur CA remonte quand il est disponible dans nos ventes WML. Le détail complet (commandes, marge, top produits) s'affichera dès l'intégration des exports de ventes de ces officines.</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">Liste officielle (${O.length} officines, source : liste des adhérents Essentiels Pharma). ${O.filter(o=>o.client).length} sont déjà clientes Intégral — leur CA remonte quand il est disponible dans nos ventes WML. Le détail complet (commandes, marge, top produits) s'affichera dès l'intégration des exports de ventes de ces officines.</div>
       </div>
     </div>`;
 

@@ -754,7 +754,7 @@
   // ── Périmètre « alias » (Essentiels Pharma, 26/11/2026) ────
   // Pas de listing du groupement : le périmètre = les CIP que la table de départ GRP_DEPART
   // (crm/v2/groupement-alias.js, publique) range sous perimetre.valeur. On ne lit PAS GRP_OVR
-  // (décision de Will du 24/11 : 28 officines). Clientes = présentes dans V2.pharmacies (WML) ;
+  // (liste officielle reçue le 27/11/2026 : 31 adhérents ; GRP_RETIREES, hors GRP_DEPART, écarte Bouchemaine). Clientes = présentes dans V2.pharmacies (WML) ;
   // non clientes = nom/ville/CP/tél lus dans la base nationale publique PHARMA_FR (chargée à la demande).
   // Mise en forme du nom : copie locale de joli() de v2-tournees-essentiels.js (pas d'import croisé).
   function nomJoli(s) {
