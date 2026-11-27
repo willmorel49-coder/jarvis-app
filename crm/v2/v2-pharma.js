@@ -2161,7 +2161,7 @@
           ((V2.promoted && V2.promoted[String(pid)])
             ? '<span class="v2-btn v2-btn-ghost" style="cursor:default;color:var(--c-opp);border-color:var(--c-opp)">✓ Passé en client</span>'
             : '<button class="v2-btn v2-btn-primary" onclick="V2.promoteToClient(\'' + esc(String(pid)) + '\')">➕ Passer en client</button>') +
-          txProspectBtn(pid) +
+          txProspectBtn(pid) + etudeFiche(pid, 'v2-btn v2-btn-ghost', nameOf(pid, p[6] || p[10])) +
           '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Voir sur Google Maps</a>' +
         '</div></div>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
@@ -4416,6 +4416,10 @@
     return '<dialog class="fdr-dlg" id="fdr-d-' + id + '" aria-labelledby="fdr-d-' + id + '-t"><div class="fdr-dlg-h"><h2 id="fdr-d-' + id + '-t">' + esc(titre) + '</h2>' +
       '<button type="button" class="fdr-dlg-x" onclick="this.closest(\'dialog\').close()" aria-label="Fermer">×</button></div><div class="fdr-dlg-c">' + corps + '</div></dialog>';
   }
+  // 28/11/2026 — Will : « il faut qu'on ai un bouton pour les etudes sur les fiches clients prospects ». L'étude de zone de la carte
+  // (v2-carte-secteur.js), ouverte d'ici sans passer par la carte ; rien quand l'officine n'en a pas (ni pour un prospect créé à la main).
+  function etudeFiche(pid, cls, nom) { return (V2.carteSecteur && V2.carteSecteur.boutonFiche) ? V2.carteSecteur.boutonFiche(pid, cls, nom) : ''; }
+
   // 26/11/2026 — audit « chaque clic » : « Infos du jour » (annonces légales) est interne : caché en vue pharmacien (vi-int).
   // tel = la bande du téléphone (rv2-outils), posée au-dessus de la barre du pouce : Will a accordé le retrait de « Notes et rendez-vous »,
   // « Choisir quoi lui transmettre » et « Ouvrir la liste de tâches », que la barre a déjà (Noter, Envoyer, À faire). Sans barre, rien n'est retiré.
@@ -4423,7 +4427,7 @@
     var barre = !!(tel && c.voitVentes && fbC);
     var b = function (id, nom, cls) { return '<button type="button" class="fdr-outil' + (cls ? ' ' + cls : '') + '" aria-haspopup="dialog" onclick="V2.fdrOuvrir(\'' + id + '\')">' + esc(nom) + '</button>'; };
     return '<div class="fdr-outils" role="group" aria-label="Outils du rendez-vous">' + b('infos', 'Informations') + (c.notes && !(barre && V2.notes) ? b('notes', 'Notes et rendez-vous') : '') +
-      (c.briefOff ? b('brief', 'Infos du jour', 'vi-int') : '') + fdrGrandsBoutons(c.pid, c.voitVentes, barre) + '</div>';
+      (c.briefOff ? b('brief', 'Infos du jour', 'vi-int') : '') + etudeFiche(c.pid, 'fdr-outil vi-int', c.nom) + fdrGrandsBoutons(c.pid, c.voitVentes, barre) + '</div>';
   }
   function fdrOutils(c) {
     // 26/11/2026 — vue pharmacien : la fenêtre « Informations » montre ses coordonnées (kvPh : ville, adresse, titulaire, groupement), jamais la version

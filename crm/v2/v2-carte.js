@@ -2536,6 +2536,14 @@
     redessinerBarre: function () { renderFbRow(); },
     surCarte: surCarte, etroit: fbEtroit,
     choixDepot: function () { return pickDepotMode; },
-    tourDe: function () { return tour; }
+    tourDe: function () { return tour; },
+    // 28/11/2026 — bouton « Étude de zone » des fiches cliente et prospect (v2-pharma.js) : les données de la carte sans la carte, comme boot()
+    // avant de dessiner (base nationale, puis recalage sur les clients), refait à chaque étude pour lire aussi ce qui est arrivé depuis.
+    sansCarte: function (cb) {
+      ensureData(function (err) {
+        if (err || !window.PHARMA_FR) { cb(false); return; }
+        D = window.PHARMA_FR; recaler(); cb(true);
+      });
+    }
   };
 })();

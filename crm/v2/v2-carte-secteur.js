@@ -178,6 +178,9 @@
       });
     },
     etude: function (i) { ouvrirEtude(i); },
+    // 28/11/2026 — fiches cliente et prospect (v2-pharma.js) : le bouton (HTML, vide sans étude) et son clic.
+    boutonFiche: function (pid, cls, nom) { return boutonFiche(pid, cls, nom); },
+    etudeFiche: function (pid, nom) { etudeDepuisFiche(pid, nom); },
     // Posé par v2-carte.js une fois la carte créée (le fond, les marqueurs et la vue de départ sont prêts).
     monter: function () { monter(); },
     // Pour les essais : l'état lu en direct (jamais pour le code de l'app).
@@ -491,14 +494,53 @@
   function ouvrirEtude(i) {
     var A = S.A, D = A && A.donnees(), p = D && D.p[i]; if (!p) return;
     var id = String(p[13] == null ? '' : p[13]), finess = window.ETUDES_ZONE_IDX && window.ETUDES_ZONE_IDX[id];
+    var tok = ouvrirPE(p[6]);
+    if (!/^[0-9][0-9AB][0-9]{7}$/.test(String(finess || ''))) { direPE('<p>Étude pas encore calculée pour cette officine.</p>'); return; }
+    ouvrirEnrichie(i, finess, tok);
+  }
+  // L'écran de l'étude, ouvert sur « arrive… » ; rouvert par-dessus lui-même (fiche → étude), il rend toujours le focus au bouton d'origine.
+  function ouvrirPE(nom) {
     var pe = monterPE(), tok = ++S.pe.jeton;
-    S.pe.ouverte = true; S.pe.dernier = document.activeElement;
-    document.querySelector('#pe [data-pe-nom]').textContent = p[6] || 'Pharmacie';
+    if (!S.pe.ouverte) S.pe.dernier = document.activeElement;
+    S.pe.ouverte = true;
+    document.querySelector('#pe [data-pe-nom]').textContent = nom || 'Pharmacie';
     pe.hidden = false; document.body.classList.add('pe-ouvert'); pe.scrollTop = 0;
     try { pe.focus({ preventScroll: true }); } catch (e) { pe.focus(); }
     direPE('<p>L’étude de zone arrive…</p>');
-    if (!/^[0-9][0-9AB][0-9]{7}$/.test(String(finess || ''))) { direPE('<p>Étude pas encore calculée pour cette officine.</p>'); return; }
-    ouvrirEnrichie(i, finess, tok);
+    return tok;
+  }
+  // 28/11/2026 — depuis une fiche cliente ou prospect (v2-pharma.js), la carte jamais ouverte : la même étude, les données de la carte préparées sans elle.
+  function etudeDepuisFiche(pid, nom) {
+    var A = V2._carteApi, id = String(pid == null ? '' : pid); if (!A || !A.sansCarte || !id) return;
+    S.A = A;   // toujours cette interface (preparer la reçoit aussi) ; CB sert aux feuilles et aux scripts
+    chargerCssEtude(function () {
+      var tok = ouvrirPE(nom);
+      A.sansCarte(function (ok) {
+        if (tok !== S.pe.jeton || !S.pe.ouverte) return;   // refermée pendant la lecture des données
+        if (!ok) { direPE('<p>Les données de la carte n’ont pas pu être chargées. Vérifiez votre connexion puis réessayez.</p>'); return; }
+        API.preparer(A);   // secteur du commercial connecté, comme à l'ouverture de la carte (les clientes « Chez Intégral » en dépendent)
+        var D = A.donnees(), i = -1, k;
+        for (k = 0; k < D.p.length; k++) if (String(D.p[k][13]) === id) { i = k; break; }
+        if (i < 0) { direPE('<p>Étude pas encore calculée pour cette officine.</p>'); return; }
+        ouvrirEtude(i);
+      });
+    });
+  }
+  // Le bouton des fiches : posé tout de suite quand l'index est déjà lu ; sinon une place vide, remplie à l'arrivée de l'index (sans redessiner la fiche).
+  function boutonFiche(pid, cls, nom) {
+    var id = String(pid == null ? '' : pid);
+    if (!/^[0-9A-Za-z]+$/.test(id)) return '';   // prospect créé à la main (px_…) : pas de FINESS, pas d'étude
+    var html = function () {
+      return window.ETUDES_ZONE_IDX && window.ETUDES_ZONE_IDX[id] ? '<button type="button" class="' + esc(cls) + ' sx-etude-fiche" data-nom="' + esc(nom || '') + '" onclick="V2.carteSecteur.etudeFiche(\'' + id + '\', this.getAttribute(\'data-nom\'))">Étude de zone</button>' : '';
+    };
+    if (window.ETUDES_ZONE_IDX || (S.idxEssai && !S.idxAttente)) return html();
+    setTimeout(function () {
+      etudeIndex(function () {
+        var l = document.querySelectorAll('.sx-etude-place[data-pid="' + id + '"]');
+        for (var k = 0; k < l.length; k++) l[k].outerHTML = html();
+      });
+    }, 0);
+    return '<span class="sx-etude-place" data-pid="' + id + '" style="display:contents"></span>';
   }
   // L'ancienne étude (etudes-zone/<finess>.js : les 3 feuilles A4 de Phirst + « Chez Intégral ») : le secours quand l'étude enrichie manque.
   function ouvrirAncienne(i, finess, tok) {
