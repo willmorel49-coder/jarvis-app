@@ -9,12 +9,15 @@
 })(typeof window !== 'undefined' ? window : this, function () {
   'use strict';
 
-  /* le secteur de Yann, dans l'ordre où il appelle (lib/secteur.ts de la V1) */
-  var SECTEUR = ['44', '49', '35', '56', '29', '22', '72', '37', '14', '85', '50', '61'];
+  /* le secteur de Yann, dans l'ordre où il appelle (lib/secteur.ts de la V1) : le Grand Ouest, puis l'Île-de-France (ajoutée le 27/11/2026,
+     Paris, petite couronne, grande couronne) */
+  var SECTEUR = ['44', '49', '35', '56', '29', '22', '72', '37', '14', '85', '50', '61', '75', '92', '93', '94', '78', '91', '95', '77'];
   function dep2(d) { return String(d == null ? '' : d).slice(0, 2); }
   function rang(d) { var i = SECTEUR.indexOf(dep2(d)); return i < 0 ? 999 : i; }
   function dansSecteur(d) { return rang(d) !== 999; }
-  function primeSecteur(d) { var r = rang(d); return r === 999 ? -12 : 24 - r * 2; }
+  /* Prime du secteur : 24 pour le premier département, puis 2 de moins par rang ; jamais sous 0 dans le secteur (l'Île-de-France, rangs 12 à 19,
+     reste au-dessus du hors-secteur à -12). Le Grand Ouest garde exactement ses valeurs (24 à 2). */
+  function primeSecteur(d) { var r = rang(d); return r === 999 ? -12 : Math.max(0, 24 - r * 2); }
 
   function norm(v) { return String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
   function cle(nom, ville) { return norm(nom) + '|' + norm(ville); }

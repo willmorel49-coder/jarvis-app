@@ -7,10 +7,19 @@ const J = '2026-11-21'
 
 test('ordre du secteur : 44 avant 29, hors secteur à la fin', () => {
   assert.ok(P.rang('44') < P.rang('29'))
-  assert.equal(P.rang('75'), 999)
+  assert.equal(P.rang('13'), 999)
   assert.equal(P.rang('44100'), 0)
   assert.equal(P.primeSecteur('44'), 24)
-  assert.equal(P.primeSecteur('75'), -12)
+  assert.equal(P.primeSecteur('13'), -12)
+})
+test('Île-de-France dans le secteur (27/11/2026) : après le Grand Ouest, jamais sous le hors-secteur, Grand Ouest inchangé', () => {
+  const IDF = ['75', '92', '93', '94', '78', '91', '95', '77']
+  for (const d of IDF) { assert.ok(P.dansSecteur(d), d); assert.ok(P.rang(d) > P.rang('61'), d); assert.ok(P.primeSecteur(d) >= 0 && P.primeSecteur(d) > P.primeSecteur('13'), d) }
+  assert.ok(P.dansSecteur('75011') && P.dansSecteur('77300'))
+  assert.equal(P.SECTEUR.length, 20)
+  assert.deepEqual(P.SECTEUR.slice(0, 12), ['44', '49', '35', '56', '29', '22', '72', '37', '14', '85', '50', '61'])
+  assert.deepEqual(P.SECTEUR.slice(0, 12).map(P.primeSecteur), [24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2])
+  for (const d of ['13', '69', '33', '59', '2A']) assert.equal(P.dansSecteur(d), false, d)
 })
 test('cle : sans accents ni casse', () => {
   assert.equal(P.cle('Pharmacie DU Stade', 'Rennes'), P.cle('pharmacie du stade ', 'RENNES'))
@@ -46,7 +55,7 @@ test('relances dues : échues, secteur, ni clos ni futures', () => {
     f({ nom: 'C', next_action_date: '2026-11-22' }),
     f({ nom: 'D', next_action_date: '2026-11-01', stage: 'perdu' }),
     f({ nom: 'E', next_action_date: '2026-11-01', stage: 'archive' }),
-    f({ nom: 'F', next_action_date: '2026-11-01', departement: '75', cp: '75001' }),
+    f({ nom: 'F', next_action_date: '2026-11-01', departement: '13', cp: '13001' }),
   ], J)
   assert.deepEqual(r.map((x) => x.nom).sort(), ['A', 'B'])
   const a = r.find((x) => x.nom === 'A')

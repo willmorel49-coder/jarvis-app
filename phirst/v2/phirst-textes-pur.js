@@ -39,7 +39,7 @@
   /* Le mail de « Lui écrire plutôt » (L2, idée 4) : un texte de Yann comme les phrases, mais qui n'est PAS une raison d'appeler (pas dans RAISONS).
      Mots remplacés tout seuls : {titulaire}, {pharmacie}, {lien} (la ligne qui le porte disparaît s'il n'y a aucun lien). La signature s'ajoute en bas (lue en base). */
   var MAILS = [
-    { cle: 'mail_lettre', raison: 'Le mail de la lettre', propo: 'Bonjour {titulaire},\n\nJe vous écris de la part de Yann, agenceur de pharmacies dans le Grand Ouest. Il a préparé une présentation de ce qu’il peut faire pour votre officine.\nVous pouvez la lire ici : {lien}\n\nSi vous souhaitez en parler, répondez simplement à ce message : nous vous rappellerons à l’heure qui vous convient.' }
+    { cle: 'mail_lettre', raison: 'Le mail de la lettre', propo: 'Bonjour {titulaire},\n\nJe vous écris de la part de Yann, agenceur de pharmacies dans le Grand Ouest et en Île-de-France. Il a préparé une présentation de ce qu’il peut faire pour votre officine.\nVous pouvez la lire ici : {lien}\n\nSi vous souhaitez en parler, répondez simplement à ce message : nous vous rappellerons à l’heure qui vous convient.' }
   ];
   function raisonDe(cle) {
     var k = String(cle == null ? '' : cle), tout = RAISONS.concat(A_VENIR, MAILS);

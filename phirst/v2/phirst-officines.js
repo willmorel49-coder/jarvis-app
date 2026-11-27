@@ -123,7 +123,7 @@
     z.innerHTML = '<div class="po-secteur"><div class="pa-chips" role="group" aria-label="Périmètre">' +
       '<button type="button" class="pa-chip" data-sect="only" aria-pressed="' + (!S.france) + '">Secteur de Yann</button>' +
       '<button type="button" class="pa-chip" data-sect="france" aria-pressed="' + S.france + '">Toute la France</button></div>' +
-      '<p class="po-aide po-une" title="' + esc(S.france ? 'Votre secteur d’abord, puis le reste de la France.' : 'Grand Ouest par priorité : ' + P.SECTEUR.join(' · ')) + '">' + (S.france ? 'Votre secteur d’abord, puis le reste de la France.' : 'Grand Ouest par priorité : ' + esc(P.SECTEUR.join(' · '))) + '</p></div>' +
+      '<p class="po-aide po-une" title="' + esc(S.france ? 'Votre secteur d’abord, puis le reste de la France.' : 'Grand Ouest puis Île-de-France, par priorité : ' + P.SECTEUR.join(' · ')) + '">' + (S.france ? 'Votre secteur d’abord, puis le reste de la France.' : 'Grand Ouest puis Île-de-France, par priorité : ' + esc(P.SECTEUR.join(' · '))) + '</p></div>' +
       (aide() ? '<p class="po-aide">' + esc(aide()) + '</p>' : '') +
       (savoir ? '<details class="po-savoir"><summary>À savoir</summary><p>' + esc(savoir) + '</p></details>' : '') +
       (filtres.length ? '<div class="pa-chips po-sf" role="group" aria-label="Affiner la liste">' + filtres.map(function (f) {
@@ -246,8 +246,10 @@
   var COURT_COUCHE = { fiches: 'Mes fiches', robots: 'Robots', transferts: 'Cessions', ehpad: 'EHPAD', signaux: 'À saisir', toutes: 'Toutes', integral: 'Intégral' };
   var AIDE_COUCHE = { fiches: 'les officines de vos pistes, en épingle verte.', robots: 'robot concurrent, point orange (Omnicell en rouge).', transferts: 'cession, transfert ou création, point bleu.',
     ehpad: 'fournisseur d’EHPAD, point violet.', signaux: 'à saisir maintenant, point vert vif.', toutes: 'toutes les officines, petit point vert foncé.', integral: 'cliente d’Intégral, anneau bleu.' };
-  var SECTEUR_BORNES = [[46.2, -5.3], [49.8, 1.2]];
-  var CAP_PAGES = 4;
+  /* Cadre du « Secteur de Yann » : le Grand Ouest et l'Île-de-France (27/11/2026). */
+  var SECTEUR_BORNES = [[46.2, -5.3], [49.8, 3.6]];
+  /* 6 tranches de 1 000 : avec l'Île-de-France, la couche « Toutes » du secteur compte 5 284 officines (2 214 avant), au-delà des 4 000 d'avant. */
+  var CAP_PAGES = 6;
   /* yann : vrai quand le compte n'est pas la téléprospectrice (couche « Clients Intégral » et bloc Intégral de la fiche, jamais pour elle). */
   var M = { racine: null, map: null, perim: 'only', on: { fiches: true, robots: true, transferts: true, ehpad: true, signaux: false, toutes: false, integral: true },
     groupes: {}, lignes: {}, ix: {}, pistes: [], sommes: null, jeton: 0, minuteur: 0, totaux: {}, vus: {}, plafond: false, fab: '', meta: {},
