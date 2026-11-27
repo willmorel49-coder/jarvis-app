@@ -16,8 +16,8 @@ test('le cadre du secteur contient le Grand Ouest ET l’Île-de-France, pas l�
   for (const [nom, p] of Object.entries({ Strasbourg: [48.58, 7.75], Lyon: [45.76, 4.84], Lille: [50.63, 3.06] })) assert.ok(!dedans(p), nom)
 })
 
-test('une couche du secteur peut porter ses 5 284 officines sans être plafonnée', () => {
+test('une couche du secteur peut porter ses 6 253 officines sans être plafonnée (avec de la marge)', () => {
   const m = /var CAP_PAGES = (\d+);/.exec(js)
   assert.ok(m)
-  assert.ok(Number(m[1]) * 1000 >= 5284, 'CAP_PAGES × 1 000 < 5 284')
+  assert.ok(Number(m[1]) * 1000 >= 6253 + 1000, 'CAP_PAGES × 1 000 < 6 253 + 1 000 de marge')
 })

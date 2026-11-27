@@ -248,8 +248,9 @@
     ehpad: 'fournisseur d’EHPAD, point violet.', signaux: 'à saisir maintenant, point vert vif.', toutes: 'toutes les officines, petit point vert foncé.', integral: 'cliente d’Intégral, anneau bleu.' };
   /* Cadre du « Secteur de Yann » : le Grand Ouest et l'Île-de-France (27/11/2026). */
   var SECTEUR_BORNES = [[46.2, -5.3], [49.8, 3.6]];
-  /* 6 tranches de 1 000 : avec l'Île-de-France, la couche « Toutes » du secteur compte 5 284 officines (2 214 avant), au-delà des 4 000 d'avant. */
-  var CAP_PAGES = 6;
+  /* 8 tranches de 1 000 : avec l'Île-de-France, la couche « Toutes » du secteur comptait 5 284 officines (2 214 avant) ; le 27/11/2026 les
+     pharmacies d'Île-de-France que l'annuaire Ameli connaît mais qu'aucun groupement ne liste la portent à 6 253 (au-delà des 6 000 d'avant). */
+  var CAP_PAGES = 8;
   /* yann : vrai quand le compte n'est pas la téléprospectrice (couche « Clients Intégral » et bloc Intégral de la fiche, jamais pour elle). */
   var M = { racine: null, map: null, perim: 'only', on: { fiches: true, robots: true, transferts: true, ehpad: true, signaux: false, toutes: false, integral: true },
     groupes: {}, lignes: {}, ix: {}, pistes: [], sommes: null, jeton: 0, minuteur: 0, totaux: {}, vus: {}, plafond: false, fab: '', meta: {},
