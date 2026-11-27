@@ -1162,7 +1162,7 @@
       .sort(function (a, b) { return b.ca - a.ca; });
 
     // Couleurs périmètre — tokens de séries (sépare les périmètres sans clinquant)
-    var PERIM_COLORS = { 'NP': 'var(--c-fiche)', 'BP': 'var(--c-cat)', 'OPSO': 'var(--c-amber)' };
+    var PERIM_COLORS = { 'NP': 'var(--c-fiche)', 'BP': 'var(--c-cat)', 'OPSO': 'var(--c-amber)', "Pharm'Only": 'var(--c-froid)' };
     function perimColor(lbl) { return PERIM_COLORS[lbl] || 'var(--muted-2)'; }
 
     // Top 8 produits groupement
