@@ -9927,13 +9927,20 @@ async function syncOpsoPharmacies() {
   // Recharge depuis Supabase pour avoir l'état réel (pas filtré)
   const { data: allPharmas } = await sb.from('pharmacies').select('id,name,code,color');
   _neutRows(allPharmas, ['name']);
-  const existingNoms = new Set((allPharmas || []).map(p => normPhName(p.name)));
+  // 27/11/2026 : même règle que filterToOpsoScope — une fiche qui a un code se juge par son CIP, une fiche sans code par son nom.
+  // Par le nom seul, 5 « Pharmacie du Centre » et 2 « Pharmacie de l'Hôtel de Ville » d'un autre réseau entraient dans le périmètre
+  // et faisaient croire que Montoir et Boulogne avaient déjà leur fiche.
+  const normCipS = c => String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, '');
+  const cipsS = opsoListingCIPs(), nomsS = opsoAdherentNoms();
+  const dedans = p => { const c = normCipS(p.code); if (c && cipsS) return cipsS.has(c); return nomsS ? nomsS.has(normPhName(p.name)) : false; };
+  const presents = (allPharmas || []).filter(dedans);
+  const cipsPresents = new Set(presents.map(p => normCipS(p.code)).filter(Boolean));
+  const nomsPresents = new Set(presents.map(p => normPhName(p.name)));
 
-  const missing = OPSO_ADHERENTS.filter(a => !existingNoms.has(normPhName(a.nom)));
+  const missing = OPSO_ADHERENTS.filter(a => !cipsPresents.has(normCipS(a.cip)) && !nomsPresents.has(normPhName(a.nom)));
   if (!missing.length) {
     // Toutes présentes — synchronise juste state.pharmacies depuis Supabase
-    state.pharmacies = (allPharmas || [])
-      .filter(p => existingNoms.has(normPhName(p.name)) && opsoAdherentNoms()?.has(normPhName(p.name)))
+    state.pharmacies = presents
       .map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
     state.pharmacies.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
     return;
@@ -9951,9 +9958,8 @@ async function syncOpsoPharmacies() {
   // Recharge l'état complet depuis Supabase après insertion
   const { data: refreshed } = await sb.from('pharmacies').select('id,name,code,color');
   _neutRows(refreshed, ['name']);
-  const allowed = opsoAdherentNoms();
   state.pharmacies = (refreshed || [])
-    .filter(p => allowed?.has(normPhName(p.name)))
+    .filter(dedans)
     .map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color }));
   state.pharmacies.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
 }
