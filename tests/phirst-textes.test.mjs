@@ -13,8 +13,8 @@ describe('idée 1 : la première phrase', () => {
       const r = T.raisonDe(cle)
       assert.ok(r && r.propo.length > 40, 'motif sans proposition : ' + cle)
     }
-    // 27/11/2026 : + les deux phrases des lignes repérées au FINESS (motif « ars », choisies par l'étiquette, voir phirst-finess-phrase.test.mjs)
-    assert.equal(T.RAISONS.length, Object.keys(P.MOTIFS).length + 2)
+    // 27/11/2026 : + les deux phrases des lignes repérées au FINESS et celle de la voisine d'une fermeture (motif « ars », choisies par l'étiquette, voir phirst-finess-phrase.test.mjs)
+    assert.equal(T.RAISONS.length, Object.keys(P.MOTIFS).length + 3)
   })
   test('rien écrit par Yann : la proposition, marquée comme telle', () => {
     const p = T.phraseDe('cession', [])
@@ -37,7 +37,7 @@ describe('idée 1 : la première phrase', () => {
       assert.equal(T.phraseDe(c, []).source, 'proposition')
       assert.equal(T.phraseDe(c, [{ cle: c, texte: 'Mienne' }]).texte, 'Mienne')
     }
-    assert.equal(T.RAISONS.length, 14); assert.equal(new Set(T.RAISONS.map((r) => r.cle)).size, 14)   // 27/11/2026 : 12 + les deux du FINESS
+    assert.equal(T.RAISONS.length, 15); assert.equal(new Set(T.RAISONS.map((r) => r.cle)).size, 15)   // 27/11/2026 : 12 + les deux du FINESS + la voisine d'une fermeture
     assert.equal(P.MOTIFS.ars[0], 'Transfert autorisé par l’ARS')
   })
   test('aucune proposition ne parle d’argent', () => {

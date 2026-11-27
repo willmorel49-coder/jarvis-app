@@ -28,6 +28,8 @@
     /* 27/11/2026 — les lignes repérées au FINESS (motif « ars ») : la pharmacie a DÉJÀ ouvert, d'où deux phrases à part (choix cliqué de Will), voir clePhrase. */
     { cle: 'finess_ouverture', raison: 'Transfert ou création repérés au FINESS', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. Votre officine a ouvert récemment à cette adresse : comment se passe l’installation ? Après une ouverture, Yann aide souvent à revoir un rayon, le comptoir ou à prévoir un robot. Avez-vous deux minutes ?' },
     { cle: 'finess_regroupement', raison: 'Regroupement repéré au FINESS', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. Vos deux officines viennent de se regrouper : comment se passe l’installation ? Deux équipes et deux stocks dans un même lieu, c’est souvent le moment de revoir l’agencement ou de prévoir un robot. Avez-vous deux minutes ?' },
+    /* 27/11/2026 — la pharmacie OUVERTE la plus proche d'une fermeture vue au FINESS (choix cliqué de Will « Appeler la voisine ») : elle récupère des patients. */
+    { cle: 'finess_voisine', raison: 'Une pharmacie voisine ferme (FINESS)', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. Une pharmacie toute proche de la vôtre ferme ses portes : vous allez sans doute accueillir une partie de ses patients. Plus de monde au comptoir et plus de stock, c’est souvent le moment de revoir l’agencement ou de prévoir un robot. Avez-vous deux minutes ?' },
     { cle: 'client', raison: 'Client qui revient', propo: 'Bonjour, ici l’équipe de Yann, l’agenceur avec qui vous avez déjà travaillé. Nous prenons de vos nouvelles : un nouveau projet se dessine-t-il dans votre officine ?' },
     { cle: 'recommande', raison: 'Recommandé par un confrère', propo: 'Bonjour, un confrère de votre région nous a recommandés auprès de vous. Yann est agenceur de pharmacies et a équipé son officine. Puis-je vous présenter ce qu’il a fait ?' },
     { cle: 'relance', raison: 'Relance promise', propo: 'Bonjour, je vous rappelle comme convenu, de la part de Yann. Avez-vous eu le temps d’y réfléchir ? Je suis là pour fixer un moment qui vous arrange.' },
@@ -71,6 +73,7 @@
     var m = r ? r.motif : null, e = r && typeof r.etiquette === 'string' ? P.norm(r.etiquette) : '';
     if (m === 'ars' && /^(transfert repere|creation reperee) au finess$/.test(e)) return 'finess_ouverture';
     if (m === 'ars' && e === 'regroupement repere au finess') return 'finess_regroupement';
+    if (m === 'ars' && /^une pharmacie voisine (vient de fermer|va fermer)$/.test(e)) return 'finess_voisine';   // ligne-l4.mjs, ETIQUETTE_VOISINE
     return m;
   }
   /* La mention sous « Pour commencer ». `yann` : celui qui regarde est Yann (le lien vers Réglages n'a de sens que pour lui). */

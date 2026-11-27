@@ -57,3 +57,30 @@ describe('lignes repérées au FINESS : leur propre phrase', () => {
     }
   })
 })
+
+// 27/11/2026, suite (choix cliqué de Will « Appeler la voisine ») : la pharmacie ouverte la plus proche d'une fermeture vue au FINESS.
+// Étiquettes recopiées telles que le robot les écrit (~/phirst-ligne/ligne-l4.mjs, ETIQUETTE_VOISINE).
+describe('voisine d’une pharmacie qui ferme : sa propre phrase', () => {
+  test('« vient de fermer » et « va fermer » → la phrase « ferme ses portes », jamais celle de l’ARS', () => {
+    for (const e of ['Une pharmacie voisine vient de fermer', 'Une pharmacie voisine va fermer']) {
+      assert.equal(T.clePhrase(ligne('ars', e)), 'finess_voisine', e)
+      const p = T.phraseDe(T.clePhrase(ligne('ars', e)), [])
+      assert.equal(p.source, 'proposition'); assert.equal(p.raison, 'Une pharmacie voisine ferme (FINESS)')
+      assert.ok(p.texte.includes('Une pharmacie toute proche de la vôtre ferme ses portes' + NB + ': vous allez sans doute accueillir une partie de ses patients.'), e)
+      assert.doesNotMatch(p.texte, /ARS|transfert|ouvert/i)
+    }
+  })
+  test('contre-épreuve : un autre motif ou une autre étiquette ne prend pas cette phrase', () => {
+    assert.equal(T.clePhrase(ligne('cession', 'Une pharmacie voisine vient de fermer')), 'cession')
+    assert.equal(T.clePhrase(ligne('ars', 'Une pharmacie voisine vient de fermer à Rennes')), 'ars')
+    assert.equal(T.clePhrase(ligne('ars', '  une PHARMACIE voisine  va fermer ')), 'finess_voisine')
+  })
+  test('Yann a écrit sa phrase : c’est la sienne ; dans Réglages juste après les deux du FINESS, sans somme d’argent', () => {
+    assert.equal(T.phraseDe(T.clePhrase(ligne('ars', 'Une pharmacie voisine va fermer')), [{ cle: 'finess_voisine', texte: 'Ma phrase voisine.' }]).texte, 'Ma phrase voisine.')
+    const cles = T.RAISONS.map((r) => r.cle), i = cles.indexOf('ars')
+    assert.deepEqual(cles.slice(i, i + 4), ['ars', 'finess_ouverture', 'finess_regroupement', 'finess_voisine'])
+    const P = req('../phirst/v2/phirst-pur.js'), r = T.raisonDe('finess_voisine')
+    assert.equal(P.contientMontant(r.propo), false); assert.ok(r.propo.length <= T.LONG_MAX); assert.doesNotMatch(r.propo, / [?!:;]/)
+    assert.deepEqual(P.etiquetteDe({ motif: 'ars', etiquette: 'Une pharmacie voisine vient de fermer' }), ['Une pharmacie voisine vient de fermer', 'orange'])
+  })
+})
