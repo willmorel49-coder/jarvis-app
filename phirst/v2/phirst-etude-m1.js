@@ -185,20 +185,24 @@ function monter(hote, etude, opts) {
   var LIB = { ehpad_pa: 'EHPAD et résidences pour personnes âgées' };
   var libelle = function (v) { return LIB[v.libelle] || (/^[a-z_]+$/.test(v.libelle) ? v.libelle.replace(/_/g, ' ').replace(/^./, function (c) { return c.toUpperCase(); }) : v.libelle); };
 
+  /* C4 (28/11/2026) : un chiffre qui suit la zone choisie dit sa zone, sinon il paraît contredire la zone naturelle. */
+  var avecZone = function (lib) { var z = 'à moins de ' + S.z + NBSP + 'min'; return / par zone( de trajet)?$/.test(lib) ? lib.replace(/ par zone( de trajet)?$/, ' ' + z) : / de la zone par /.test(lib) ? lib.replace(' de la zone ', ' ' + z + ', ') : lib + ' (' + z + ')'; };
   function rowHTML(v, b) {
     var lib = esc(tx(libelle(v)));
+    if (v.par_zone) lib = avecZone(lib);
     if (v.id === 'parc_connu') return '<div class="em1-val em1-question"><div class="em1-vl"><b>Question au pharmacien :</b> avez-vous déjà un robot de dispensation ?<small>« Absente du parc connu » ne veut pas dire « sans robot » : le parc connu est incomplet.</small></div></div>';
     if (v.id === 'sief_detail') return '';
     if (v.par_rayon) return '';
     if (v.par_zone && v.par_zone[S.z] && typeof v.par_zone[S.z] === 'object') return '<div class="em1-val"><div class="em1-vl">' + lib + '</div><div class="em1-vv em1-txt">' + Object.entries(v.par_zone[S.z]).map(function (kp) { return esc(ZONAGE(kp[0])) + ' : ' + nb(kp[1] * 100, 0) + NBSP + '%'; }).join(', ') + '</div></div>';
     var x = v.par_zone ? v.par_zone[S.z] : v.valeur;
     var note = /_|\[\]|\bnull\b/.test(v.note || '') ? '' : tx(v.note);
-    if (x == null) return '<div class="em1-val em1-inc"><div class="em1-vl">' + lib + (v.raison ? '<small>' + esc(tx(v.raison)) + '</small>' : '') + '</div><div class="em1-vv">inconnu</div></div>';
+    if (x == null) return '<div class="em1-val em1-inc"><div class="em1-vl">' + lib + (v.raison ? '<small>' + esc(tx(v.raison)) + '</small>' : '') + '</div><div class="em1-vv">' + esc(tx(v.absence) || 'inconnu') + '</div></div>';
     var nombre = typeof x === 'number' && v.unite !== 'date' && v.unite !== 'zonage';
     var aff = nombre ? cnt(x, v.unite, b.id + '.' + v.id) : esc(fmtVal(x, v.unite));
     var tag = v.declenche ? ' <span class="em1-tag em1-q">à pousser</span>' : '';
-    var long = nombre && (v.unite || '').length > 12;
-    return '<div class="em1-val' + (v.declenche ? ' em1-dec' : '') + (long ? ' em1-long' : '') + '"><div class="em1-vl">' + lib + tag + (note ? '<small>' + esc(note) + '</small>' : '') + '</div><div class="em1-vv' + (nombre ? '' : ' em1-txt') + '">' + aff + '</div></div>';
+    var phrase = typeof x === 'string' && x.length > 40;
+    var long = nombre && (v.unite || '').length > 12 || phrase;
+    return '<div class="em1-val' + (v.declenche ? ' em1-dec' : '') + (long ? ' em1-long' : '') + (phrase ? ' em1-lphrase' : '') + '"><div class="em1-vl">' + lib + tag + (note ? '<small>' + esc(note) + '</small>' : '') + '</div><div class="em1-vv' + (nombre ? '' : ' em1-txt') + (phrase ? ' em1-phrase' : '') + '">' + aff + '</div></div>';
   }
   function tableRayons(b) {
     var L = valeurs(b).filter(function (v) { return v.par_rayon; }); if (!L.length) return '';
@@ -228,13 +232,16 @@ function monter(hote, etude, opts) {
     h += ligne('Dirigeant', (x.dirigeants || []).map(function (d) { return d.qualite + (d.age ? ', ' + d.age + NBSP + 'ans' : ''); }).join(' ; '));
     h += ligne('Effectif', x.effectif ? x.effectif.tranche + ' (' + x.effectif.annee + ')' : 'inconnu' + (x.effectif_raison ? ' : ' + tx(x.effectif_raison) : ''));
     h += ligne('Équipe', x.equipe ? equipeTxt(x.equipe) : '');
+    if (x.transmission) h += '<div class="em1-val em1-long em1-lphrase"><div class="em1-vl">Transmission</div><div class="em1-vv em1-txt em1-phrase">' + esc(tx(x.transmission.texte)) + '</div></div>';
     h += '</div>';
+    if (x.transmission && (jar || tel)) h += '<p class="em1-notice em1-ecran"><b>À surveiller (JARVIS, non imprimé).</b> ' + esc(tx(x.transmission.interne)) + '</p>';
     if (x.perime_dans_l_etude_actuelle) h += '<p class="em1-notice"><b>Attention, exploitant à vérifier.</b> L\'exploitant actuel est ' + esc(tx(x.denomination)) + ' ; les chiffres lus à l\'annuaire sont ceux de l\'ancienne société.</p>';
     if (!cs.length) return h + '<div class="em1-etat"><span><b>Comptes : inconnus.</b> ' + esc(tx(x.comptes_raison) || 'aucun exercice lisible') + '</span></div>';
-    var cols = [['Clôture', function (c) { return dateFr(c.cloture); }]];
+    var duree = function (i) { if (i + 1 >= cs.length) return 0; var m = Math.round((Date.parse(cs[i].cloture) - Date.parse(cs[i + 1].cloture)) / 864e5 / 30.44); return m > 0 && m < 12 ? m : 0; };
+    var cols = [['Clôture', function (c, i) { var m = duree(i); return dateFr(c.cloture) + (m ? ' (exercice de ' + m + NBSP + 'mois)' : ''); }]];
     if (!tel) cols.push(["Chiffre d'affaires", function (c) { return c.ca && c.ca.valeur != null ? fmtVal(c.ca.valeur, '€') : 'inconnu'; }], ['Résultat net', function (c) { return c.resultat_net && c.resultat_net.valeur != null ? fmtVal(c.resultat_net.valeur, '€') : 'inconnu'; }]);
     cols.push(['Endettement', function (c) { return c.taux_endettement_pct == null ? 'inconnu' : fmtVal(c.taux_endettement_pct, '%'); }], ['Autonomie financière', function (c) { return c.autonomie_financiere_pct == null ? 'inconnu' : fmtVal(c.autonomie_financiere_pct, '%'); }]);
-    return h + '<h3 style="margin-top:22px">Exercices lisibles</h3><div class="em1-defile-x"><table class="em1-tab em1-ex"><thead><tr>' + cols.map(function (c) { return '<th>' + c[0] + '</th>'; }).join('') + '</tr></thead><tbody>' + cs.map(function (c) { return '<tr>' + cols.map(function (k) { return '<td>' + esc(k[1](c)) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+    return h + '<h3 style="margin-top:22px">Exercices lisibles</h3><div class="em1-defile-x"><table class="em1-tab em1-ex"><thead><tr>' + cols.map(function (c) { return '<th>' + c[0] + '</th>'; }).join('') + '</tr></thead><tbody>' + cs.map(function (c, i) { return '<tr>' + cols.map(function (k) { return '<td>' + esc(k[1](c, i)) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
   }
 
   /* Ne pas couper « L5125-6-1 » ni « 2 000 » en fin de ligne (texte déjà échappé). */

@@ -146,6 +146,8 @@
 .em1 .em1-val .em1-vv{font:440 27px/1.1 var(--titre);color:var(--marque);text-align:right;white-space:nowrap}
 .em1[data-vue=jarvis] .em1-val .em1-vv{font:700 24px/1.1 Archivo,sans-serif;letter-spacing:-.02em;color:var(--ink)}
 .em1 .em1-val .em1-vv.em1-txt{font-size:19px;white-space:normal;max-width:19em}
+.em1 .em1-val.em1-lphrase{grid-template-columns:minmax(0,1fr)}
+.em1 .em1-val .em1-vv.em1-txt.em1-phrase{font:400 16px/1.4 Archivo,sans-serif;letter-spacing:0;color:var(--ink);text-align:left;max-width:none}
 .em1 .em1-val.em1-inc .em1-vv{font:500 17px/1.2 Archivo,sans-serif;color:var(--ink3)}
 .em1 .em1-val.em1-question{grid-template-columns:1fr}
 .em1 .em1-val.em1-question .em1-vl{font-size:16px}

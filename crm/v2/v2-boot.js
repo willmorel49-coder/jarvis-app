@@ -1576,9 +1576,11 @@
   // 28/11/2026 — exception : les fichiers de la version 2026-11-27 ont été remplacés sur place (sources sans chemin de fichier
   // interne, choix de Will du 27/11). Nouveau nom de copie (r2) : chaque appareil reprend une fois l'étude déjà ouverte ;
   // l'ancienne copie est effacée au passage. Tout futur remplacement sur place devra changer ce suffixe.
+  // 28/11/2026, 6 h — r3 : correctifs de vérité (transfert, synthèse, périmètres, PDA sans accueil de jour ni EHPAD à pharmacie
+  // interne, transmission), même version remplacée sur place ; les copies r2 et plus anciennes sont effacées au passage.
   V2.binaireProtege = function (fichier, cb) {
-    var cle = 'https://protege.local/' + fichier + '?v=fige-r2';
-    try { caches.open(CACHE_EMPREINTES).then(function (c) { c.delete('https://protege.local/' + fichier + '?v=fige'); }, function () {}); } catch (e) {}
+    var cle = 'https://protege.local/' + fichier + '?v=fige-r3';
+    try { caches.open(CACHE_EMPREINTES).then(function (c) { ['fige', 'fige-r2'].forEach(function (v) { c.delete('https://protege.local/' + fichier + '?v=' + v); }); }, function () {}); } catch (e) {}
     function rien() { delete V2.protegeEchec[fichier]; cb(null); }
     function telecharger(c) {
       adresseProtegee(fichier).then(function (url) {

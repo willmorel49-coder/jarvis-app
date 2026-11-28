@@ -195,3 +195,21 @@ describe('écriture des nombres et chargement de la feuille (28/11/2026)', () =>
     assert.match(js, /phirst-etude-m1\.css' \+ jeton\(\)/)
   })
 })
+
+describe('correctifs de vérité du 28/11/2026 (transmission, PDA)', () => {
+  test('transmission : la phrase de l’étude vient des données, sans âge écrit par le module', () => {
+    assert.match(js, /if \(x\.transmission\) h \+= '<div class="em1-val em1-long em1-lphrase"><div class="em1-vl">Transmission<\/div><div class="em1-vv em1-txt em1-phrase">' \+ esc\(tx\(x\.transmission\.texte\)\)/)
+  })
+  test('transmission : le signal avec l’âge ne s’affiche que dans JARVIS (vues jarvis et telepro), à l’écran seulement', () => {
+    assert.match(js, /if \(x\.transmission && \(jar \|\| tel\)\) h \+= '<p class="em1-notice em1-ecran">/)
+    assert.match(css, /@media print\{\.em1 \.em1-ecran\{display:none!important\}\}/)
+  })
+  test('un texte de plus de 40 signes s’écrit comme une phrase (liste des EHPAD écartés), pas comme un chiffre', () => {
+    assert.match(js, /var phrase = typeof x === 'string' && x\.length > 40;/)
+    assert.match(css, /\.em1 \.em1-val\.em1-lphrase\{grid-template-columns:minmax\(0,1fr\)\}/)   // une seule colonne : le libellé ne passe plus sous la phrase (vu sous WebKit le 28/11)
+    assert.match(css, /\.em1 \.em1-val \.em1-vv\.em1-txt\.em1-phrase\{font:400 16px\/1\.4 Archivo,sans-serif;/)
+  })
+  test('une valeur absente affiche son champ absence (« aucun », « sans objet ») avant « inconnu »', () => {
+    assert.match(js, /esc\(tx\(v\.absence\) \|\| 'inconnu'\)/)
+  })
+})
