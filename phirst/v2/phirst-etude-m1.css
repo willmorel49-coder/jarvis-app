@@ -386,6 +386,21 @@ html[data-impression=resume] .em1 .em1-pied{break-before:auto;margin-top:6mm}}
 @media print{.em1 .em1-val.em1-long{grid-template-columns:minmax(0,1fr)}.em1 .em1-val.em1-long .em1-vv{text-align:left;white-space:normal}}
 /* Valeur en texte (nom de la société…) : 19em dépassait la colonne imprimée et la fin était coupée (« …SELABL », PDF WebKit, 28/11) */
 @media print{.em1 .em1-val .em1-vv.em1-txt{max-width:62mm}}
+/* Reflet de la couverture : le survol de la souris pose un dégradé en style en ligne (pointermove), qui passait par-dessus la règle
+   d'impression ; Safari imprime en NOIR ses parties transparentes (pages 1-2 illisibles, PDF de Will du 28/11, reproduit au banc) */
+@media print{.em1 .em1-feuille{background:#fff!important}}
+/* Consignes d'écran (« Le point glisse », « Touchez une ligne ») : sans objet sur papier (PDF de Will, 28/11) */
+@media print{.em1 .em1-ecran{display:none!important}}
+/* Titre seul en bas de page (« Communes de la zone sans pharmacie… », « Zones mal desservies », PDF de Will p. 24-25) : WebKit n'applique
+   ni break-after:avoid ni break-inside:avoid dans les colonnes flottantes. Une ligne, elle, ne se coupe jamais : le titre devient une ligne
+   qui emporte 30 mm de réserve invisible (le contenu qui suit remonte d'autant) et passe à la page suivante avec le début de son contenu */
+@media print{.em1 .em1-p-main h3,.em1 h4,.em1 .em1-note-t{display:inline-block;width:100%;padding-bottom:30mm;margin-bottom:0}
+.em1 .em1-p-main h3+*,.em1 h4+*,.em1 .em1-note-t+*{margin-top:-30mm!important}
+/* les longs tableaux (communes, exercices) se coupent entre deux lignes, sinon ils sautent en entier et laissent leur titre seul */
+.em1 .em1-tab.em1-md,.em1 .em1-tab.em1-ex{break-inside:auto;page-break-inside:auto}
+/* WebKit coupe une ligne de tableau en deux (« 31 mars » / « 2021 ») et ignore break-inside:avoid sur une ligne : chaque exercice tient
+   donc sur UNE ligne de texte, que WebKit ne coupe jamais (15 exercices au plus sur les 19 392 études) */
+.em1 .em1-ex td{white-space:nowrap;font-size:10pt}}
 /* Empilement (vu à 1440 sous WebKit, 28/11) : l'étude reste sous la barre de l'app ; la carte (Leaflet monte à 400-1000) et la fiche d'une
    voisine glissent sous la réglette quand on défile. Le panneau du téléphone (fiche en bas d'écran) reste au-dessus. */
 .em1{position:relative;z-index:0}

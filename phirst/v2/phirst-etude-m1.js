@@ -167,7 +167,7 @@ function monter(hote, etude, opts) {
     var ind = E.reperes.indicateurs.filter(function (i) { var m = /_(5|10|15)$/.exec(i.cle); return !m || m[1] === S.z; });
     var cl = E.reperes.classe;
     $('.em1-couv-bas').innerHTML = '<div class="em1-cles">' + cles.map(function (x, i) { return '<div class="em1-cle"><span class="em1-v">' + (x[0] == null ? 'inconnu' : cnt(x[0], '', 'cle' + i)) + '</span><span><span class="em1-l">' + esc(x[2]) + '</span><span class="em1-src">' + esc(x[3]) + '</span></span></div>'; }).join('') + '</div>' +
-      '<div class="em1-rep-t"><h2>Où vous situez-vous en France ?</h2><p>Le point glisse sur l\'échelle des pharmacies étudiées.</p></div>' +
+      '<div class="em1-rep-t"><h2>Où vous situez-vous en France ?</h2><p class="em1-ecran">Le point glisse sur l\'échelle des pharmacies étudiées.</p></div>' +
       '<div class="em1-reperes">' + ind.map(repHTML).join('') + '</div>' +
       '<p class="em1-rep-leg"><i style="background:var(--acc)"></i>Votre pharmacie, parmi toutes les pharmacies étudiées' + (cl && cl.nom ? ' <i style="border:2px solid var(--ink3);margin-left:14px"></i>Parmi les pharmacies des ' + esc(cl.nom) : '') + '.</p>';
   }
@@ -213,7 +213,7 @@ function monter(hote, etude, opts) {
     if (!L.length) return '<p class="em1-srcb">Aucune pharmacie voisine à moins de ' + S.z + ' minutes.</p>';
     var rows = L.slice(0, S.nbV).map(function (p) { return '<li><button type="button" class="em1-vrow" data-voisine="' + esc(p.finess) + '"><span class="em1-vn">' + esc(nomSur(p.nom)) + '</span><span class="em1-vm">' + esc(tc(p.commune)) + ' · ' + nb(p.distance_km, 1) + NBSP + 'km · ' + p.zone_min + NBSP + 'min</span><span class="em1-vt">' + (p.a_surveiller ? 'À surveiller' : '') + '</span><i class="em1-go" aria-hidden="true">›</i></button></li>'; }).join('');
     var reste = L.length - S.nbV;
-    return '<div class="em1-voisines"><h4>Les ' + L.length + ' pharmacies voisines à moins de ' + S.z + ' minutes</h4><p class="em1-srcb" style="margin:0 0 8px">Touchez une ligne : sa fiche s\'ouvre dans la marge. « À surveiller » : titulaire de 60 ans et plus, exerçant seul.</p><ul class="em1-vlist">' + rows + '</ul>' + (reste > 0 ? '<button type="button" class="em1-plus" data-plus>Voir ' + Math.min(20, reste) + ' de plus (' + reste + ' restantes)</button>' : '') + '</div>';
+    return '<div class="em1-voisines"><h4>Les ' + L.length + ' pharmacies voisines à moins de ' + S.z + ' minutes</h4><p class="em1-srcb" style="margin:0 0 8px"><span class="em1-ecran">Touchez une ligne : sa fiche s\'ouvre dans la marge. </span>« À surveiller » : titulaire de 60 ans et plus, exerçant seul.</p><ul class="em1-vlist">' + rows + '</ul>' + (reste > 0 ? '<button type="button" class="em1-plus" data-plus>Voir ' + Math.min(20, reste) + ' de plus (' + reste + ' restantes)</button>' : '') + '</div>';
   }
   function siefListe(b) {
     var d = (val(b, 'sief_detail') || {}).detail || []; if (!d.length) return '';
