@@ -391,8 +391,8 @@ html[data-impression=resume] .em1 .em1-pied{break-before:auto;margin-top:6mm}}
 @media print{.em1 .em1-feuille{background:#fff!important}}
 /* Consignes d'écran (« Le point glisse », « Touchez une ligne ») : sans objet sur papier (PDF de Will, 28/11) */
 @media print{.em1 .em1-ecran{display:none!important}}
-/* « Chez Intégral » (palier, CA, nos clientes, tournée, groupement) : jamais imprimé, le papier peut partir chez le pharmacien
-   (choix de Will, 28/11/2026 : « rien de Chez Intégral ») ; il reste à l'écran dans JARVIS */
+/* La partie que JARVIS ajoute (palier, CA, nos clientes, tournée, groupement) : jamais imprimée, le papier peut partir chez le
+   pharmacien (choix de Will, 28/11/2026) ; elle reste à l'écran dans JARVIS. Ce fichier ne doit jamais en écrire le nom (test du module) */
 @media print{.em1 .em1-integral-hote{display:none!important}}
 /* Titre seul en bas de page (« Communes de la zone sans pharmacie… », « Zones mal desservies », PDF de Will p. 24-25) : WebKit n'applique
    ni break-after:avoid ni break-inside:avoid dans les colonnes flottantes. Une ligne, elle, ne se coupe jamais : le titre devient une ligne
