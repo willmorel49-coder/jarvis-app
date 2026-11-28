@@ -213,3 +213,26 @@ describe('correctifs de vérité du 28/11/2026 (transmission, PDA)', () => {
     assert.match(js, /esc\(tx\(v\.absence\) \|\| 'inconnu'\)/)
   })
 })
+
+describe('accord de l’unité (28/11/2026 : « 1 établissements » à l’écran)', () => {
+  const bloc = js.slice(js.indexOf('  var PLURIEL = {'), js.indexOf('  function fmtVal('))
+  const accord = new Function(bloc + '; return accord;')()
+  test('sous 2 : singulier ; à partir de 2 : pluriel ; seul le premier mot s’accorde', () => {
+    assert.equal(accord(1, 'établissements'), 'établissement')
+    assert.equal(accord(0, 'pharmacies'), 'pharmacie')
+    assert.equal(accord(1.5, 'lits pour 100 habitants'), 'lit pour 100 habitants')
+    assert.equal(accord(1, "lieux d'exercice"), "lieu d'exercice")
+    assert.equal(accord(2, 'commune'), 'communes')
+    assert.equal(accord(124, 'établissements'), 'établissements')
+    assert.equal(accord(1.999, 'places'), 'places')
+  })
+  test('une unité inconnue ou une valeur non numérique reste telle quelle', () => {
+    for (const u of ['consult./hab./an', 'méd./10 000 hab.', 'mois', '%', 'rang']) assert.equal(accord(1, u), u)
+    assert.equal(accord('monte', 'pharmacies'), 'pharmacies')
+    assert.equal(accord(1, ''), '')
+  })
+  test('branché sur l’affichage des nombres et sur les habitants arrondis', () => {
+    assert.match(js, /default: return fmtNum\(x\) \+ \(unit \? NBSP \+ accord\(x, unit\) : ''\);/)
+    assert.match(js, /NBSP \+ accord\(Math\.round\(i\.valeur\), unit\)/)
+  })
+})

@@ -86,6 +86,18 @@ function monter(hote, etude, opts) {
   var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   var dateFr = function (s) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? (+m[3] === 1 ? '1er' : +m[3]) + ' ' + MOIS[+m[2] - 1] + ' ' + m[1] : String(s || ''); };
   var ZONAGE = function (s) { return /ZIP/.test(s) ? 'Zone d\'intervention prioritaire' : /ZAC/.test(s) ? 'Zone d\'action complémentaire' : /HZ/.test(s) ? 'Hors zone' : s; };
+  /* accord de l'unité (28/11/2026) : sous 2, singulier (« 0 établissement », « 1 pharmacie », « 1,5 lit pour 100 habitants ») ;
+     à partir de 2, pluriel (« 2 communes »). Seul le premier mot s'accorde ; une unité inconnue reste telle quelle. */
+  var PLURIEL = { 'établissement': 'établissements', 'pharmacie': 'pharmacies', 'habitant': 'habitants', 'commune': 'communes', 'logement': 'logements',
+    'place': 'places', 'lit': 'lits', 'ménage': 'ménages', 'emploi': 'emplois', 'actif': 'actifs', 'chambre': 'chambres', 'emplacement': 'emplacements',
+    'exercice': 'exercices', 'pharmacien': 'pharmaciens', 'lieu': 'lieux', 'an': 'ans', 'médecin': 'médecins' };
+  var SINGULIER = {}; Object.keys(PLURIEL).forEach(function (k) { SINGULIER[PLURIEL[k]] = k; });
+  var accord = function (x, unit) {
+    if (!unit || typeof x !== 'number' || !isFinite(x)) return unit;
+    var i = unit.indexOf(' '), m = i < 0 ? unit : unit.slice(0, i), reste = i < 0 ? '' : unit.slice(i);
+    var un = Math.round(Math.abs(x) * 100) / 100 < 2;
+    return un ? (SINGULIER[m] ? SINGULIER[m] + reste : unit) : (PLURIEL[m] ? PLURIEL[m] + reste : unit);
+  };
   function fmtVal(x, unit) {
     if (x == null) return 'inconnu';
     if (typeof x === 'string') return unit === 'zonage' ? ZONAGE(x) : unit === 'date' ? dateFr(x) : x === 'descend' ? 'à la baisse' : x === 'monte' ? 'à la hausse' : x + (unit ? NBSP + unit : '');
@@ -97,7 +109,7 @@ function monter(hote, etude, opts) {
       case 'm': return x >= 1000 ? nb(x / 1000, 1) + NBSP + 'km' : nb(x, 0) + NBSP + 'm';
       case 'part (0 à 1)': return fmtNum(x * 100, '%') + NBSP + '%';
       case 'rang': case 'zonage': case 'date': return nb(x, 0);
-      default: return fmtNum(x) + (unit ? NBSP + unit : '');
+      default: return fmtNum(x) + (unit ? NBSP + accord(x, unit) : '');
     }
   }
   /* texte sûr pour la vue courante : la téléprospectrice ne voit jamais un montant (mots entiers : « Europe », « neurologue » restent) */
@@ -173,7 +185,7 @@ function monter(hote, etude, opts) {
   }
   function repHTML(i) {
     var raison = tx(i.raison), unit = i.unite;
-    var val = i.valeur == null ? 'inconnu' : (/hab/.test(unit || '') && !/\//.test(unit) ? nb(Math.round(i.valeur), 0) + NBSP + unit : fmtVal(i.valeur, unit));
+    var val = i.valeur == null ? 'inconnu' : (/hab/.test(unit || '') && !/\//.test(unit) ? nb(Math.round(i.valeur), 0) + NBSP + accord(Math.round(i.valeur), unit) : fmtVal(i.valeur, unit));
     var x = i.centile_national, xc = i.centile_classe;
     var piste = x == null ? '<div class="em1-piste"></div>' : '<div class="em1-piste" style="--x:' + x + '%;--xc:' + (xc == null ? x : xc) + '%">' + [25, 50, 75].map(function (t) { return '<i class="em1-tk" style="left:' + t + '%"></i><span class="em1-tkl" style="left:' + t + '%;top:17px">' + t + '</span>'; }).join('') + (xc != null ? '<i class="em1-pc"></i>' : '') + '<i class="em1-pt"></i></div>';
     return '<div class="em1-rep"><div class="em1-rl">' + esc(tx(i.libelle)) + '</div>' + piste + '<div class="em1-rv"><b>' + esc(val) + '</b>' + esc(x == null ? (raison || 'inconnu') : tx(i.phrase)) + '</div></div>';
