@@ -620,11 +620,12 @@
     });
   }
   // Sur la carte de l'étude enrichie : nos clientes et les tournées de livraison (comme la carte de l'ancienne étude).
+  // Classe pe-int-carte : jamais imprimées (choix de Will, 28/11/2026 : « rien de Chez Intégral » sur le papier remis au pharmacien).
   function carteIntegral(m, L, z, hote) {
-    if (S.prepT) S.prepT.forEach(function (t) { L.polyline(t.pts, { color: '#1A2030', weight: 2.2, opacity: 0.55, dashArray: '7 6', interactive: false }).addTo(m); });
+    if (S.prepT) S.prepT.forEach(function (t) { L.polyline(t.pts, { color: '#1A2030', weight: 2.2, opacity: 0.55, dashArray: '7 6', interactive: false, className: 'pe-int-carte' }).addTo(m); });
     z.liste.forEach(function (x) {
-      L.circleMarker([x.c.lat, x.c.lng], { radius: 9, weight: 3, color: '#0050E6', fill: false, interactive: false }).addTo(m);
-      L.circleMarker([x.c.lat, x.c.lng], { radius: 5, weight: 2, color: '#fff', fillColor: '#0034A0', fillOpacity: 1, interactive: false }).addTo(m);
+      L.circleMarker([x.c.lat, x.c.lng], { radius: 9, weight: 3, color: '#0050E6', fill: false, interactive: false, className: 'pe-int-carte' }).addTo(m);
+      L.circleMarker([x.c.lat, x.c.lng], { radius: 5, weight: 2, color: '#fff', fillColor: '#0034A0', fillOpacity: 1, interactive: false, className: 'pe-int-carte' }).addTo(m);
     });
     var lg = hote && hote.querySelector('.legende');
     if (lg && (z.liste.length || (S.prepT && S.prepT.length))) lg.insertAdjacentHTML('beforeend', (z.liste.length ? '<span class="lz"><i style="background:#0034A0;border-radius:50%;box-shadow:0 0 0 2px #fff,0 0 0 4px #0050E6"></i>Nos clientes</span>' : '') + (S.prepT && S.prepT.length ? '<span class="lz"><i style="background:none;border-top:2px dashed #1A2030;border-radius:0;height:0"></i>Tournées de livraison</span>' : ''));

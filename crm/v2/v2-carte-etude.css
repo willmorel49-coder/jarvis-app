@@ -127,6 +127,8 @@
   #pe .pe-carte{height:120mm}
   #pe h1{font-size:54px}
   .pe-ici-point::after{display:none}
+  /* nos clientes et nos tournées sur la carte de l'étude enrichie : jamais sur le papier (choix de Will, 28/11/2026) */
+  #pe .pe-int-carte{display:none!important}
 }
 
 /* ── Habillage JARVIS (aube) : titres Archivo 800 serrés, chiffres en bleu dosé, papier blanc-bleu ── */
